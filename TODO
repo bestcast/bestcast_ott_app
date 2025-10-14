@@ -1,0 +1,27 @@
+keytool -genkey -v -keystore $env:USERPROFILE\upload-keystore.jks `
+        -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 `
+        -alias upload
+
+
+
+keytool -genkey -v -keystore $env:C:\Users\WINDOWS\Desktop\bestcaststudios\bestcast-upload-keystore.jks `
+        -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 `
+        -alias upload
+
+        [Storing \Users\WINDOWS\Desktop\bestcaststudios\bestcast-upload-keystore.jks]
+
+
+keytool -genkey -v `
+  -keystore "C:\Users\WINDOWS\Desktop\bestcaststudios\bestcast-upload-keystore.jks" `
+  -storetype JKS `
+  -keyalg RSA `
+  -keysize 2048 `
+  -validity 10000 `
+  -alias upload
+
+
+
+
+
+Warning:
+The JKS keystore uses a proprietary format. It is recommended to migrate to PKCS12 which is an industry standard format using "keytool -importkeystore -srckeystore \Users\WINDOWS\Desktop\bestcaststudios\bestcast-upload-keystore.jks -destkeystore \Users\WINDOWS\Desktop\bestcaststudios\bestcast-upload-keystore.jks -deststoretype pkcs12".

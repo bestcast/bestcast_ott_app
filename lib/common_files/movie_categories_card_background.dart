@@ -1,0 +1,25 @@
+// Flutter imports:
+import 'package:flutter/material.dart';
+
+class MovieCardBackgroundView extends StatelessWidget {
+  final Container container;
+
+  const MovieCardBackgroundView(this.container, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      child: Card(
+        semanticContainer: true,
+        clipBehavior: Clip.antiAliasWithSaveLayer,
+        shape: RoundedRectangleBorder(
+          // borderRadius: BorderRadius.circular(20.0),
+          borderRadius: BorderRadius.circular(3.0),
+          side: BorderSide(width: 0.2, color: Colors.white),
+        ),
+        elevation: 5,
+        child: container,
+      ),
+    );
+  }
+}
