@@ -87,8 +87,7 @@ class _IntroPageState extends State<IntroPage> {
         // OR Vice Versa for ThemeMode.dark
         statusBarBrightness: Brightness.light,
         // OR Vice Versa for ThemeMode.dark
-        systemNavigationBarColor:
-            Colors.black, // OR Vice Versa for ThemeMode.dark
+        systemNavigationBarColor: Colors.black, // OR Vice Versa for ThemeMode.dark
       ),
     );
 
@@ -160,8 +159,7 @@ class _IntroPageState extends State<IntroPage> {
                                         style: TextStyle(
                                             fontSize: 35.0,
                                             color: AppDefaultColors.white,
-                                            fontFamily: GoogleFonts.titanOne()
-                                                .fontFamily),
+                                            fontFamily: GoogleFonts.titanOne().fontFamily),
                                         textAlign: TextAlign.center),
                                   ),
                                 ),
@@ -172,9 +170,7 @@ class _IntroPageState extends State<IntroPage> {
                                     //TODO hide in ios
                                     'All of Bestcast starting at\naffordable price',
                                     // '',
-                                    style: TextStyle(
-                                        color: AppDefaultColors.white,
-                                        fontSize: 20),
+                                    style: TextStyle(color: AppDefaultColors.white, fontSize: 20),
                                     textAlign: TextAlign.center),
                               ),
                             ],
@@ -217,8 +213,7 @@ class _IntroPageState extends State<IntroPage> {
                                         style: TextStyle(
                                             fontSize: 35.0,
                                             color: AppDefaultColors.white,
-                                            fontFamily: GoogleFonts.titanOne()
-                                                .fontFamily),
+                                            fontFamily: GoogleFonts.titanOne().fontFamily),
                                         textAlign: TextAlign.center),
                                   ),
                                 ),
@@ -226,9 +221,7 @@ class _IntroPageState extends State<IntroPage> {
                               Container(
                                 alignment: Alignment.center,
                                 child: Text('Join today, no reason to wait.',
-                                    style: TextStyle(
-                                        color: AppDefaultColors.white,
-                                        fontSize: 20),
+                                    style: TextStyle(color: AppDefaultColors.white, fontSize: 20),
                                     textAlign: TextAlign.center),
                               ),
                             ],
@@ -271,19 +264,15 @@ class _IntroPageState extends State<IntroPage> {
                                         style: TextStyle(
                                             fontSize: 35.0,
                                             color: AppDefaultColors.white,
-                                            fontFamily: GoogleFonts.titanOne()
-                                                .fontFamily),
+                                            fontFamily: GoogleFonts.titanOne().fontFamily),
                                         textAlign: TextAlign.center),
                                   ),
                                 ),
                               ),
                               Container(
                                 alignment: Alignment.center,
-                                child: Text(
-                                    'Stream on your phone, tablet,\nlaptop,TV and more.',
-                                    style: TextStyle(
-                                        color: AppDefaultColors.white,
-                                        fontSize: 20),
+                                child: Text('Stream on your phone, tablet,\nlaptop,TV and more.',
+                                    style: TextStyle(color: AppDefaultColors.white, fontSize: 20),
                                     textAlign: TextAlign.center),
                               ),
                             ],
@@ -325,16 +314,10 @@ class _IntroPageState extends State<IntroPage> {
                         child: GestureDetector(
                           onTap: () {
                             Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) =>
-                                        BestcastWebView(url: "privacy")));
+                                context, MaterialPageRoute(builder: (context) => BestcastWebView(url: "privacy")));
                           },
                           child: Text("PRIVACY",
-                              style: TextStyle(
-                                  fontSize: 15,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600)),
+                              style: TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.w600)),
                         ),
                       ),
                       SizedBox(
@@ -348,10 +331,7 @@ class _IntroPageState extends State<IntroPage> {
                             // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginPage()));
                           },
                           child: Text("LOGIN",
-                              style: TextStyle(
-                                  fontSize: 15,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600)),
+                              style: TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.w600)),
                         ),
                       ),
                       Container(
@@ -421,8 +401,7 @@ class _IntroPageState extends State<IntroPage> {
                           isScrollControlled: true,
                           builder: (BuildContext context) {
                             return StatefulBuilder(
-                              builder: (BuildContext context,
-                                  void Function(void Function()) setState) {
+                              builder: (BuildContext context, void Function(void Function()) setState) {
                                 return LoaderOverlay(
                                   child: Padding(
                                     padding: const EdgeInsets.only(top: 30.0),
@@ -432,14 +411,11 @@ class _IntroPageState extends State<IntroPage> {
                                       child: Padding(
                                         padding: const EdgeInsets.all(20.0),
                                         child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.start,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
+                                          mainAxisAlignment: MainAxisAlignment.start,
+                                          crossAxisAlignment: CrossAxisAlignment.start,
                                           children: <Widget>[
                                             Padding(
-                                              padding:
-                                                  const EdgeInsets.all(10.0),
+                                              padding: const EdgeInsets.all(10.0),
                                               child: GestureDetector(
                                                 onTap: () {
                                                   Navigator.of(context).pop();
@@ -450,79 +426,48 @@ class _IntroPageState extends State<IntroPage> {
                                                         child: SizedBox(
                                                       width: 10,
                                                     )),
-                                                    Icon(Icons.close,
-                                                        color: AppDefaultColors
-                                                            .appColor),
+                                                    Icon(Icons.close, color: AppDefaultColors.appColor),
                                                   ],
                                                 ),
                                               ),
                                             ),
                                             Padding(
-                                              padding: const EdgeInsets.only(
-                                                  top: 10.0, bottom: 10),
+                                              padding: const EdgeInsets.only(top: 10.0, bottom: 10),
                                               child: Text(
                                                 'Ready to watch?',
-                                                style: TextStyle(
-                                                    fontSize: 30,
-                                                    fontWeight:
-                                                        FontWeight.w600),
+                                                style: TextStyle(fontSize: 30, fontWeight: FontWeight.w600),
                                               ),
                                             ),
                                             Padding(
-                                              padding: const EdgeInsets.only(
-                                                  top: 20.0, bottom: 10),
+                                              padding: const EdgeInsets.only(top: 20.0, bottom: 10),
                                               child: Text(
                                                 // "Enter your email to create or sign in to your account.",
                                                 "Enter your mobile number to create or sign in to your account.",
-                                                style: TextStyle(
-                                                    fontSize: 17.0,
-                                                    color: AppDefaultColors
-                                                        .boxDarkGray),
+                                                style: TextStyle(fontSize: 17.0, color: AppDefaultColors.boxDarkGray),
                                               ),
                                             ),
                                             Padding(
-                                              padding: EdgeInsets.only(
-                                                  top: 10, bottom: 5),
+                                              padding: EdgeInsets.only(top: 10, bottom: 5),
                                               child: Container(
                                                 decoration: BoxDecoration(
                                                   color: Colors.white,
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                          5.0),
-                                                  border: Border.all(
-                                                      width: 1,
-                                                      color: Colors.blue),
+                                                  borderRadius: BorderRadius.circular(5.0),
+                                                  border: Border.all(width: 1, color: Colors.blue),
                                                 ),
                                                 child: Padding(
-                                                  padding: EdgeInsets.only(
-                                                      left: 15,
-                                                      right: 15,
-                                                      top: 0),
+                                                  padding: EdgeInsets.only(left: 15, right: 15, top: 0),
                                                   child: TextFormField(
-                                                    keyboardType:
-                                                        TextInputType.number,
-                                                    controller:
-                                                        userNameController,
+                                                    keyboardType: TextInputType.number,
+                                                    controller: userNameController,
                                                     cursorColor: Colors.black,
-                                                    style: TextStyle(
-                                                        color: Colors.black),
+                                                    style: TextStyle(color: Colors.black),
                                                     decoration: InputDecoration(
                                                       border: InputBorder.none,
-                                                      labelText:
-                                                          'Mobile number',
-                                                      hintStyle: TextStyle(
-                                                          fontSize: 12,
-                                                          color: Colors.black),
-                                                      labelStyle: TextStyle(
-                                                          fontSize: 18,
-                                                          color: Colors.black),
-                                                      floatingLabelStyle:
-                                                          TextStyle(
-                                                              color:
-                                                                  Colors.black),
-                                                      focusColor:
-                                                          AppDefaultColors
-                                                              .darkBlue,
+                                                      labelText: 'Mobile number',
+                                                      hintStyle: TextStyle(fontSize: 12, color: Colors.black),
+                                                      labelStyle: TextStyle(fontSize: 18, color: Colors.black),
+                                                      floatingLabelStyle: TextStyle(color: Colors.black),
+                                                      focusColor: AppDefaultColors.darkBlue,
                                                     ),
                                                   ),
                                                 ),
@@ -530,63 +475,44 @@ class _IntroPageState extends State<IntroPage> {
                                             ),
                                             _isEmailPhoneValid == false
                                                 ? Padding(
-                                                    padding:
-                                                        const EdgeInsets.only(
-                                                            top: 1, bottom: 10),
+                                                    padding: const EdgeInsets.only(top: 1, bottom: 10),
                                                     child: Text(
                                                       // "Enter a valid email",
                                                       _errorMessage!,
                                                       // "Enter a valid mobile number",
-                                                      style: TextStyle(
-                                                          fontSize: 17.0,
-                                                          color:
-                                                              AppDefaultColors
-                                                                  .appRed),
+                                                      style: TextStyle(fontSize: 17.0, color: AppDefaultColors.appRed),
                                                     ),
                                                   )
                                                 : Text(""),
                                             Padding(
-                                              padding: EdgeInsets.only(
-                                                  top: 25.0, bottom: 10),
+                                              padding: EdgeInsets.only(top: 25.0, bottom: 10),
                                               child: SubmitRedButton(
                                                 "GET STARTED",
                                                 onTap: () async {
                                                   // Navigator.push(context, MaterialPageRoute(builder: (context) => const Dashboard()));
 
-                                                  if (await CommonWidget()
-                                                      .isInternetConnectivity()) {
-                                                    if (formkey.currentState !=
-                                                            null &&
-                                                        formkey.currentState!
-                                                            .validate()) {
-                                                      String userName =
-                                                          userNameController
-                                                              .text;
+                                                  if (await CommonWidget().isInternetConnectivity()) {
+                                                    if (formkey.currentState != null &&
+                                                        formkey.currentState!.validate()) {
+                                                      String userName = userNameController.text;
 
                                                       // Navigator.push(context, MaterialPageRoute(builder: (context) => CreateAccount(requiredEmail: _userName)));
                                                       // if (validateEmail(_userName.toString())) {
-                                                      if (userName.toString() !=
-                                                          "") {
+                                                      if (userName.toString() != "") {
                                                         // verifyAccountEmail(_userName);
-                                                        createAccount(
-                                                            "user", userName);
+                                                        createAccount("user", userName);
                                                       } else {
                                                         setState(() {
-                                                          _isEmailPhoneValid =
-                                                              false;
-                                                          _errorMessage =
-                                                              "Enter a valid mobile number";
+                                                          _isEmailPhoneValid = false;
+                                                          _errorMessage = "Enter a valid mobile number";
                                                         });
                                                       }
                                                     } else {
                                                       print("Not Validated");
                                                     }
                                                   } else {
-                                                    CommonWidget().showSnackBar(
-                                                        context,
-                                                        ContentType.warning,
-                                                        "Check your internet connection.",
-                                                        "");
+                                                    CommonWidget().showSnackBar(context, ContentType.warning,
+                                                        "Check your internet connection.", "");
                                                   }
                                                 },
                                               ),
@@ -594,10 +520,8 @@ class _IntroPageState extends State<IntroPage> {
                                             if (isLoading)
                                               Align(
                                                   alignment: Alignment.center,
-                                                  child:
-                                                      CircularProgressIndicator(
-                                                    color: AppDefaultColors
-                                                        .thikRed,
+                                                  child: CircularProgressIndicator(
+                                                    color: AppDefaultColors.thikRed,
                                                   ))
                                           ],
                                         ),
@@ -624,16 +548,10 @@ class _IntroPageState extends State<IntroPage> {
   void handleClick(int item) {
     switch (item) {
       case 0:
-        Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (context) => BestcastWebView(url: "privacy")));
+        Navigator.push(context, MaterialPageRoute(builder: (context) => BestcastWebView(url: "privacy")));
         break;
       case 1:
-        Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (context) => BestcastWebView(url: "help")));
+        Navigator.push(context, MaterialPageRoute(builder: (context) => BestcastWebView(url: "help")));
         break;
     }
   }
@@ -642,9 +560,7 @@ class _IntroPageState extends State<IntroPage> {
     context.loaderOverlay.show();
     // final postValues = {'email': _email};
     final postValues = {'phone': email};
-    ApiServices()
-        .postRequest(AppConfig.emailverifyUrl, postValues)
-        .then((response) async {
+    ApiServices().postRequest(AppConfig.emailverifyUrl, postValues).then((response) async {
       String jsonsDataString = response.body.toString();
       print("verfiyEmail_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -654,10 +570,7 @@ class _IntroPageState extends State<IntroPage> {
 
           if (status == "success") {
             context.loaderOverlay.hide();
-            Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => OTPactivity(otpEmailorPhone: email)));
+            Navigator.push(context, MaterialPageRoute(builder: (context) => OTPactivity(otpEmailorPhone: email)));
             // Navigator.push(context, MaterialPageRoute(builder: (context) => CreateAccount(requiredEmail: _email)));
           } else {
             context.loaderOverlay.hide();
@@ -666,15 +579,13 @@ class _IntroPageState extends State<IntroPage> {
           context.loaderOverlay.hide();
         } catch (e) {
           print('verifyEmailException:$e');
-          CommonWidget().showSnackBar(
-              context, ContentType.failure, "", "Something went wrong");
+          CommonWidget().showSnackBar(context, ContentType.failure, "", "Something went wrong");
         }
       } else {
         print("Error: $response");
         context.loaderOverlay.hide();
         // CommonWidget().showSnackBar(context, ContentType.failure, "Error", "Something went wrong.");
-        CommonWidget().showSnackBar(
-            context, ContentType.failure, "Error", response.toString());
+        CommonWidget().showSnackBar(context, ContentType.failure, "Error", response.toString());
       }
       context.loaderOverlay.hide();
     });
@@ -685,15 +596,8 @@ class _IntroPageState extends State<IntroPage> {
       isLoading = true;
     });
     context.loaderOverlay.show();
-    final postValues = {
-      'phone': mobileNumber,
-      'name': userName,
-      'refferer': '',
-      'device': "mobile"
-    };
-    ApiServices()
-        .postRequest(AppConfig.registerUrl, postValues)
-        .then((response) async {
+    final postValues = {'phone': mobileNumber, 'name': userName, 'refferer': '', 'device': "mobile"};
+    ApiServices().postRequest(AppConfig.registerUrl, postValues).then((response) async {
       String jsonsDataString = response.body.toString();
       if (response.statusCode == 200) {
         print("register_Response: $jsonsDataString");
@@ -724,15 +628,13 @@ class _IntroPageState extends State<IntroPage> {
           print('RegisterError:$e');
           context.loaderOverlay.hide();
           isLoading = false;
-          CommonWidget().showSnackBar(
-              context, ContentType.failure, "", "Something went wrong");
+          CommonWidget().showSnackBar(context, ContentType.failure, "", "Something went wrong");
         }
       } else {
         print("Error: $response");
         context.loaderOverlay.hide();
         isLoading = false;
-        CommonWidget().showSnackBar(
-            context, ContentType.failure, "Error", "Something went wrong.");
+        CommonWidget().showSnackBar(context, ContentType.failure, "Error", "Something went wrong.");
       }
       context.loaderOverlay.hide();
       isLoading = false;
@@ -742,9 +644,7 @@ class _IntroPageState extends State<IntroPage> {
   void verifyAccountEmailorPhone(String email) async {
     context.loaderOverlay.show();
     final postValues = {'email': email};
-    ApiServices()
-        .postRequest(AppConfig.sendOtp, postValues)
-        .then((response) async {
+    ApiServices().postRequest(AppConfig.sendOtp, postValues).then((response) async {
       String jsonsDataString = response.body.toString();
       print("sendOtp_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -753,10 +653,7 @@ class _IntroPageState extends State<IntroPage> {
           String status = jsonReponse['status'];
 
           if (status == "success") {
-            Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => OTPactivity(otpEmailorPhone: email)));
+            Navigator.push(context, MaterialPageRoute(builder: (context) => OTPactivity(otpEmailorPhone: email)));
           } else {
             String errorMessage = jsonReponse['message'];
             setState(() {
@@ -766,14 +663,12 @@ class _IntroPageState extends State<IntroPage> {
           context.loaderOverlay.hide();
         } catch (e) {
           print('sendOTPmailException:$e');
-          CommonWidget().showSnackBar(
-              context, ContentType.failure, "", "Something went wrong");
+          CommonWidget().showSnackBar(context, ContentType.failure, "", "Something went wrong");
         }
       } else {
         print("Error: $response");
         context.loaderOverlay.hide();
-        CommonWidget().showSnackBar(
-            context, ContentType.failure, "Error", response.toString());
+        CommonWidget().showSnackBar(context, ContentType.failure, "Error", response.toString());
       }
       context.loaderOverlay.hide();
     });

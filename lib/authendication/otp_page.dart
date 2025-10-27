@@ -25,11 +25,13 @@ import '../register/who_watching_page.dart';
 class OTPactivity extends StatefulWidget {
   final String otpEmailorPhone;
   final String? getOtpMessageType;
+  final String? getCountryCode;
 
   const OTPactivity({
     super.key,
     required this.otpEmailorPhone,
     this.getOtpMessageType,
+    this.getCountryCode,
   });
 
   @override
@@ -42,6 +44,7 @@ class _OTPactivityState extends State<OTPactivity> {
 
   var registerContent = "";
   var otpMessageType = "";
+  var countryCode = "";
   var isButtonEnabled;
   var _resesndButtonEnabled;
   bool clearText = false;
@@ -58,6 +61,7 @@ class _OTPactivityState extends State<OTPactivity> {
     _resesndButtonEnabled = false;
     registerContent = widget.otpEmailorPhone;
     otpMessageType = widget.getOtpMessageType!;
+    countryCode = widget.getCountryCode!;;
     _startTimer();
   }
 
@@ -180,7 +184,7 @@ class _OTPactivityState extends State<OTPactivity> {
                     if (await CommonWidget().isInternetConnectivity()) {
                       if (_resesndButtonEnabled) {
                         context.loaderOverlay.show();
-                        resendOTP(registerContent, otpMessageType);
+                        resendOTP(registerContent, otpMessageType, countryCode);
                       }
                     } else {
                       CommonWidget().showSnackBar(context, ContentType.warning,
@@ -294,14 +298,13 @@ class _OTPactivityState extends State<OTPactivity> {
     });
   }
 
-  void resendOTP(String email, String otpMessageType) async {
+  void resendOTP(String email, String otpMessageType, String countryCode,) async {
     context.loaderOverlay.hide();
-    final postValues = {'email': email, "otp_message_type": otpMessageType};
+    final postValues = {'email': email, "otp_message_type": otpMessageType, "country_code": countryCode};
     ApiServices()
         .postRequest(AppConfig.sendOtp, postValues)
         .then((response) async {
       String jsonsDataString = response.body.toString();
-      print("sendOtp_Response: $jsonsDataString");
       if (response.statusCode == 200) {
         try {
           var jsonReponse = jsonDecode(jsonsDataString);

@@ -9,9 +9,9 @@ import 'package:flutter/services.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 
 // Project imports:
-import 'package:bestcaststudios/app_config/app_utils.dart';
-import 'package:bestcaststudios/authendication/otp_page.dart';
-import 'package:bestcaststudios/components/functions/navigation_fun.dart';
+import '../app_config/app_utils.dart';
+import '../authendication/otp_page.dart';
+import '../components/functions/navigation_fun.dart';
 import '../app_config/app_strings.dart';
 import '../app_config/appconfig.dart';
 import '../common_files/api_services.dart';
@@ -39,7 +39,9 @@ class _LoginPageState extends State<LoginPage> {
 
   SingingCharacter? character = SingingCharacter.whatsAppOtp;
 
-  TextEditingController userNameController = TextEditingController();
+  TextEditingController getCountryCode = TextEditingController();
+  TextEditingController mobileNumberController = TextEditingController();
+
   GlobalKey<FormState> formkey = GlobalKey<FormState>();
 
   @override
@@ -90,28 +92,35 @@ class _LoginPageState extends State<LoginPage> {
                   children: [
                     Expanded(
                       child: RadioListTile<SingingCharacter>(
-                        title: Text('SMS', style: TextStyle(color: Colors.white)),
-                        activeColor: AppDefaultColors.thikRed,
-                        value: SingingCharacter.smsOtp,
-                      ),
-                    ),
-                    Expanded(
-                      child: RadioListTile<SingingCharacter>(
                         title: Text('Whats App', style: TextStyle(color: Colors.white)),
                         activeColor: AppDefaultColors.thikRed,
                         value: SingingCharacter.whatsAppOtp,
                       ),
                     ),
+                    Expanded(
+                      child: RadioListTile<SingingCharacter>(
+                        title: Text('SMS', style: TextStyle(color: Colors.white)),
+                        activeColor: AppDefaultColors.thikRed,
+                        value: SingingCharacter.smsOtp,
+                      ),
+                    ),
                   ],
                 ),
               ),
-              SizedBox(height: 12.0),
+              // Todo: ----------------------------OTP Country Code ----------------------------------
               // ! Enter Mobile Number
-              TextfieldWidget(
-                label: "Mobile Number",
-                controller: userNameController,
-                keyboardType: TextInputType.number,
-              ),
+              SizedBox(height: 12.0),
+              if (character == SingingCharacter.whatsAppOtp)
+                WhatsApptextfieldWidget(
+                  controller: mobileNumberController,
+                  onChanged: (phone) {
+                    getCountryCode.text = phone.countryCode;
+                  },
+                ),
+              if (character == SingingCharacter.smsOtp)
+                SMStextfieldWidget(
+                  controller: mobileNumberController,
+                ),
               if (_errorMessage != null)
                 Align(
                   alignment: Alignment.topLeft,
@@ -123,12 +132,13 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                 ),
+              // Todo: ----------------------------OTP Country Code ----------------------------------
               // ! Send Code Button
               SizedBox(height: 25.0),
               SendButtonWidgets(
                 "Send",
                 onPressed: () async {
-                  String emailorPhone = userNameController.text.trim();
+                  String emailorPhone = mobileNumberController.text.trim();
                   if (formkey.currentState!.validate()) {
                     if (!appUtils.validateEmail(emailorPhone) && !appUtils.isNumericUsing_tryParse(emailorPhone)) {
                       setState(() {
@@ -136,7 +146,7 @@ class _LoginPageState extends State<LoginPage> {
                       });
                     } else {
                       setState(() => _errorMessage = null);
-                      verifyAccountEmailorPhone(character, emailorPhone);
+                      verifyAccountEmailorPhone(character, getCountryCode.text, emailorPhone);
                     }
                   } else {
                     setState(() {
@@ -200,12 +210,14 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  void verifyAccountEmailorPhone(SingingCharacter? character, String input) async {
+  void verifyAccountEmailorPhone(SingingCharacter? character, String countryCode, String input) async {
     setState(() => isLoading = true);
 
     try {
       final otpMessageType = _getOtpType(character);
-      final postValues = {'email': input, "otp_message_type": otpMessageType};
+      countryCode = (countryCode.isEmpty || otpMessageType == "sms") ? "+91" : countryCode;
+
+      final postValues = {'email': input, "otp_message_type": otpMessageType, "country_code": countryCode};
       final response = await ApiServices().postRequest(AppConfig.sendOtp, postValues);
       final jsonResponse = jsonDecode(response.body);
 
@@ -213,8 +225,8 @@ class _LoginPageState extends State<LoginPage> {
         final status = jsonResponse['status'];
 
         if (status == "success") {
-          AuthNavigator.navigateWithFade(
-              context, OTPactivity(otpEmailorPhone: input, getOtpMessageType: otpMessageType));
+          AuthNavigator.navigateWithFade(context,
+              OTPactivity(otpEmailorPhone: input, getOtpMessageType: otpMessageType, getCountryCode: countryCode));
         } else {
           setState(() => _errorMessage = jsonResponse['message']);
         }

@@ -38,9 +38,9 @@ class _RegisterPageState extends State<RegisterPage> {
   String? _phoneErrorMessage;
 
   SingingCharacter? character = SingingCharacter.whatsAppOtp;
-
-  TextEditingController mobileNumberController = TextEditingController();
   TextEditingController userNameController = TextEditingController();
+  TextEditingController getCountryCode = TextEditingController();
+  TextEditingController mobileNumberController = TextEditingController();
   GlobalKey<FormState> formkey = GlobalKey<FormState>();
 
   @override
@@ -60,8 +60,7 @@ class _RegisterPageState extends State<RegisterPage> {
         backgroundColor: AppDefaultColors.appColor,
         elevation: 0,
         leading: IconButton(
-          icon:
-              const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -81,10 +80,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     alignment: Alignment.topLeft,
                     child: Text(
                       'Ready To Watch.',
-                      style: TextStyle(
-                          color: AppDefaultColors.white,
-                          fontSize: 30,
-                          fontWeight: FontWeight.bold),
+                      style: TextStyle(color: AppDefaultColors.white, fontSize: 30, fontWeight: FontWeight.bold),
                     ),
                   ),
                   // ! Text Widgets
@@ -92,9 +88,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     alignment: Alignment.topLeft,
                     child: Text(
                       "Enter your mobile number to create your account.",
-                      style: TextStyle(
-                          fontSize: 16.0,
-                          color: AppDefaultColors.textLightGray),
+                      style: TextStyle(fontSize: 16.0, color: AppDefaultColors.textLightGray),
                     ),
                   ),
                   SizedBox(height: 25),
@@ -110,18 +104,16 @@ class _RegisterPageState extends State<RegisterPage> {
                       children: [
                         Expanded(
                           child: RadioListTile<SingingCharacter>(
-                            title: Text('SMS',
-                                style: TextStyle(color: Colors.white)),
+                            title: Text('Whats App', style: TextStyle(color: Colors.white)),
                             activeColor: AppDefaultColors.thikRed,
-                            value: SingingCharacter.smsOtp,
+                            value: SingingCharacter.whatsAppOtp,
                           ),
                         ),
                         Expanded(
                           child: RadioListTile<SingingCharacter>(
-                            title: Text('Whats App',
-                                style: TextStyle(color: Colors.white)),
+                            title: Text('SMS', style: TextStyle(color: Colors.white)),
                             activeColor: AppDefaultColors.thikRed,
-                            value: SingingCharacter.whatsAppOtp,
+                            value: SingingCharacter.smsOtp,
                           ),
                         ),
                       ],
@@ -132,19 +124,25 @@ class _RegisterPageState extends State<RegisterPage> {
                   TextfieldWidget(
                     label: 'Full Name',
                     controller: userNameController,
-                    keyboardType: TextInputType.text,
                   ),
-                  if (_nameErrorMessage != null)
-                    _buildError(_nameErrorMessage!),
-                  SizedBox(height: 12.0),
+                  if (_nameErrorMessage != null) _buildError(_nameErrorMessage!),
+                  // Todo: ----------------------------OTP Country Code ----------------------------------
                   // ! Mobile Number TextField
-                  TextfieldWidget(
-                    label: 'Mobile Number',
-                    controller: mobileNumberController,
-                    keyboardType: TextInputType.number,
-                  ),
-                  if (_phoneErrorMessage != null)
-                    _buildError(_phoneErrorMessage!),
+                  SizedBox(height: 12.0),
+                  if (character == SingingCharacter.whatsAppOtp)
+                    WhatsApptextfieldWidget(
+                      controller: mobileNumberController,
+                      onChanged: (phone) {
+                        print("AZMAT: ${phone.countryCode}");
+                        getCountryCode.text = phone.countryCode;
+                      },
+                    ),
+                  if (character == SingingCharacter.smsOtp)
+                    SMStextfieldWidget(
+                      controller: mobileNumberController,
+                    ),
+                  if (_phoneErrorMessage != null) _buildError(_phoneErrorMessage!),
+                  // Todo: ----------------------------OTP Country Code ----------------------------------
                   // ! Submit Button
                   SizedBox(height: 25.0),
                   SendButtonWidgets(
@@ -155,6 +153,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         createAccount(
                           character,
                           userNameController.text.trim(),
+                          getCountryCode.text,
                           mobileNumberController.text.trim(),
                         );
                       } else {
@@ -185,9 +184,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     children: [
                       Text(
                         "Already have an account?",
-                        style: TextStyle(
-                            color: AppDefaultColors.textLightGray,
-                            fontSize: 17),
+                        style: TextStyle(color: AppDefaultColors.textLightGray, fontSize: 17),
                       ),
                       TextButton(
                         onPressed: () {
@@ -227,23 +224,23 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  void createAccount(
-      SingingCharacter? character, String userName, String mobileNumber) async {
+  void createAccount(SingingCharacter? character, String userName, String countryCode, String mobileNumber) async {
     setState(() => isLoading = true);
     context.loaderOverlay.hide();
-
     final otpMessageType = _getOtpType(character);
+    countryCode = (countryCode.isEmpty || otpMessageType == "sms") ? "+91" : countryCode;
+
     final postValues = {
       "phone": mobileNumber,
       "name": userName,
       "refferer": '',
       "device": "mobile",
-      "otp_message_type": otpMessageType
+      "otp_message_type": otpMessageType,
+      "country_code": countryCode,
     };
 
     try {
-      final response =
-          await ApiServices().postRequest(AppConfig.registerUrl, postValues);
+      final response = await ApiServices().postRequest(AppConfig.registerUrl, postValues);
       final body = response.body.toString();
 
       if (response.statusCode == 200) {
@@ -252,11 +249,10 @@ class _RegisterPageState extends State<RegisterPage> {
           AuthNavigator.navigateWithFade(
               context,
               OTPactivity(
-                  otpEmailorPhone: mobileNumber,
-                  getOtpMessageType: otpMessageType));
+                  otpEmailorPhone: mobileNumber, getOtpMessageType: otpMessageType, getCountryCode: countryCode));
         } else {
-          CommonWidget().showSnackBar(context, ContentType.failure, "Failed",
-              jsonResponse['message'] ?? "Something went wrong");
+          CommonWidget()
+              .showSnackBar(context, ContentType.failure, "Failed", jsonResponse['message'] ?? "Something went wrong");
         }
       } else if (response.statusCode == 201) {
         final jsonResponse = jsonDecode(body);
@@ -264,15 +260,13 @@ class _RegisterPageState extends State<RegisterPage> {
           _nameErrorMessage = jsonResponse['errors']['name']?[0];
           _phoneErrorMessage = jsonResponse['errors']['phone']?[0];
         });
-        CommonWidget().showSnackBar(context, ContentType.failure, "Failed",
-            jsonResponse['message'] ?? "Something went wrong");
+        CommonWidget()
+            .showSnackBar(context, ContentType.failure, "Failed", jsonResponse['message'] ?? "Something went wrong");
       } else {
-        CommonWidget().showSnackBar(
-            context, ContentType.failure, "Error", "Server error occurred");
+        CommonWidget().showSnackBar(context, ContentType.failure, "Error", "Server error occurred");
       }
     } catch (e) {
-      CommonWidget().showSnackBar(context, ContentType.failure, "Error",
-          "The phone has already been taken.");
+      CommonWidget().showSnackBar(context, ContentType.failure, "Error", "The phone has already been taken.");
     } finally {
       context.loaderOverlay.hide();
       setState(() => isLoading = false);
@@ -309,8 +303,8 @@ class _RegisterPageState extends State<RegisterPage> {
     // Phone validation
     if (phone.isEmpty) {
       phoneError = "Mobile number is required";
-    } else if (phone.length != 10 || !RegExp(r'^[0-9]+$').hasMatch(phone)) {
-      phoneError = "Enter a valid 10-digit number";
+    } else if (phone.length < 7 || phone.length > 15 || !RegExp(r'^[0-9]+$').hasMatch(phone)) {
+      phoneError = "Enter a valid number with 7 to 15 digits";
     }
 
     setState(() {

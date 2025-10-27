@@ -1,7 +1,7 @@
 class AppConfig {
   // static const String BaseUrl = "https://moviesdev.harikaran.com";
-  // static const String BaseUrl = "https://bestcast.co";
-  static const String BaseUrl = "http://app.bestcast.co";
+  static const String BaseUrl = "https://bestcast.co";
+  // static const String BaseUrl = "http://app.bestcast.co";
 
   static const String encryptionKey = '5A4B3C2D1E0DSS';
 
