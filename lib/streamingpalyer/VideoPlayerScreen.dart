@@ -1,10 +1,9 @@
-// Flutter imports:
 import 'package:flutter/material.dart';
 
-// Package imports:
 import 'package:chewie/chewie.dart';
 import 'package:video_player/video_player.dart';
 
+// ignore: must_be_immutable
 class VideoPlayerScreen extends StatefulWidget {
   String getMainMovieUrl = "";
   String getMainMovieID = "";

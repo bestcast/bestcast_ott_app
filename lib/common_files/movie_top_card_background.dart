@@ -1,4 +1,3 @@
-// Flutter imports:
 import 'package:flutter/material.dart';
 
 class MovieTopCardBackgroundView extends StatelessWidget {
@@ -19,11 +18,9 @@ class MovieTopCardBackgroundView extends StatelessWidget {
               topRight: Radius.circular(5),
               bottomRight: Radius.circular(0),
               bottomLeft: Radius.circular(0)),
-          // side: BorderSide(width: 1,color: Colors.white),
         ),
         child: container,
         // elevation: 5,
-        // margin: EdgeInsets.all(10),
       ),
     );
   }

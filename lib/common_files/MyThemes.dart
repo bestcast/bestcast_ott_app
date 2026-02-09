@@ -1,7 +1,5 @@
-// Flutter imports:
 import 'package:flutter/material.dart';
 
-// Project imports:
 import 'app_default_colors.dart';
 
 enum MyThemeKeys { LIGHT, DARK }
@@ -25,13 +23,11 @@ class MyThemes {
       focusColor: AppDefaultColors.lightRed,
     ),
 
-    //TODO change background app theme color
     appBarTheme: AppBarTheme(backgroundColor: AppDefaultColors.appColor),
     textSelectionTheme: TextSelectionThemeData(
         selectionColor: AppDefaultColors.appColor,
         cursorColor: AppDefaultColors.appColor,
         selectionHandleColor: AppDefaultColors.appColor),
-    // backgroundColor: AppDefaultColors.appColor,
     brightness: Brightness.light,
     highlightColor: Colors.white,
 
@@ -46,7 +42,6 @@ class MyThemes {
     primaryColor: Colors.grey,
     brightness: Brightness.dark,
     highlightColor: Colors.white,
-    // backgroundColor: Colors.black54,
     textSelectionTheme: TextSelectionThemeData(selectionColor: Colors.grey),
   );
 
@@ -56,8 +51,6 @@ class MyThemes {
         return lightTheme;
       case MyThemeKeys.DARK:
         return darkTheme;
-      default:
-        return lightTheme;
     }
   }
 }

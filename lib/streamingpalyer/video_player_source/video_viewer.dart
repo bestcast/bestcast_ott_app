@@ -1,12 +1,9 @@
 library;
 
-// Flutter imports:
 import 'package:flutter/material.dart';
 
-// Package imports:
 import 'package:provider/provider.dart';
 
-// Project imports:
 import 'domain/bloc/controller.dart';
 import 'domain/bloc/metadata.dart';
 import 'domain/entities/language.dart';

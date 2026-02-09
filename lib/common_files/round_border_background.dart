@@ -1,7 +1,5 @@
-// Flutter imports:
 import 'package:flutter/material.dart';
 
-// Project imports:
 import 'app_default_colors.dart';
 
 class RoundBackgroundView extends StatelessWidget {
@@ -23,7 +21,6 @@ class RoundBackgroundView extends StatelessWidget {
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(50),
               side: BorderSide(color: AppDefaultColors.white, width: 1)
-              // borders: Border.all(width: 1, color: Colors.grey),
               ),
         ),
         child: Text(

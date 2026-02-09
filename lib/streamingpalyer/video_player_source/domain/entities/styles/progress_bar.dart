@@ -1,10 +1,7 @@
-// Flutter imports:
 import 'package:flutter/material.dart';
 
-// Project imports:
 import 'package:bestcaststudios/streamingpalyer/video_player_source/domain/entities/styles/bar.dart';
 
-// import 'package:bestcaststudios/streamingpalyer/video_player_source/domain/entities/styles/bar.dart';
 
 class ProgressBarStyle {
   /// It is the style that will have all the icons and elements of the progress bar

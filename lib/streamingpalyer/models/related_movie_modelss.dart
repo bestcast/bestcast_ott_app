@@ -1,4 +1,3 @@
-// Project imports:
 import 'package:bestcaststudios/Dashboard/Models/Movie.dart';
 
 class RelatedMovieData {

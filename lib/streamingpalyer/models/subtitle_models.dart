@@ -10,9 +10,9 @@ class SubTitleModel {
   });
 
   factory SubTitleModel.fromJson(Map<String, dynamic> json) => SubTitleModel(
-        active: json["active"].toString() ?? "",
-        label: json["label"].toString() ?? "",
-        url: json["url"].toString() ?? "",
+        active: json["active"].toString(),
+        label: json["label"].toString(),
+        url: json["url"].toString(),
       );
 
   Map<String, dynamic> toJson() =>

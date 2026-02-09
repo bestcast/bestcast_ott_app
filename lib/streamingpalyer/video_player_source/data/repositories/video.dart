@@ -1,10 +1,7 @@
-// Flutter imports:
 import 'package:flutter/material.dart';
 
-// Package imports:
 import 'package:provider/provider.dart';
 
-// Project imports:
 import '../../domain/bloc/metadata.dart';
 import '../../domain/repositories/video.dart';
 import '../../video_viewer.dart';

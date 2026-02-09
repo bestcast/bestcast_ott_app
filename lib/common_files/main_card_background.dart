@@ -1,4 +1,3 @@
-// Flutter imports:
 import 'package:flutter/material.dart';
 
 class MainCardBackgroundView extends StatelessWidget {
@@ -18,7 +17,6 @@ class MainCardBackgroundView extends StatelessWidget {
         ),
         elevation: 5,
         child: container,
-        // margin: EdgeInsets.all(10),
       ),
     );
   }

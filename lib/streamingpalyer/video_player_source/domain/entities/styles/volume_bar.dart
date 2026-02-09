@@ -1,13 +1,9 @@
-// Flutter imports:
 import 'package:flutter/material.dart';
 
-// Package imports:
 import 'package:helpers/helpers/size.dart';
 
-// Project imports:
 import 'package:bestcaststudios/streamingpalyer/video_player_source/domain/entities/styles/bar.dart';
 
-// import 'package:helpers/helpers.dart';
 
 class VolumeBarStyle {
   /// Only Android Support, this style is for Volume controller but at

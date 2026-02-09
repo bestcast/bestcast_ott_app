@@ -1,11 +1,8 @@
-// Dart imports:
 import 'dart:async';
 
-// Package imports:
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
-// Project imports:
 import 'db_movies_model.dart';
 
 class DatabaseHelper {
@@ -83,7 +80,6 @@ class DatabaseHelper {
 
   Future<String> getMovieId(String id) async {
     await _initDatabase();
-    // var result = await _database?.rawQuery("SELECT * FROM moviesTable where movieID = "+id);
     //
     final List<Map<String, dynamic>> result = await _database!.query(
       'moviesTable',
@@ -101,7 +97,6 @@ class DatabaseHelper {
 
   Future<String> getMoviePath(String id) async {
     await _initDatabase();
-    // var result = await _database?.rawQuery("SELECT * FROM moviesTable where movieID = "+id);
     //
     final List<Map<String, dynamic>> result = await _database!.query(
       'moviesTable',
@@ -119,7 +114,6 @@ class DatabaseHelper {
 
   Future<String> getMovieTitle(String id) async {
     await _initDatabase();
-    // var result = await _database?.rawQuery("SELECT * FROM moviesTable where movieID = "+id);
     //
     final List<Map<String, dynamic>> result = await _database!.query(
       'moviesTable',

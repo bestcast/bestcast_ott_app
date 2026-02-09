@@ -1,24 +1,19 @@
-// Dart imports:
 import 'dart:async';
 import 'dart:developer';
 
-// Flutter imports:
 import 'package:flutter/material.dart';
 
-// Package imports:
 import 'package:helpers/helpers.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
-// Project imports:
 import '../../data/repositories/video.dart';
 import '../../domain/entities/ads.dart';
 import '../../domain/entities/subtitle.dart';
 import '../../domain/entities/video_source.dart';
 import '../../ui/fullscreen.dart';
 
-// import 'package:wakelock/wakelock.dart';
 
 const int _kMillisecondsToHideTheOverlay = 2800;
 

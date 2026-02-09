@@ -1,16 +1,12 @@
-// Dart imports:
 import 'dart:convert';
 
-// Flutter imports:
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-// Package imports:
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Project imports:
 import 'package:bestcaststudios/app_config/app_strings.dart';
 import '../app_config/app_preferences.dart';
 import '../app_config/app_utils.dart';
@@ -23,6 +19,7 @@ import '../common_files/loading_widget.dart';
 import '../common_files/submitRedButton.dart';
 import '../webview_pages/bestcast_webviewpages.dart';
 
+// ignore: must_be_immutable
 class CreateAccount extends StatefulWidget {
   String requiredEmail = "";
 
@@ -48,10 +45,8 @@ class _CreateAccountState extends State<CreateAccount> {
   @override
   void initState() {
     super.initState();
-    // SystemChrome.setPreferredOrientations([
     //   DeviceOrientation.portraitUp,
     //   DeviceOrientation.portraitDown,
-    // ]);
 
     getInitialValue();
 
@@ -146,7 +141,6 @@ class _CreateAccountState extends State<CreateAccount> {
                                   onTap: () {
                                     if (accountCreatedStatus) {
                                       getLogout(token);
-                                      // Navigator.push(context, MaterialPageRoute(builder: (context) => const IntroPage()));
                                     } else {
                                       Navigator.push(
                                           context,
@@ -304,9 +298,6 @@ class _CreateAccountState extends State<CreateAccount> {
                                         "Check your internet connection.",
                                         "");
                                   }
-                                  // setState(() {
-                                  //   accountCreatedStatus = true;
-                                  // });
                                 },
                               ),
                             ),
@@ -334,8 +325,6 @@ class _CreateAccountState extends State<CreateAccount> {
   }
 
   void createAccount(String userName, String password) async {
-    // appUtils.showLoaderDialog(context);
-    // appUtils.hideLoaderDialog(context);
     setState(() {
       isLoading = true;
     });
@@ -415,8 +404,6 @@ class _CreateAccountState extends State<CreateAccount> {
             appUtils.showToast(message);
             context.loaderOverlay.hide();
             isLoading = false;
-            // appUtils.hideLoaderDialog(context);
-            // CommonWidget().showSnackBar(context, ContentType.failure, "Failed", message.toString());
           }
         } catch (e) {
           print('RegisterError:$e');
@@ -464,7 +451,6 @@ class _CreateAccountState extends State<CreateAccount> {
               'login',
               (route) => false, // Removes all routes from the stack
             );
-            // await Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginPage(requiredEmail: "")));
           }
         } catch (e) {
           isLoading = false;

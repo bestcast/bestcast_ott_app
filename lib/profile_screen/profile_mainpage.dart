@@ -1,10 +1,7 @@
-// Dart imports:
 import 'dart:convert';
 
-// Flutter imports:
 import 'package:flutter/material.dart';
 
-// Package imports:
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:barcode_scan2/platform_wrapper.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -14,7 +11,6 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Project imports:
 import 'package:bestcaststudios/Dashboard/Models/Usermovies.dart';
 import 'package:bestcaststudios/common_files/movie_bottom_card_background.dart';
 import 'package:bestcaststudios/common_files/movie_top_card_background.dart';
@@ -22,8 +18,7 @@ import 'package:bestcaststudios/download_files/dowloadmoviefiles.dart';
 import 'package:bestcaststudios/register/who_watching_page.dart';
 import 'package:bestcaststudios/webview_pages/bestcast_webviewpages.dart';
 import '../Dashboard/Models/Movie.dart';
-import '../Dashboard/MovieCategories.dart';
-import '../Dashboard/MoviesModels.dart';
+
 import '../app_config/app_preferences.dart';
 import '../app_config/app_utils.dart';
 import '../app_config/appconfig.dart';
@@ -37,9 +32,6 @@ import '../common_files/movie_categories_card_wishlist.dart';
 import '../common_files/movie_vertical_card_background.dart';
 import '../main_screen.dart';
 import '../streamingpalyer/video_player.dart';
-import 'ProfileMovieCategories.dart';
-
-// import 'package:device_info/device_info.dart';
 
 class ProfileMainPage extends StatefulWidget {
   const ProfileMainPage({super.key});
@@ -51,8 +43,6 @@ class ProfileMainPage extends StatefulWidget {
 class _ProfileMainPageState extends State<ProfileMainPage> {
   final AppUtils appUtils = AppUtils();
 
-  List<MoviesCategoryModel> moviesCategoryModel = [];
-  List<ProfileMoviesCategoryModel> profileMoviesCategoryModel = [];
   List<Movies> moviesMyListModel = [];
   List<Movies> moviesWatchingModel = [];
   List<Movies> moviesRecentlyModel = [];
@@ -60,23 +50,6 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
   bool isLoading = false;
   bool loggedStatus = false;
   bool permissionGranted = false;
-  final String _loadUrl = "";
-  String _id = "";
-  String _email = "";
-  String _phone = "";
-  String _name = "";
-  String _firstname = "";
-  String _lastname = "";
-  String _dob = "";
-  String _gender = "";
-  String _plan = "";
-  String _plan_expiry = "";
-  String _photo = "";
-  String _otp = "";
-  String _tvcode = "";
-  String _referal_code = "";
-  String _credits_used = "";
-  String _refferer = "";
   String _token = "";
 
   String profileName = "";
@@ -87,113 +60,16 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
   String version = "0.0";
   String buildNumber = "0";
 
-  var thumnailPic = [
-    "images/sample_home_screen.jpg",
-    "images/sample_movie_2.jpg",
-    "images/sample_movie_3.jpg",
-    "images/sample_movie_4.jpg",
-    "images/sample_movie_5.jpg",
-    "images/sample_movie_1.jpg"
-  ];
-
-  var thumnailWishPic = [
-    "images/sample_wish_list1.jpg",
-    "images/sample_wish_list2.jpg",
-    "images/sample_wish_list3.jpg",
-    "images/sample_wish_list4.jpg",
-    "images/sample_wish_list5.jpg",
-    "images/sample_wish_list6.jpg"
-  ];
-
-  var lastPlayedTimeItems = ["0.5", "0.2", "0.7", "0.4", "0.8", "0.3"];
-
-  var title = [
-    "Aquaman",
-    "Hanuman",
-    "JOKER",
-    "The Marvel Wonder Women",
-    "Leo",
-    "Captain Miller"
-  ];
-  var categoryItems = ["My List", "Continue Watching", "Recently Watched"];
-  var allCategoryItems = [
-    "Wish List",
-    "Tamil",
-    "Telungu",
-    "English",
-    "Hindi",
-    "Comedies",
-    "Action",
-    "Adventures"
-  ];
-
-  void getMoviesListsTemp() {
-    for (int i = 0; i < 3; i++) {
-      List<MoviesModel> moviesModel = [];
-      var j = 0;
-      var catID = i + 1;
-      for (int K = 0; K < 11; K++) {
-        if (K == 6) {
-          j = 0;
-        }
-
-        if (i == 2) {
-          moviesModel.add(MoviesModel(
-              catogoryID: catID.toString(),
-              movieID: "3",
-              thumbnailPicture: thumnailWishPic[j],
-              lastPlayedTime: lastPlayedTimeItems[j],
-              title: title[j],
-              descriptions: "Action"));
-        } else {
-          moviesModel.add(MoviesModel(
-              catogoryID: catID.toString(),
-              movieID: "1",
-              thumbnailPicture: thumnailPic[j],
-              lastPlayedTime: lastPlayedTimeItems[j],
-              title: title[j],
-              descriptions: "Action"));
-        }
-
-        if (j < 6) {
-          j++;
-        }
-      }
-      moviesCategoryModel.add(MoviesCategoryModel(
-          catogoryID: catID.toString(),
-          catogoryName: categoryItems[i],
-          moviesModel: moviesModel));
-    }
-  }
-
   @override
   void initState() {
     super.initState();
 
-    // getMoviesListsTemp();
     getInitalValue();
-    // _getStoragePermission();
   }
 
   Future<void> getInitalValue() async {
     final pref = await SharedPreferences.getInstance();
     setState(() {
-      _id = pref.getString(AppPreferences.id) ?? '';
-      _email = pref.getString(AppPreferences.email) ?? '';
-      _phone = pref.getString(AppPreferences.phone) ?? '';
-      _name = pref.getString(AppPreferences.name) ?? '';
-      _firstname = pref.getString(AppPreferences.firstname) ?? '';
-      _lastname = pref.getString(AppPreferences.lastname) ?? '';
-      _dob = pref.getString(AppPreferences.dob) ?? '';
-      _gender = pref.getString(AppPreferences.gender) ?? '';
-      _plan = pref.getString(AppPreferences.plan) ?? '';
-      _plan_expiry = pref.getString(AppPreferences.plan_expiry) ?? '';
-      _photo = pref.getString(AppPreferences.photo) ?? '';
-      _otp = pref.getString(AppPreferences.otp) ?? '';
-      _tvcode = pref.getString(AppPreferences.tvcode) ?? '';
-      _referal_code = pref.getString(AppPreferences.referal_code) ?? '';
-      _credits_used = pref.getString(AppPreferences.credits_used) ?? '';
-      _refferer = pref.getString(AppPreferences.refferer) ?? '';
       _token = pref.getString(AppPreferences.token) ?? '';
       loggedStatus = pref.getBool(AppPreferences.loggedStatus) ?? false;
 
@@ -208,8 +84,6 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
 
     PackageInfo packageInfo = await PackageInfo.fromPlatform();
 
-    // String appName = packageInfo.appName;
-    // String packageName = packageInfo.packageName;
     version = packageInfo.version;
     buildNumber = packageInfo.buildNumber;
   }
@@ -234,12 +108,6 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
               child: GestureDetector(
                 onTap: () async {
                   var result = await BarcodeScanner.scan();
-
-                  print(result.type);
-                  print("BarCode: ${result.rawContent}");
-                  print(result.format);
-                  print("BarCode: ${result.formatNote}");
-
                   if (result.type.toString() == "Barcode") {
                     setState(() {
                       var barCode = result.rawContent.toString();
@@ -259,7 +127,6 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
               child: GestureDetector(
                 onTap: () {
                   getBottomWidget();
-                  // Navigator.push(context, MaterialPageRoute(builder: (context) => const AddUser()));
                 },
                 child: Row(
                   children: const [
@@ -283,13 +150,10 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                           height: 100.0,
                           // color: Colors.green,
                           child: GestureDetector(
-                            onTap: () {
-                              // Navigator.push(context, MaterialPageRoute(builder: (context) => MainScreen()));
-                            },
+                            onTap: () {},
                             child: CircleAvatar(
                               backgroundColor: AppDefaultColors.boxDarkGray,
                               // foregroundColor: Colors.green,
-                              // backgroundImage: AssetImage("images/icon_user1.jpg"),
                               backgroundImage: NetworkImage(profilePicture),
                             ),
                           ),
@@ -306,16 +170,10 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                           ),
                         ),
 
-                        //TODO enable --visibility
                         Visibility(
                           visible: true,
                           child: GestureDetector(
                             onTap: () {
-                              // viewDownloadMovies();
-
-                              // if (permissionGranted) {
-                              //   Navigator.push(context, MaterialPageRoute(builder: (context) => DownloadMovieFiles()));
-                              // }
                               Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -334,7 +192,6 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                                   decoration: BoxDecoration(
                                     color: AppDefaultColors.helpBlue,
                                     borderRadius: BorderRadius.circular(50.0),
-                                    // border: Border.all(color: Colors.white)
                                   ),
                                   child: IconButton(
                                     padding: EdgeInsets.zero,
@@ -389,7 +246,6 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                           child: Align(
                             alignment: Alignment.topLeft,
                             child: ListView.builder(
-                                // physics: const NeverScrollableScrollPhysics(),
                                 physics: ClampingScrollPhysics(),
                                 scrollDirection: Axis.horizontal,
                                 shrinkWrap: true,
@@ -397,13 +253,6 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                                 itemBuilder: (BuildContext context, int index) {
                                   return GestureDetector(
                                     onTap: () {
-                                      // Navigator.push(
-                                      //     context,
-                                      //     MaterialPageRoute(
-                                      //         builder: (context) => VideoApp(
-                                      //               getMovieID: "1",
-                                      //             )));
-
                                       Navigator.push(
                                           context,
                                           MaterialPageRoute(
@@ -441,7 +290,6 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                           child: Align(
                             alignment: Alignment.topLeft,
                             child: ListView.builder(
-                                // physics: const NeverScrollableScrollPhysics(),
                                 physics: ClampingScrollPhysics(),
                                 scrollDirection: Axis.horizontal,
                                 shrinkWrap: true,
@@ -487,7 +335,6 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                           child: Align(
                             alignment: Alignment.topLeft,
                             child: ListView.builder(
-                                // physics: const NeverScrollableScrollPhysics(),
                                 physics: ClampingScrollPhysics(),
                                 scrollDirection: Axis.horizontal,
                                 shrinkWrap: true,
@@ -512,8 +359,6 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                                 }),
                           ),
                         )
-
-                        // : LoadingWidget(),
                       ],
                     ),
                   ),
@@ -535,36 +380,6 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
       _showPermissionRequestMessage();
     }
   }
-
-  // Future<void> _getStoragePermission() async {
-  //   DeviceInfoPlugin plugin = DeviceInfoPlugin();
-  //   AndroidDeviceInfo android = await plugin.androidInfo;
-  //   if (android.version.sdkInt < 33) {
-  //     if (await Permission.storage.request().isGranted) {
-  //       setState(() {
-  //         permissionGranted = true;
-  //       });
-  //     } else if (await Permission.storage.request().isPermanentlyDenied) {
-  //       await openAppSettings();
-  //     } else if (await Permission.audio.request().isDenied) {
-  //       setState(() {
-  //         permissionGranted = false;
-  //       });
-  //     }
-  //   } else {
-  //     if (await Permission.photos.request().isGranted) {
-  //       setState(() {
-  //         permissionGranted = true;
-  //       });
-  //     } else if (await Permission.photos.request().isPermanentlyDenied) {
-  //       await openAppSettings();
-  //     } else if (await Permission.photos.request().isDenied) {
-  //       setState(() {
-  //         permissionGranted = false;
-  //       });
-  //     }
-  //   }
-  // }
 
   void _showPermissionRequestMessage() {
     showDialog(
@@ -590,86 +405,6 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
   /// If need use this
   ///Mylist,  WatchedMovie and Continueous watching
   ///all in same lits
-  Widget getListViewBuilder() {
-    return ListView.builder(
-        physics: const NeverScrollableScrollPhysics(),
-        shrinkWrap: true,
-        itemCount: profileMoviesCategoryModel.length,
-        itemBuilder: (BuildContext context, int index) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ListTile(
-                title: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        profileMoviesCategoryModel[index]
-                            .catogoryName
-                            .toString(),
-                        // moviesCategoryModel[index].catogoryName.toString(),
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 17.0,
-                            fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(
-                height: profileMoviesCategoryModel[index].catogoryID == "3"
-                    ? 280
-                    : 200,
-                child: ListView.builder(
-                    // physics: const NeverScrollableScrollPhysics(),
-                    physics: ClampingScrollPhysics(),
-                    scrollDirection: Axis.horizontal,
-                    shrinkWrap: true,
-                    itemCount: profileMoviesCategoryModel[index].catogoryID ==
-                            "1"
-                        ? profileMoviesCategoryModel[index]
-                            .moviesMylistModel
-                            ?.length
-                        : profileMoviesCategoryModel[index].catogoryID == "2"
-                            ? profileMoviesCategoryModel[index]
-                                .moviesWatchingModel
-                                ?.length
-                            : profileMoviesCategoryModel[index]
-                                .moviesRWatchedModel
-                                ?.length,
-                    itemBuilder: (BuildContext context, int index2) {
-                      return GestureDetector(
-                          onTap: () {
-                            // Navigator.push(
-                            //     context,
-                            //     MaterialPageRoute(
-                            //         builder: (context) => VideoApp(
-                            //               getMovieID: "1",
-                            //             )));
-                          },
-                          child: profileMoviesCategoryModel[index].catogoryID ==
-                                  "3"
-                              ? getMovieCategoryWidget(
-                                  profileMoviesCategoryModel[index]
-                                      .moviesRWatchedModel![index2],
-                                  "")
-                              : profileMoviesCategoryModel[index].catogoryID ==
-                                      "2"
-                                  ? getMovieCategoryWidget(
-                                      profileMoviesCategoryModel[index]
-                                          .moviesWatchingModel![index2],
-                                      "2")
-                                  : getMovieCategoryWidget(
-                                      profileMoviesCategoryModel[index]
-                                          .moviesMylistModel![index2],
-                                      "1"));
-                    }),
-              ),
-            ],
-          );
-        });
-  }
 
   Widget getMovieMyListWidget(Movies moviesModel) {
     return Container(
@@ -699,13 +434,10 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                     height: double.infinity,
                     fit: BoxFit.cover,
                   ),
-                  // Image.network(
                   //   width: double.infinity,
                   //   height: double.infinity,
-                  //   moviesModel.thumbnail.toString(),
                   //   // 'images/sample_home_screen.jpg',
                   //   fit: BoxFit.cover,
-                  // ),
                 ),
               ),
             ),
@@ -716,7 +448,6 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
   }
 
   Widget getMovieContinueWatchingWidget(Movies moviesModel) {
-    // moviesModel.usermovies!.watchedPercent==null?"0":moviesModel.usermovies!.watchedPercent.toString()
     print(
         "CHeckWatchedPercent${moviesModel.usermovies!.watchedPercent}" == "null"
             ? "0"
@@ -752,13 +483,6 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                         height: double.infinity,
                         fit: BoxFit.cover,
                       )
-                      // Image.network(
-                      //   width: double.infinity,
-                      //   height: double.infinity,
-                      //   moviesModel.thumbnail.toString(),
-                      //   // 'images/sample_home_screen.jpg',
-                      //   fit: BoxFit.cover,
-                      // ),
                       ),
                 ),
               ),
@@ -805,7 +529,6 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
             color: AppDefaultColors.darkGray,
             width: 130,
             height: 40,
-            // margin: EdgeInsets.only(top: 0),
             child: Padding(
               padding: const EdgeInsets.all(8.0),
               child: Row(
@@ -873,13 +596,10 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                             height: double.infinity,
                             fit: BoxFit.cover,
                           )
-                          // Image.network(
                           //   width: double.infinity,
                           //   height: double.infinity,
-                          //   moviesModel.thumbnail.toString(),
                           //   // 'images/sample_home_screen.jpg',
                           //   fit: BoxFit.cover,
-                          // ),
                           ),
                     ),
                   )
@@ -903,13 +623,10 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                           height: double.infinity,
                           fit: BoxFit.cover,
                         ),
-                        // Image.network(
                         //   width: double.infinity,
                         //   height: double.infinity,
-                        //   moviesModel.thumbnail.toString(),
                         //   // 'images/sample_home_screen.jpg',
                         //   fit: BoxFit.cover,
-                        // ),
                       ),
                     ),
                   ),
@@ -921,15 +638,12 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                   child: Padding(
                     padding: const EdgeInsets.only(left: 4.1),
                     child: ClipRRect(
-                      // borderRadius: BorderRadius.all(Radius.circular(5)),
                       borderRadius: BorderRadius.only(
                           topLeft: Radius.circular(0),
                           topRight: Radius.circular(0),
                           bottomLeft: Radius.circular(5),
                           bottomRight: Radius.circular(5)),
-
                       child: LinearProgressIndicator(
-                        // value: double.parse(moviesModel.lastPlayedTime.toString()),
                         value: double.parse("40"),
                         color: AppDefaultColors.thikRed,
                         backgroundColor: AppDefaultColors.textLightGray,
@@ -970,7 +684,6 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
     );
   }
 
-  // Widget getMovieWishListCategoryWidget(MoviesModel moviesModel) {
   Widget getMovieWishListCategoryWidget(Movies moviesModel) {
     return Container(
       width: 240,
@@ -1001,14 +714,10 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                         fit: BoxFit.cover,
                       )
 
-                      // Image.network(
                       //   width: double.infinity,
                       //   height: double.infinity,
-                      //   // moviesModel.thumbnailPicture.toString(),
-                      //   moviesModel.thumbnail.toString(),
                       //   // 'images/sample_home_screen.jpg',
                       //   fit: BoxFit.cover,
-                      // ),
                       ),
                 ),
               ),
@@ -1076,7 +785,6 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      // backgroundColor: AppDefaultColors.darkGray.withOpacity(0.9),
       backgroundColor: AppDefaultColors.darkGray,
       transitionAnimationController: AnimationController(
         vsync: Navigator.of(context),
@@ -1315,7 +1023,6 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                               return showSignOutAlertDialog();
                             },
                           );
-                          // Navigator.push(context, MaterialPageRoute(builder: (context) => WhosWatchingPage()));
                         },
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -1377,7 +1084,6 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      // backgroundColor: AppDefaultColors.darkGray.withOpacity(0.9),
       backgroundColor: AppDefaultColors.darkGray,
       transitionAnimationController: AnimationController(
         vsync: Navigator.of(context),
@@ -1602,9 +1308,6 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
       print("setqrcode_Response: $jsonsDataString");
       if (response.statusCode == 200) {
         try {
-          var jsonReponse = jsonDecode(jsonsDataString);
-          // String data = jsonReponse['data'];
-
           setState(() {
             isLoading = false;
           });
@@ -1635,7 +1338,6 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
       String token, String profileId, String searchType) async {
     isLoading = true;
     moviesMyListModel.clear();
-    // context.loaderOverlay.show();
     ApiServices()
         .getRequestData(
             "${AppConfig.usermovieslist}$profileId&mylist=$searchType", token)
@@ -1709,20 +1411,16 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
         } catch (e) {
           setState(() {
             isLoading = false;
-            // context.loaderOverlay.hide();
           });
           print('MylistsMovieException:$e');
         }
       } else {
         print("MyListError: $response");
-        // context.loaderOverlay.hide();
         isLoading = false;
-        // CommonWidget().showSnackBar(context, ContentType.failure, "Error", response.toString());
       }
 
       setState(() {
         isLoading = false;
-        // context.loaderOverlay.hide();
       });
     });
   }
@@ -1731,7 +1429,6 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
       String token, String profileId, String searchType) async {
     isLoading = true;
     moviesWatchingModel.clear();
-    // context.loaderOverlay.show();
     ApiServices()
         .getRequestData(
             "${AppConfig.usermovieslist}$profileId&watching=$searchType", token)
@@ -1817,20 +1514,16 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
         } catch (e) {
           setState(() {
             isLoading = false;
-            // context.loaderOverlay.hide();
           });
           print('CreateUserProfileException:$e');
         }
       } else {
         print("Error: $response");
-        // context.loaderOverlay.hide();
         isLoading = false;
-        // CommonWidget().showSnackBar(context, ContentType.failure, "Error", response.toString());
       }
 
       setState(() {
         isLoading = false;
-        // context.loaderOverlay.hide();
       });
     });
   }
@@ -1839,7 +1532,6 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
       String token, String profileId, String searchType) async {
     isLoading = true;
     moviesRecentlyModel.clear();
-    // context.loaderOverlay.show();
     ApiServices()
         .getRequestData(
             "${AppConfig.usermovieslist}$profileId&watched=$searchType", token)
@@ -1906,36 +1598,22 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
             getUserMoviesLitRWatched(_token, profileID, "");
           }
 
-          for (var i = 0; i < categoryItems.length; i++) {
-            profileMoviesCategoryModel.add(ProfileMoviesCategoryModel(
-                catogoryID: i.toString(),
-                catogoryName: categoryItems[i],
-                moviesMylistModel: moviesMyListModel,
-                moviesWatchingModel: moviesWatchingModel,
-                moviesRWatchedModel: moviesRecentlyModel));
-          }
-
           setState(() {
             isLoading = true;
-            // context.loaderOverlay.hide();
           });
         } catch (e) {
           setState(() {
             isLoading = false;
-            // context.loaderOverlay.hide();
           });
           print('CreateUserProfileException:$e');
         }
       } else {
         print("Error: $response");
-        // context.loaderOverlay.hide();
         isLoading = false;
-        // CommonWidget().showSnackBar(context, ContentType.failure, "Error", response.toString());
       }
 
       setState(() {
         isLoading = false;
-        // context.loaderOverlay.hide();
       });
     });
   }
@@ -2006,28 +1684,19 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
               }
             });
           }
-          // isLoading = false;
         } catch (e) {
-          // isLoading = false;
           print('getTokenExistException:$e');
         }
       } else {
-        // setState(() {
-        //   isLoading = false;
-        // });
         print("geTokenResError: $response");
       }
-
-      // isLoading = false;
     });
-    // isLoading = false;
     setState(() {
       isLoading = false;
     });
   }
 
   void getLogout(String token) async {
-    // context.loaderOverlay.show();
     appUtils.showLoaderDialog(context);
 
     ApiServices()
@@ -2045,13 +1714,11 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
             await pref.clear();
 
             await Future.delayed(Duration(seconds: 1));
-            // context.loaderOverlay.hide();
 
             Navigator.of(context).pushNamedAndRemoveUntil(
               'mainscreen',
               (route) => false, // Removes all routes from the stack
             );
-            // await Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginPage(requiredEmail: "")));
           }
         } catch (e) {
           appUtils.hideLoaderDialog(context);

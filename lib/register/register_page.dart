@@ -1,15 +1,11 @@
-// Dart imports:
 import 'dart:convert';
 
-// Flutter imports:
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-// Package imports:
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 
-// Project imports:
 import '../app_config/app_utils.dart';
 import '../app_config/appconfig.dart';
 import '../authendication/login_page.dart';
@@ -126,7 +122,6 @@ class _RegisterPageState extends State<RegisterPage> {
                     controller: userNameController,
                   ),
                   if (_nameErrorMessage != null) _buildError(_nameErrorMessage!),
-                  // Todo: ----------------------------OTP Country Code ----------------------------------
                   // ! Mobile Number TextField
                   SizedBox(height: 12.0),
                   if (character == SingingCharacter.whatsAppOtp)
@@ -142,7 +137,6 @@ class _RegisterPageState extends State<RegisterPage> {
                       controller: mobileNumberController,
                     ),
                   if (_phoneErrorMessage != null) _buildError(_phoneErrorMessage!),
-                  // Todo: ----------------------------OTP Country Code ----------------------------------
                   // ! Submit Button
                   SizedBox(height: 25.0),
                   SendButtonWidgets(

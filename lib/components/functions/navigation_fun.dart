@@ -1,4 +1,3 @@
-// Flutter imports:
 import 'package:flutter/material.dart';
 
 class AuthNavigator {
@@ -52,18 +51,8 @@ class AuthNavigator {
   }
 }
 
-// Fade Navigation (replace current page)
-// AuthNavigator.navigateWithFade(context, OTPactivity(otpEmailorPhone: "12345"));
 
-// Fade Navigation (keep previous page in stack)
-// AuthNavigator.navigateWithFade(context, LoginActivity(), replace: false);
 
-// Slide Navigation (default: slide from right)
-// AuthNavigator.navigateWithSlide(context, DashboardPage());
 
 // Slide From Bottom
-// AuthNavigator.navigateWithSlide(
 //   context,
-//   SettingsPage(),
-//   begin: const Offset(0, 1),
-// );

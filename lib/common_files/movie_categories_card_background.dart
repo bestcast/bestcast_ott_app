@@ -1,4 +1,3 @@
-// Flutter imports:
 import 'package:flutter/material.dart';
 
 class MovieCardBackgroundView extends StatelessWidget {
@@ -13,7 +12,6 @@ class MovieCardBackgroundView extends StatelessWidget {
         semanticContainer: true,
         clipBehavior: Clip.antiAliasWithSaveLayer,
         shape: RoundedRectangleBorder(
-          // borderRadius: BorderRadius.circular(20.0),
           borderRadius: BorderRadius.circular(3.0),
           side: BorderSide(width: 0.2, color: Colors.white),
         ),

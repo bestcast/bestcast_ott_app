@@ -1,4 +1,3 @@
-// Flutter imports:
 import 'package:flutter/material.dart';
 
 class MainTransaparentCardBackgroundView extends StatelessWidget {
@@ -16,7 +15,6 @@ class MainTransaparentCardBackgroundView extends StatelessWidget {
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
           colors: <Color>[
-            // Colors.black.withOpacity(1),
             Colors.transparent.withOpacity(0.1),
             Colors.black.withOpacity(0.9),
           ],

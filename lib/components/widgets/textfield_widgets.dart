@@ -1,8 +1,6 @@
-// Flutter imports:
 import 'package:flutter/material.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 
-// Project imports:
 import '/common_files/app_default_colors.dart';
 
 // ! Text Field Widget

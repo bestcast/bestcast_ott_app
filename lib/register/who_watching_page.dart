@@ -1,16 +1,12 @@
-// Dart imports:
 import 'dart:convert';
 
-// Flutter imports:
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-// Package imports:
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Project imports:
 import 'package:bestcaststudios/authendication/plan_expired_creen.dart';
 import 'package:bestcaststudios/register/add_userpage.dart';
 import 'package:bestcaststudios/register/who_watching_model.dart';
@@ -23,14 +19,13 @@ import '../common_files/app_default_colors.dart';
 import '../common_files/common_widgets.dart';
 import '../common_files/loading_widget.dart';
 
+// ignore: must_be_immutable
 class WhosWatchingPage extends StatefulWidget {
-  // String editMode = "";
 
   String activityType = "";
 
   WhosWatchingPage({super.key, required this.activityType});
 
-  // const WhosWatchingPage(String editMode, {super.key});
 
   @override
   State<WhosWatchingPage> createState() => _WhosWatchingPageState();
@@ -40,7 +35,6 @@ class _WhosWatchingPageState extends State<WhosWatchingPage> {
   List<WhoWatchingModel> whoWatchingModel = [];
   late bool editMode;
 
-  // bool editMode=false;
   bool profilMode = false;
   final AppUtils appUtils = AppUtils();
   bool isLoading = false;
@@ -62,7 +56,6 @@ class _WhosWatchingPageState extends State<WhosWatchingPage> {
     "images/icon_add.png",
   ];
 
-  String _id = "";
   String _email = "";
   String _token = "";
 
@@ -83,13 +76,11 @@ class _WhosWatchingPageState extends State<WhosWatchingPage> {
 
     print("EditModeStatus: $editMode");
 
-    // getUserProfileListsTemp();
   }
 
   Future<void> getInitalValue() async {
     final pref = await SharedPreferences.getInstance();
     setState(() {
-      _id = pref.getString(AppPreferences.id) ?? '';
       _email = pref.getString(AppPreferences.email) ?? '';
       _token = pref.getString(AppPreferences.token) ?? '';
     });
@@ -157,7 +148,6 @@ class _WhosWatchingPageState extends State<WhosWatchingPage> {
                     for (int v = 0; v < whoWatchingModel.length; v++) {
                       whoWatchingModel[v].editable = true;
                     }
-                    // whoWatchingModel[0].editable = true;
                     editMode = true;
                   }
                 });
@@ -192,12 +182,8 @@ class _WhosWatchingPageState extends State<WhosWatchingPage> {
                     return MyGridItem(
                       whoWatchingModel: whoWatchingModel[index],
                       onTap: () async {
-                        // var jsonReponse = jsonDecode(whoWatchingModel[index] as String);
-                        // print("UserData:"+jsonReponse);
-                        // print("UserData:"+whoWatchingModel.toString());
 
                         if (widget.activityType == "New") {
-                          // getUserDetails(_token,whoWatchingModel[index]);
                           _awaitProfile(context, whoWatchingModel[index]);
                         } else {
                           if (whoWatchingModel[index].editable == true &&
@@ -212,45 +198,21 @@ class _WhosWatchingPageState extends State<WhosWatchingPage> {
                   },
                 ),
 
-                // GridView.count(
                 //   shrinkWrap: true,
                 //   mainAxisSpacing: 5,
                 //   crossAxisSpacing: 1,
                 //   crossAxisCount: 2,
                 //   childAspectRatio: 2/2,
-                //   padding: const EdgeInsets.all(20.0),
-                //   children: [
-                //     ...myImageAndCaption.map(
-                //       (i) => Column(
                 //         mainAxisSize: MainAxisSize.min,
                 //         mainAxisAlignment: MainAxisAlignment.center,
                 //         crossAxisAlignment: CrossAxisAlignment.center,
-                //         children: [
-                //           SizedBox(
                 //             width: 100.0,
                 //             height: 100.0,
                 //             // color: Colors.green,
-                //             child: CircleAvatar(
                 //               backgroundColor: AppDefaultColors.boxDarkGray,
                 //               // foregroundColor: Colors.green,
-                //               backgroundImage: AssetImage(i.first),
-                //             ),
-                //           ),
-                //           SizedBox(
-                //             child: FittedBox(
                 //               fit: BoxFit.fitWidth,
-                //               child: Padding(
-                //                 padding: const EdgeInsets.all(8.0),
                 //                 child: Text(i.last,
-                //                     style: TextStyle(color: Colors.white, fontSize: 17)),
-                //               ),
-                //             ),
-                //           ),
-                //         ],
-                //       ),
-                //     ),
-                //   ],
-                // ),
               ),
             )
           : LoadingWidget(),
@@ -331,7 +293,6 @@ class _WhosWatchingPageState extends State<WhosWatchingPage> {
 
           await Future.delayed(Duration(seconds: 3));
           isLoading = false;
-          // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginPage(requiredEmail: "")));
         }
       } else {
         print("Error: $response");
@@ -361,8 +322,6 @@ class _WhosWatchingPageState extends State<WhosWatchingPage> {
           String status = jsonReponse['status'];
 
           if (status == "success") {
-            String? planExpiry =
-                jsonReponse['results']['user']['plan_expiry'].toString();
             String? planStatus =
                 jsonReponse['results']['user']['plan_status'].toString();
             String? planDeviceStatus =
@@ -383,7 +342,6 @@ class _WhosWatchingPageState extends State<WhosWatchingPage> {
             }
 
             //TOD0 hide
-            // _awaitProfile(context, whoWatchingModel);
           }
           isLoading = false;
         } catch (e) {
@@ -419,7 +377,6 @@ class _WhosWatchingPageState extends State<WhosWatchingPage> {
               builder: (context) =>
                   AddUserPage(pageType: 'New', userData: whoWatchingModel)));
       print("Profilestatus$value");
-      // if (value == "success") {
       if (value != null) {
         getUserProfiles(_token);
       }
@@ -430,7 +387,6 @@ class _WhosWatchingPageState extends State<WhosWatchingPage> {
               builder: (context) =>
                   AddUserPage(pageType: 'Edit', userData: whoWatchingModel)));
 
-      // if (value == "success") {
       print("ProfileEditStatus$value");
       getUserProfiles(_token);
     } else {
@@ -451,7 +407,6 @@ class _WhosWatchingPageState extends State<WhosWatchingPage> {
           AppPreferences.profilePicture, userProfileData.profilePicture!);
       await pref.setString(
           AppPreferences.isChild, userProfileData.isChild!.toString());
-      // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => MainScreen()));
       Navigator.of(context).pushNamedAndRemoveUntil(
         'mainscreen',
         (route) => false, // Removes all routes from the stack
@@ -496,7 +451,6 @@ class MyGridItem extends StatelessWidget {
                     ? CircleAvatar(
                         backgroundColor: AppDefaultColors.boxDarkGray,
                         // foregroundColor: Colors.green,
-                        // backgroundImage: AssetImage('images/loading.gif'),
                         backgroundImage:
                             AssetImage('images/default_profile.jpg'),
                         child: CircleAvatar(
@@ -504,7 +458,6 @@ class MyGridItem extends StatelessWidget {
                           backgroundColor: Colors.transparent,
                           backgroundImage: NetworkImage(
                               whoWatchingModel.profilePicture.toString()),
-                          // backgroundImage: NetworkImage("https://moviesdev.harikaran.com/img/sample/profile-1.jpg"),
                         ),
                       )
                     : CircleAvatar(

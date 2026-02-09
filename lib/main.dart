@@ -1,17 +1,13 @@
-// Dart imports:
 import 'dart:async';
 
-// Flutter imports:
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-// Package imports:
 import 'package:animated_splash_screen/animated_splash_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Project imports:
 import 'package:bestcaststudios/common_files/loading_widget.dart';
 import 'package:bestcaststudios/main_screen.dart';
 import 'package:bestcaststudios/register/profile_image_grid.dart';
@@ -104,7 +100,6 @@ class MyApp extends StatelessWidget {
       home: const MyHomePage(title: 'Bestcast OTT'),
       routes: {
         "profile_image_grid": (context) => ProfileImageGrid(),
-        // 'login': (context) => LoginPage(requiredEmail: ''),
         'mainscreen': (context) => MainScreen(),
       },
     );

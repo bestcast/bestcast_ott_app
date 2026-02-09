@@ -1,4 +1,3 @@
-// Dart imports:
 import 'dart:convert';
 
 DownloadedMovieModel moviesModelFromJson(String str) =>

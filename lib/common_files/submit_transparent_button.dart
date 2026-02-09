@@ -1,7 +1,5 @@
-// Flutter imports:
 import 'package:flutter/material.dart';
 
-// Project imports:
 import 'app_default_colors.dart';
 
 class SubmitTransparentButton extends StatelessWidget {
@@ -21,7 +19,6 @@ class SubmitTransparentButton extends StatelessWidget {
         style: ButtonStyle(
           backgroundColor: WidgetStateProperty.all(
               AppDefaultColors.boxDarkGray.withOpacity(0.5)),
-          // backgroundColor: MaterialStateProperty.all(Colors.transparent),
           foregroundColor: WidgetStateProperty.all(Colors.transparent),
           padding: WidgetStateProperty.all(
               EdgeInsets.symmetric(vertical: 0, horizontal: 0)),

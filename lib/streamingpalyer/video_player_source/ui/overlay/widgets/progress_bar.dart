@@ -1,14 +1,10 @@
-// Dart imports:
 import 'dart:ui' as ui;
 
-// Flutter imports:
 import 'package:flutter/material.dart';
 
-// Package imports:
 import 'package:helpers/helpers.dart';
 import 'package:provider/provider.dart';
 
-// Project imports:
 import 'package:bestcaststudios/streamingpalyer/video_player_source/data/repositories/video.dart';
 import 'package:bestcaststudios/streamingpalyer/video_player_source/domain/entities/styles/video_viewer.dart';
 import 'package:bestcaststudios/streamingpalyer/video_player_source/ui/widgets/transitions.dart';

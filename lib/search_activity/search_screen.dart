@@ -1,15 +1,11 @@
-// Dart imports:
 import 'dart:convert';
 
-// Flutter imports:
 import 'package:flutter/material.dart';
 
-// Package imports:
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Project imports:
 import 'package:bestcaststudios/common_files/loading_widget.dart';
 import '../Dashboard/Models/Movie.dart';
 import '../Dashboard/Models/Usermovies.dart';
@@ -23,11 +19,6 @@ import '../common_files/movie_categories_card_background.dart';
 import '../common_files/movie_categories_card_wishlist.dart';
 import '../notification_activity/notification_model.dart';
 import '../streamingpalyer/video_player.dart';
-
-// import 'package:speech_to_text/speech_recognition_result.dart';
-// import 'package:speech_to_text/speech_to_text.dart';
-
-// import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -43,33 +34,11 @@ class _SearchScreenState extends State<SearchScreen> {
 
   bool isLoading = false;
   bool isSearchLoading = false;
-  final String _loadUrl = "";
-  String _id = "";
-  String _email = "";
-  String _phone = "";
-  String _name = "";
-  String _firstname = "";
-  String _lastname = "";
-  String _dob = "";
-  String _gender = "";
-  String _plan = "";
-  String _plan_expiry = "";
-  String _photo = "";
-  String _otp = "";
-  String _tvcode = "";
-  String _referal_code = "";
-  String _credits_used = "";
-  String _refferer = "";
   String _token = "";
-
   String profileName = "";
   String profilePicture = "";
   String profileID = "";
   String profilePictureID = "";
-
-  // SpeechToText _speech = SpeechToText();
-  // late stt.SpeechToText _speech;
-  final bool _isListening = false;
   String _searchText = '';
   String _recommendedMoviesTitle = '';
 
@@ -77,33 +46,14 @@ class _SearchScreenState extends State<SearchScreen> {
   void initState() {
     super.initState();
 
-    // _speech = stt.SpeechToText();
     _initSpeech();
 
-    // getRecommendedVideosTemp();
-    // getNotificationTemp();
     getInitalValue();
   }
 
   Future<void> getInitalValue() async {
     final pref = await SharedPreferences.getInstance();
     setState(() {
-      _id = pref.getString(AppPreferences.id) ?? '';
-      _email = pref.getString(AppPreferences.email) ?? '';
-      _phone = pref.getString(AppPreferences.phone) ?? '';
-      _name = pref.getString(AppPreferences.name) ?? '';
-      _firstname = pref.getString(AppPreferences.firstname) ?? '';
-      _lastname = pref.getString(AppPreferences.lastname) ?? '';
-      _dob = pref.getString(AppPreferences.dob) ?? '';
-      _gender = pref.getString(AppPreferences.gender) ?? '';
-      _plan = pref.getString(AppPreferences.plan) ?? '';
-      _plan_expiry = pref.getString(AppPreferences.plan_expiry) ?? '';
-      _photo = pref.getString(AppPreferences.photo) ?? '';
-      _otp = pref.getString(AppPreferences.otp) ?? '';
-      _tvcode = pref.getString(AppPreferences.tvcode) ?? '';
-      _referal_code = pref.getString(AppPreferences.referal_code) ?? '';
-      _credits_used = pref.getString(AppPreferences.credits_used) ?? '';
-      _refferer = pref.getString(AppPreferences.refferer) ?? '';
       _token = pref.getString(AppPreferences.token) ?? '';
 
       profileName = pref.getString(AppPreferences.profileName) ?? '';
@@ -113,7 +63,6 @@ class _SearchScreenState extends State<SearchScreen> {
     });
 
     getPopularMoviesLits(_token, profileID);
-    // getUserMoviesList(_token, profileID, "");
   }
 
   List<MoviesModel> moviesModel = [];
@@ -188,15 +137,8 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
             backgroundColor: AppDefaultColors.appColor,
           ),
-          // floatingActionButton: FloatingActionButton(
-          //   onPressed:(){
-          //     // var status = await Permission.speech.request();
           //   // If not yet listening for speech start, otherwise stop
-          //   _speech.isNotListening ? _startListening : _stopListening;
-          //   },
           //   tooltip: 'Listen',
-          //   child: Icon(_speech.isNotListening ? Icons.mic_off : Icons.mic),
-          // ),
           body: isLoading == false
               ? SingleChildScrollView(
                   child: Column(
@@ -224,12 +166,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                         .addPostFrameCallback((_) {
                                       setState(() {
                                         if (txt?.length != 0) {
-                                          // _isEmailPhoneValid = true;
-                                        } else {
-                                          // print("SearchTextOnChangedtxt: "+txt.toString());
-                                          // getUserMoviesList(_token, profileID, "");
-                                          // _isEmailPhoneValid = false;
-                                        }
+                                        } else {}
                                       });
                                     });
                                     return null;
@@ -244,10 +181,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                                 AppDefaultColors.textLightGray),
                                         onPressed: () {},
                                       ),
-                                      // suffixIcon: IconButton(
-                                      //   icon: Icon(Icons.mic_none_outlined, size: 30, color: AppDefaultColors.textLightGray),
                                       //   onPressed: _isListening ? null : _toggleListening,
-                                      // ),
                                       suffix: isSearchLoading
                                           ? SizedBox(
                                               height: 30.0,
@@ -280,7 +214,6 @@ class _SearchScreenState extends State<SearchScreen> {
                             ),
                           ),
                           SizedBox(height: 20),
-                          // Text(
                           //   _speech.isListening
                           //       ? '$_searchText'
                           //   // If listening isn't active but could be tell the user
@@ -292,15 +225,12 @@ class _SearchScreenState extends State<SearchScreen> {
                           //       : 'Speech not available',
                           //
                           //   // 'Search Text: $_searchText',
-                          //   style: TextStyle(fontSize: 20, color: Colors.white),
-                          // ),
                         ],
                       ),
                       moviesListModel.isNotEmpty
                           ? SizedBox(
                               height: 280,
                               child: ListView.builder(
-                                  // physics: const NeverScrollableScrollPhysics(),
                                   physics: ClampingScrollPhysics(),
                                   scrollDirection: Axis.horizontal,
                                   shrinkWrap: true,
@@ -333,12 +263,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           itemBuilder: (BuildContext context, int index) {
                             return GestureDetector(
                               onTap: () {
-                                // Navigator.push(
                                 //     context,
-                                //     MaterialPageRoute(
-                                //         builder: (context) => ViewUserProfile(
-                                //               notificationModel: notificationModel[index],
-                                //             )));
                               },
                               child:
                                   getUsersWidget(popularMoviesListModel[index]),
@@ -383,12 +308,9 @@ class _SearchScreenState extends State<SearchScreen> {
                           height: double.infinity,
                           fit: BoxFit.cover,
                         )
-                        // Image.network(
                         //   width: double.infinity,
                         //   height: double.infinity,
-                        //   notificationModel.thumnail.toString(),
                         //   fit: BoxFit.cover,
-                        // ),
                         ),
                     if (popularMovies.movie_access == "1")
                       Align(
@@ -449,7 +371,6 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  // Widget getMovieRecommendedHorizontalWidget(MoviesModel moviesModel) {
   Widget getMovieRecommendedHorizontalWidget(Movies moviesModel) {
     return Container(
       width: 130,
@@ -490,13 +411,10 @@ class _SearchScreenState extends State<SearchScreen> {
                           height: double.infinity,
                           fit: BoxFit.cover,
                         )
-                        // Image.asset(
                         //   width: double.infinity,
                         //   height: double.infinity,
-                        //   moviesModel.portraitsmall.toString(),
                         //   // 'images/sample_home_screen.jpg',
                         //   fit: BoxFit.cover,
-                        // ),
                         ),
                     if (moviesModel.movie_access == "1")
                       Align(
@@ -538,57 +456,13 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _initSpeech() async {
-    // _isListening = await _speech.initialize();
     setState(() {});
   }
-
-  /// Each time to start a speech recognition session
-  void _startListening() async {
-    // await _speech.listen(onResult: _onSpeechResult);
-    setState(() {});
-  }
-
-  /// Manually stop the active speech recognition session
-  /// Note that there are also timeouts that each platform enforces
-  /// and the SpeechToText plugin supports setting timeouts on the
-  /// listen method.
-  void _stopListening() async {
-    // await _speech.stop();
-    setState(() {});
-  }
-
-  // void _onSpeechResult(SpeechRecognitionResult result) {
-  //   setState(() {
-  //     _searchText = result.recognizedWords;
-  //   });
-  // }
-
-  // void _toggleListening() async {
-  //   if (!_isListening) {
-  //     bool available = await _speech.initialize(
-  //       onError: (error) => print('Error: $error'),
-  //     );
-  //     if (available) {
-  //       setState(() => _isListening = true);
-  //       _speech.listen(
-  //         onResult: (result) {
-  //           setState(() {
-  //             _searchText = result.recognizedWords;
-  //           });
-  //         },
-  //       );
-  //     }
-  //   } else {
-  //     setState(() => _isListening = false);
-  //     _speech.stop();
-  //   }
-  // }
 
   void getPopularMoviesLits(String token, String profileId) async {
     setState(() {
       isLoading = true;
     });
-    // ApiServices().getRequestData(AppConfig.appnotifylist + "/" + profileId, token).then((response) async {
     ApiServices()
         .getRequestData("${AppConfig.movieblockslist}4&page=1", token)
         .then((response) async {
@@ -607,9 +481,6 @@ class _SearchScreenState extends State<SearchScreen> {
             for (var movieData in mainData["movies"]) {
               print("_movieID:${movieData["id"]}");
               print("_MovieTitle${movieData['title']}");
-              String nthumbnailUrl =
-                  "${AppConfig.BaseUrl}/${movieData["thumbnail"]}";
-
               String thumbnailUrl =
                   "${AppConfig.BaseUrl}/${movieData["thumbnail"]}";
               String portraitsmallUrl =
@@ -639,15 +510,8 @@ class _SearchScreenState extends State<SearchScreen> {
                 portrait: portraitUrl,
                 usermovies: null,
               ));
-              // notificationModel.add(NotificationModel(
-              //   notificationID: movieData["id"].toString(),
-              //   movieID: movieData["id"].toString(),
-              //   title: movieData["title"].toString(),
               //   description: "Notification Description",
-              //   movieName: movieData["title"].toString(),
               //   thumnail: nthumbnailUrl,
-              //   notificationDate: movieData["published_date"].toString(),
-              // ));
             }
           }
 
@@ -659,18 +523,15 @@ class _SearchScreenState extends State<SearchScreen> {
 
           setState(() {
             isLoading = false;
-            // context.loaderOverlay.hide();
           });
         } catch (e) {
           setState(() {
             isLoading = false;
-            // context.loaderOverlay.hide();
           });
           print('PopularMoviesException:$e');
         }
       } else {
         print("Error: $response");
-        // context.loaderOverlay.hide();
         isLoading = false;
         CommonWidget().showSnackBar(
             context, ContentType.failure, "Error", response.toString());
@@ -678,7 +539,6 @@ class _SearchScreenState extends State<SearchScreen> {
 
       setState(() {
         isLoading = false;
-        // context.loaderOverlay.hide();
       });
     });
   }
@@ -687,8 +547,6 @@ class _SearchScreenState extends State<SearchScreen> {
       String token, String profileId, String searchType) async {
     isLoading = true;
     moviesListModel.clear();
-    // context.loaderOverlay.show();
-    // ApiServices().getRequestData(AppConfig.usermovieslist + profileId + "&mylist=" + searchType, token).then((response) async {
     ApiServices()
         .getRequestData(AppConfig.popularMovieblockslist, token)
         .then((response) async {
@@ -753,23 +611,14 @@ class _SearchScreenState extends State<SearchScreen> {
               usermovies: usermovies,
             ));
           }
-
-          // getUserMoviesLikes(_token, profileID, "1");
-          // getPopularMoviesLits(_token, profileID);
-
-          // setState(() {
-          //   isLoading = false;
-          // });
         } catch (e) {
           setState(() {
             isLoading = false;
-            // context.loaderOverlay.hide();
           });
           print('MylistsMovieException:$e');
         }
       } else {
         print("MyListError: $response");
-        // context.loaderOverlay.hide();
         isLoading = false;
         CommonWidget().showSnackBar(
             context, ContentType.failure, "Error", response.toString());
@@ -777,7 +626,6 @@ class _SearchScreenState extends State<SearchScreen> {
 
       setState(() {
         isLoading = false;
-        // context.loaderOverlay.hide();
       });
     });
   }
@@ -786,7 +634,6 @@ class _SearchScreenState extends State<SearchScreen> {
       String token, String profileId, String searchType) async {
     isLoading = true;
     notificationModel.clear();
-    // context.loaderOverlay.show();
     ApiServices()
         .getRequestData(
             "${AppConfig.usermovieslist}$profileId&likes=$searchType", token)
@@ -807,10 +654,6 @@ class _SearchScreenState extends State<SearchScreen> {
 
             String thumbnailUrl =
                 "${AppConfig.BaseUrl}/${movieData["thumbnail"]}";
-            String portraitsmallUrl =
-                "${AppConfig.BaseUrl}/${movieData["portraitsmall"]}";
-            String portraitUrl =
-                "${AppConfig.BaseUrl}/${movieData["portrait"]}";
 
             notificationModel.add(NotificationModel(
               notificationID: movieData["id"].toString(),
@@ -826,23 +669,16 @@ class _SearchScreenState extends State<SearchScreen> {
           if (notificationModel.isEmpty) {
             getPopularMoviesLits(_token, profileID);
           } else {
-            // _recommendedMoviesTitle = "Recommended Movies";
             _recommendedMoviesTitle = "";
           }
-
-          // setState(() {
-          //   isLoading = false;
-          // });
         } catch (e) {
           setState(() {
             isLoading = false;
-            // context.loaderOverlay.hide();
           });
           print('LikesMovieException:$e');
         }
       } else {
         print("LikesError: $response");
-        // context.loaderOverlay.hide();
         isLoading = false;
         CommonWidget().showSnackBar(
             context, ContentType.failure, "Error", response.toString());
@@ -850,7 +686,6 @@ class _SearchScreenState extends State<SearchScreen> {
 
       setState(() {
         isLoading = false;
-        // context.loaderOverlay.hide();
       });
     });
   }
@@ -931,13 +766,11 @@ class _SearchScreenState extends State<SearchScreen> {
         } catch (e) {
           setState(() {
             isSearchLoading = false;
-            // context.loaderOverlay.hide();
           });
           print('UserMovieException:$e');
         }
       } else {
         print("MyListError: $response");
-        // context.loaderOverlay.hide();
         isSearchLoading = false;
         CommonWidget().showSnackBar(
             context, ContentType.failure, "Error", response.toString());
@@ -945,7 +778,6 @@ class _SearchScreenState extends State<SearchScreen> {
 
       setState(() {
         isSearchLoading = false;
-        // context.loaderOverlay.hide();
       });
     });
   }

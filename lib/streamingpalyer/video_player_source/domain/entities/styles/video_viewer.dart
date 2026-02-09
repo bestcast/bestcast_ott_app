@@ -1,7 +1,5 @@
-// Flutter imports:
 import 'package:flutter/material.dart';
 
-// Project imports:
 import 'package:bestcaststudios/streamingpalyer/video_player_source/domain/entities/styles/chat.dart';
 import 'package:bestcaststudios/streamingpalyer/video_player_source/domain/entities/styles/forward_and_rewind.dart';
 import 'package:bestcaststudios/streamingpalyer/video_player_source/domain/entities/styles/play_and_pause.dart';

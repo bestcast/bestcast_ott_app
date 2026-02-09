@@ -1,7 +1,5 @@
-// Flutter imports:
 import 'package:flutter/material.dart';
 
-// Project imports:
 import '/common_files/app_default_colors.dart';
 
 class SendButtonWidgets extends StatelessWidget {

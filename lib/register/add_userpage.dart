@@ -1,12 +1,9 @@
-// Flutter imports:
 import 'package:flutter/material.dart';
 
-// Package imports:
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Project imports:
 import 'package:bestcaststudios/register/profile_icon_model.dart';
 import 'package:bestcaststudios/register/who_watching_model.dart';
 import '../Dashboard/MovieCategories.dart';
@@ -19,6 +16,7 @@ import '../common_files/app_default_colors.dart';
 import '../common_files/common_widgets.dart';
 import '../common_files/submitButton.dart';
 
+// ignore: must_be_immutable
 class AddUserPage extends StatefulWidget {
   String pageType = "";
   WhoWatchingModel userData;
@@ -79,24 +77,6 @@ class _ProfileMainPageState extends State<AddUserPage> {
 
   bool isSwitched = false;
   var textValue = 'Switch is OFF';
-
-  final String _loadUrl = "";
-  String _id = "";
-  String _email = "";
-  String _phone = "";
-  String _name = "";
-  String _firstname = "";
-  String _lastname = "";
-  String _dob = "";
-  String _gender = "";
-  String _plan = "";
-  String _plan_expiry = "";
-  String _photo = "";
-  String _otp = "";
-  String _tvcode = "";
-  String _referal_code = "";
-  String _credits_used = "";
-  String _refferer = "";
   String _token = "";
 
   String profileName = "";
@@ -164,10 +144,6 @@ class _ProfileMainPageState extends State<AddUserPage> {
       buttonText = "Update User";
       _isUserNameValid = true;
 
-      // print("UserData:"+widget.userData.toString());
-      // var jsonReponse = jsonDecode(widget.userData);
-      // var data = jsonReponse['data'];
-      // isChild: profileUser["is_child"].toInt();
 
       profileName = widget.userData.profileName.toString();
       profilePicture = widget.userData.profilePicture.toString();
@@ -191,22 +167,6 @@ class _ProfileMainPageState extends State<AddUserPage> {
   Future<void> getInitalValue() async {
     final pref = await SharedPreferences.getInstance();
     setState(() {
-      _id = pref.getString(AppPreferences.id) ?? '';
-      _email = pref.getString(AppPreferences.email) ?? '';
-      _phone = pref.getString(AppPreferences.phone) ?? '';
-      _name = pref.getString(AppPreferences.name) ?? '';
-      _firstname = pref.getString(AppPreferences.firstname) ?? '';
-      _lastname = pref.getString(AppPreferences.lastname) ?? '';
-      _dob = pref.getString(AppPreferences.dob) ?? '';
-      _gender = pref.getString(AppPreferences.gender) ?? '';
-      _plan = pref.getString(AppPreferences.plan) ?? '';
-      _plan_expiry = pref.getString(AppPreferences.plan_expiry) ?? '';
-      _photo = pref.getString(AppPreferences.photo) ?? '';
-      _otp = pref.getString(AppPreferences.otp) ?? '';
-      _tvcode = pref.getString(AppPreferences.tvcode) ?? '';
-      _referal_code = pref.getString(AppPreferences.referal_code) ?? '';
-      _credits_used = pref.getString(AppPreferences.credits_used) ?? '';
-      _refferer = pref.getString(AppPreferences.refferer) ?? '';
       _token = pref.getString(AppPreferences.token) ?? '';
     });
   }
@@ -241,13 +201,11 @@ class _ProfileMainPageState extends State<AddUserPage> {
                     // color: Colors.green,
                     child: GestureDetector(
                       onTap: () {
-                        // Navigator.push(context, MaterialPageRoute(builder: (context) => MainScreen()));
                       },
                       child: widget.pageType == "Edit"
                           ? CircleAvatar(
                               backgroundColor: AppDefaultColors.boxDarkGray,
                               // foregroundColor: Colors.green,
-                              // backgroundImage: AssetImage('images/loading.gif'),
                               backgroundImage:
                                   AssetImage('images/icon_user1.jpg'),
                               child: CircleAvatar(
@@ -257,7 +215,6 @@ class _ProfileMainPageState extends State<AddUserPage> {
                                     ? getSelectedIcon
                                     : widget.userData.profilePicture
                                         .toString()),
-                                // backgroundImage: NetworkImage("https://moviesdev.harikaran.com/img/sample/profile-1.jpg"),
                               ),
                             )
                           : isIconSelected == false
@@ -369,14 +326,12 @@ class _ProfileMainPageState extends State<AddUserPage> {
                             // inactiveTrackColor: Colors.grey,
                           ),
                         ),
-                        // Switch(
                         //   onChanged: toggleSwitch,
                         //   value: isSwitched,
                         //   activeColor: Colors.blue,
                         //   activeTrackColor: Colors.yellow,
                         //   inactiveThumbColor: Colors.redAccent,
                         //   inactiveTrackColor: Colors.grey,
-                        // ),
                       ],
                     ),
                   ),
@@ -477,7 +432,6 @@ class _ProfileMainPageState extends State<AddUserPage> {
                                     "0",
                                     isKidEnabled,
                                     "0");
-                                // Navigator.push(context, MaterialPageRoute(builder: (context) => MainScreen()));
                               }
                             }
                           } else {
@@ -536,7 +490,6 @@ class _ProfileMainPageState extends State<AddUserPage> {
       'appnotify': "1"
     };
 
-    // final postValues = {
     //   'profileicon_id': 3,
     //   'name': "Harikaran",
     //   'language': 0,
@@ -544,7 +497,6 @@ class _ProfileMainPageState extends State<AddUserPage> {
     //   'is_child': 0,
     //   'pin': "0",
     //   'appnotify': 1
-    // };
 
     ApiServices()
         .postRequestToken(AppConfig.setUserProfile + userID, postValues, token)
@@ -553,16 +505,8 @@ class _ProfileMainPageState extends State<AddUserPage> {
       print("setuserprofile_Response: $jsonsDataString");
       if (response.statusCode == 200 || response.statusCode == 201) {
         try {
-          // var jsonReponse = jsonDecode(jsonsDataString);
-          // String status = jsonReponse['status'];
 
-          // if (status == "success") {
           Navigator.of(context).pop('success');
-          // Navigator.pop(context, "success");
-          // appUtils.showToast("Profile added successful.");
-          // } else {
-          //   appUtils.showToast("Profile not added updated.");
-          // }
           context.loaderOverlay.hide();
         } catch (e) {
           print('CreateUserProfileException:$e');
@@ -575,8 +519,6 @@ class _ProfileMainPageState extends State<AddUserPage> {
         CommonWidget().showSnackBar(
             context, ContentType.failure, "Error", response.toString());
       }
-      // setState(() {
-      // });
       context.loaderOverlay.hide();
     });
     context.loaderOverlay.hide();
@@ -623,8 +565,6 @@ class _ProfileMainPageState extends State<AddUserPage> {
         CommonWidget().showSnackBar(
             context, ContentType.failure, "Error", response.toString());
       }
-      // setState(() {
-      // });
       context.loaderOverlay.hide();
     });
     context.loaderOverlay.hide();
@@ -644,19 +584,8 @@ class _ProfileMainPageState extends State<AddUserPage> {
         });
       }
     });
-    // final value = await Navigator.push(
     //     context,
-    //     MaterialPageRoute(
-    //       builder: (context) => ProfileImageGrid(),
-    //     ));
     //
-    // if (value != null && value is ProfileIconModel) {
-    //   getSelectedIconID =value.profilePictureID.toString();
-    //   getSelectedIcon =value.profilePicture.toString();
-    //   print("ValuePrint"+getSelectedIcon);
-    // }else{
-    //   print("ValuenotPrint");
-    // }
   }
 
   Widget showDeleteUserAlertDialog() {

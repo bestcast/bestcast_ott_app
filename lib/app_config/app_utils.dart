@@ -1,10 +1,6 @@
-// Dart imports:
 import 'dart:core';
 
-// Flutter imports:
 import 'package:flutter/material.dart';
-
-// Package imports:
 import 'package:email_validator/email_validator.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
@@ -26,7 +22,6 @@ class AppUtils {
     DateTime parseDate =
         DateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").parse(dateStr);
     var inputDate = DateTime.parse(parseDate.toString());
-    // var outputFormat = DateFormat('MM/dd/yyyy hh:mm a');
     var outputFormat = DateFormat('yyyy');
     var outputDate = outputFormat.format(inputDate);
     return outputDate;
@@ -71,7 +66,6 @@ class AppUtils {
 
   bool validateEmail(String email) {
     bool isvalid = EmailValidator.validate(email);
-    // print(isvalid);
     return isvalid;
   }
 
@@ -82,9 +76,7 @@ class AppUtils {
     }
 
     // Try to parse input string to number.
-    // Both integer and double work.
     // Use int.tryParse if you want to check integer only.
-    // Use double.tryParse if you want to check double only.
     final number = num.tryParse(string);
 
     if (number == null) {

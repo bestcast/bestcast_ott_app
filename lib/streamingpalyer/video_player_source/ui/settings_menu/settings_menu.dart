@@ -1,7 +1,5 @@
-// Flutter imports:
 import 'package:flutter/material.dart';
 
-// Project imports:
 import 'package:bestcaststudios/streamingpalyer/video_player_source/data/repositories/video.dart';
 import 'package:bestcaststudios/streamingpalyer/video_player_source/domain/entities/settings_menu_item.dart';
 import 'package:bestcaststudios/streamingpalyer/video_player_source/ui/settings_menu/main_menu.dart';

@@ -1,14 +1,9 @@
-// Flutter imports:
 import 'package:flutter/material.dart';
 
-// Package imports:
 import 'package:helpers/helpers.dart';
 
-// Project imports:
 import 'package:bestcaststudios/streamingpalyer/video_player_source/domain/entities/styles/bar.dart';
 
-// import 'package:bestcaststudios/streamingpalyer/video_player_source/domain/entities/styles/bar.dart';
-// import '../entities/styles/bar.dart';
 
 class ForwardAndRewindStyle {
   /// With this argument change the icons that appear when double-tapping,

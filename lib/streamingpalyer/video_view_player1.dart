@@ -1,21 +1,14 @@
-// Dart imports:
 import 'dart:async';
 import 'dart:ui' as ui;
 
-// Flutter imports:
 import 'package:flutter/material.dart';
 
-// Package imports:
 import 'package:google_fonts/google_fonts.dart';
 import 'package:helpers/helpers.dart';
 import 'package:native_device_orientation/native_device_orientation.dart';
 
-// Project imports:
 import 'package:bestcaststudios/streamingpalyer/video_player_source/video_viewer.dart';
 
-// import 'package:video_player/video_player.dart';
-// import 'package:video_player_source/video_viewer.dart';
-// import 'package:video_viewer.dart';
 
 /// SUMMARY
 /// 1. Models
@@ -71,10 +64,8 @@ class CustomVideoViewerStyle extends VideoViewerStyle {
           textStyle: context.textTheme.titleMedium,
           playAndPauseStyle:
               PlayAndPauseWidgetStyle(background: context.color.primary),
-          // PlayAndPauseWidgetStyle(background:  Theme.of(context).colorScheme.primary),
           progressBarStyle: ProgressBarStyle(
             bar: BarStyle.progress(color: context.color.primary),
-            // bar: BarStyle.progress(color: Theme.of(context).colorScheme.primary,),
           ),
           header: Container(
             width: double.infinity,

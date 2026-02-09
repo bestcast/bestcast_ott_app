@@ -1,17 +1,13 @@
-// Dart imports:
 import 'dart:async';
 import 'dart:convert';
 
-// Flutter imports:
 import 'package:flutter/material.dart';
 
-// Package imports:
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter_otp_text_field/flutter_otp_text_field.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Project imports:
 import '../app_config/app_preferences.dart';
 import '../app_config/app_utils.dart';
 import '../app_config/appconfig.dart';
@@ -61,7 +57,7 @@ class _OTPactivityState extends State<OTPactivity> {
     _resesndButtonEnabled = false;
     registerContent = widget.otpEmailorPhone;
     otpMessageType = widget.getOtpMessageType!;
-    countryCode = widget.getCountryCode!;;
+    countryCode = widget.getCountryCode!;
     _startTimer();
   }
 
@@ -146,7 +142,6 @@ class _OTPactivityState extends State<OTPactivity> {
                   }, // end onSubmit
                 ),
                 SizedBox(height: 35),
-                // ! Submit Button (Sign In)
                 SendButtonWidgets(
                   "Sign In",
                   onPressed: () async {
@@ -172,7 +167,6 @@ class _OTPactivityState extends State<OTPactivity> {
                     ),
                   ),
                 SizedBox(height: 35),
-                // ! Text 003 (Resend Code)
                 const Text(
                   "Didn't receive a code?",
                   style: TextStyle(
@@ -277,7 +271,6 @@ class _OTPactivityState extends State<OTPactivity> {
                 builder: (context) => WhosWatchingPage(activityType: "New"),
               ),
             );
-            // Navigator.push(context, MaterialPageRoute(builder: (context) => MainScreen()));
           } else {
             String message = jsonReponse['message'];
             appUtils.showToast(message);

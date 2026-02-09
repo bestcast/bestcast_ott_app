@@ -1,8 +1,6 @@
-// Flutter imports:
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-// Package imports:
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
@@ -80,7 +78,6 @@ class CommonWidget extends StatelessWidget {
     }
   }
 
-  // ---------------------------------------------------------------------------------
 
   Future<bool> isWifiConnectivity() async {
     final Connectivity connectivity = Connectivity();

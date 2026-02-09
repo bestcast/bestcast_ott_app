@@ -1,21 +1,15 @@
-// Dart imports:
 import 'dart:convert';
 import 'dart:io';
 
-// Flutter imports:
 import 'package:flutter/animation.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
-// Package imports:
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
-// Project imports:
 import 'package:bestcaststudios/streamingpalyer/video_player_source/video_viewer.dart';
 
-// import 'package:bestcaststudios/streamingpalyer/video_player_source/video_viewer.dart';
-// import 'package:video_player/video_player.dart';
 
 class VideoSource {
   VideoSource({

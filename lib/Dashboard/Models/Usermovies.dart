@@ -21,15 +21,15 @@ class Usermovies {
       this.viewed});
 
   factory Usermovies.fromJson(Map<String, dynamic> json) => Usermovies(
-        id: json['id'].toString() ?? "",
-        movieId: json['movie_id'].toString() ?? "",
-        mylist: json['mylist'].toString() ?? "",
-        likes: json['likes'].toString() ?? "",
-        watchTime: json['watch_time'].toString() ?? "",
-        watching: json['watching'].toString() ?? "",
-        watched: json['watched'].toString() ?? "",
-        watchedPercent: json['watched_percent'].toString() ?? "",
-        viewed: json['viewed'].toString() ?? "",
+        id: json['id'].toString(),
+        movieId: json['movie_id'].toString(),
+        mylist: json['mylist'].toString(),
+        likes: json['likes'].toString(),
+        watchTime: json['watch_time'].toString(),
+        watching: json['watching'].toString(),
+        watched: json['watched'].toString(),
+        watchedPercent: json['watched_percent'].toString(),
+        viewed: json['viewed'].toString(),
       );
 
   Map<String, dynamic> toJson() => {

@@ -1,7 +1,5 @@
-// Dart imports:
 import 'dart:convert';
 
-// Project imports:
 import 'package:bestcaststudios/Dashboard/MoviesModels.dart';
 
 MoviesCategoryModel moviesCategoryModelFromJson(String str) =>

@@ -1,4 +1,3 @@
-// Flutter imports:
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -190,7 +189,6 @@ class SimulatedDownloadController extends DownloadController
     _downloadStatus = DownloadStatus.fetchingDownload;
     notifyListeners();
 
-    // Wait a second to simulate fetch time.
     await Future<void>.delayed(const Duration(seconds: 1));
 
     // If the user chose to cancel the download, stop the simulation.
@@ -204,7 +202,6 @@ class SimulatedDownloadController extends DownloadController
 
     const downloadProgressStops = [0.0, 0.15, 0.45, 0.8, 1.0];
     for (final stop in downloadProgressStops) {
-      // Wait a second to simulate varying download speeds.
       await Future<void>.delayed(const Duration(seconds: 1));
 
       // If the user chose to cancel the download, stop the simulation.
@@ -217,7 +214,6 @@ class SimulatedDownloadController extends DownloadController
       notifyListeners();
     }
 
-    // Wait a second to simulate a final delay.
     await Future<void>.delayed(const Duration(seconds: 1));
 
     // If the user chose to cancel the download, stop the simulation.

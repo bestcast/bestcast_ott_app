@@ -1,14 +1,10 @@
-// Dart imports:
 import 'dart:convert';
 
-// Flutter imports:
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-// Package imports:
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 
-// Project imports:
 import '../app_config/app_utils.dart';
 import '../authendication/otp_page.dart';
 import '../components/functions/navigation_fun.dart';
@@ -61,7 +57,8 @@ class _LoginPageState extends State<LoginPage> {
         backgroundColor: AppDefaultColors.appColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+          icon:
+              const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -77,7 +74,10 @@ class _LoginPageState extends State<LoginPage> {
               // ! Text Heading
               Text(
                 'Verify your phone number',
-                style: TextStyle(color: AppDefaultColors.white, fontSize: 26, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                    color: AppDefaultColors.white,
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 25),
               // ! Button for sms and whatsapp otp
@@ -92,14 +92,16 @@ class _LoginPageState extends State<LoginPage> {
                   children: [
                     Expanded(
                       child: RadioListTile<SingingCharacter>(
-                        title: Text('Whats App', style: TextStyle(color: Colors.white)),
+                        title: Text('Whats App',
+                            style: TextStyle(color: Colors.white)),
                         activeColor: AppDefaultColors.thikRed,
                         value: SingingCharacter.whatsAppOtp,
                       ),
                     ),
                     Expanded(
                       child: RadioListTile<SingingCharacter>(
-                        title: Text('SMS', style: TextStyle(color: Colors.white)),
+                        title:
+                            Text('SMS', style: TextStyle(color: Colors.white)),
                         activeColor: AppDefaultColors.thikRed,
                         value: SingingCharacter.smsOtp,
                       ),
@@ -107,7 +109,6 @@ class _LoginPageState extends State<LoginPage> {
                   ],
                 ),
               ),
-              // Todo: ----------------------------OTP Country Code ----------------------------------
               // ! Enter Mobile Number
               SizedBox(height: 12.0),
               if (character == SingingCharacter.whatsAppOtp)
@@ -128,11 +129,11 @@ class _LoginPageState extends State<LoginPage> {
                     padding: const EdgeInsets.only(top: 6.0, left: 4.0),
                     child: Text(
                       _errorMessage!,
-                      style: const TextStyle(color: Colors.orange, fontSize: 13),
+                      style:
+                          const TextStyle(color: Colors.orange, fontSize: 13),
                     ),
                   ),
                 ),
-              // Todo: ----------------------------OTP Country Code ----------------------------------
               // ! Send Code Button
               SizedBox(height: 25.0),
               SendButtonWidgets(
@@ -140,13 +141,15 @@ class _LoginPageState extends State<LoginPage> {
                 onPressed: () async {
                   String emailorPhone = mobileNumberController.text.trim();
                   if (formkey.currentState!.validate()) {
-                    if (!appUtils.validateEmail(emailorPhone) && !appUtils.isNumericUsing_tryParse(emailorPhone)) {
+                    if (!appUtils.validateEmail(emailorPhone) &&
+                        !appUtils.isNumericUsing_tryParse(emailorPhone)) {
                       setState(() {
                         _errorMessage = AppStrings.errorMessagePhoneOrEmail;
                       });
                     } else {
                       setState(() => _errorMessage = null);
-                      verifyAccountEmailorPhone(character, getCountryCode.text, emailorPhone);
+                      verifyAccountEmailorPhone(
+                          character, getCountryCode.text, emailorPhone);
                     }
                   } else {
                     setState(() {
@@ -162,7 +165,8 @@ class _LoginPageState extends State<LoginPage> {
                 children: [
                   Text(
                     "New to Bestcast?",
-                    style: TextStyle(color: AppDefaultColors.textLightGray, fontSize: 17),
+                    style: TextStyle(
+                        color: AppDefaultColors.textLightGray, fontSize: 17),
                   ),
                   TextButton(
                     onPressed: () {
@@ -170,39 +174,15 @@ class _LoginPageState extends State<LoginPage> {
                     },
                     child: const Text(
                       'Sign Up',
-                      style: TextStyle(color: AppDefaultColors.appRed, fontSize: 15, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          color: AppDefaultColors.appRed,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
               ),
               if (isLoading) LoadingWidget(),
-
-              // Todo: ----------------------------OTP ACTIVITY NAVIGATION----------------------------------
-              // SizedBox(height: 20),
-              // Row(
-              //   mainAxisAlignment: MainAxisAlignment.center,
-              //   children: [
-              //     Text(
-              //       "Go to",
-              //       style: TextStyle(
-              //           color: AppDefaultColors.textLightGray, fontSize: 17),
-              //     ),
-              //     TextButton(
-              //       onPressed: () {
-              //         AuthNavigator.navigateWithFade(
-              //             context, OTPactivity(otpEmailorPhone: "7545808885"));
-              //       },
-              //       child: const Text(
-              //         'OTP PAGE',
-              //         style: TextStyle(
-              //             color: AppDefaultColors.appRed,
-              //             fontSize: 15,
-              //             fontWeight: FontWeight.bold),
-              //       ),
-              //     ),
-              //   ],
-              // ),
-              // Todo: ----------------------------OTP ACTIVITY NAVIGATION----------------------------------
             ],
           ),
         ),
@@ -210,27 +190,40 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  void verifyAccountEmailorPhone(SingingCharacter? character, String countryCode, String input) async {
+  void verifyAccountEmailorPhone(
+      SingingCharacter? character, String countryCode, String input) async {
     setState(() => isLoading = true);
 
     try {
       final otpMessageType = _getOtpType(character);
-      countryCode = (countryCode.isEmpty || otpMessageType == "sms") ? "+91" : countryCode;
+      countryCode = (countryCode.isEmpty || otpMessageType == "sms")
+          ? "+91"
+          : countryCode;
 
-      final postValues = {'email': input, "otp_message_type": otpMessageType, "country_code": countryCode};
-      final response = await ApiServices().postRequest(AppConfig.sendOtp, postValues);
+      final postValues = {
+        'email': input,
+        "otp_message_type": otpMessageType,
+        "country_code": countryCode
+      };
+      final response =
+          await ApiServices().postRequest(AppConfig.sendOtp, postValues);
       final jsonResponse = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
         final status = jsonResponse['status'];
 
         if (status == "success") {
-          AuthNavigator.navigateWithFade(context,
-              OTPactivity(otpEmailorPhone: input, getOtpMessageType: otpMessageType, getCountryCode: countryCode));
+          AuthNavigator.navigateWithFade(
+              context,
+              OTPactivity(
+                  otpEmailorPhone: input,
+                  getOtpMessageType: otpMessageType,
+                  getCountryCode: countryCode));
         } else {
           setState(() => _errorMessage = jsonResponse['message']);
         }
-      } else if (response.statusCode == 201 && jsonResponse['status'] == "error") {
+      } else if (response.statusCode == 201 &&
+          jsonResponse['status'] == "error") {
         setState(() => _errorMessage = jsonResponse['message']);
       } else {
         print("Error: $response");

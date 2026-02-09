@@ -1,7 +1,5 @@
-// Flutter imports:
 import 'package:flutter/material.dart';
 
-// Project imports:
 import 'app_default_colors.dart';
 
 class IconCardBackgroundView extends StatelessWidget {

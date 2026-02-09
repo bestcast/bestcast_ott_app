@@ -1,15 +1,11 @@
-// Dart imports:
 import 'dart:io';
 
-// Flutter imports:
 import 'package:flutter/material.dart';
 
-// Package imports:
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Project imports:
 import 'package:bestcaststudios/download_files/download_movie_model.dart';
 import '../app_config/app_preferences.dart';
 import '../app_config/app_utils.dart';
@@ -33,26 +29,6 @@ class _DownloadMovieFilesState extends State<DownloadMovieFiles> {
   final dbHelper = DatabaseHelper();
   final AppUtils appUtils = AppUtils();
 
-  final String _downloadUrl = "";
-  final String _loadTrailerUrl = "";
-  String _id = "";
-  String _email = "";
-  String _phone = "";
-  String _name = "";
-  String _firstname = "";
-  String _lastname = "";
-  String _dob = "";
-  String _gender = "";
-  String _plan = "";
-  String _plan_expiry = "";
-  String _photo = "";
-  String _otp = "";
-  String _tvcode = "";
-  String _referal_code = "";
-  String _credits_used = "";
-  String _refferer = "";
-  String _token = "";
-
   String profileName = "";
   String profilePicture = "";
   String profileID = "";
@@ -63,10 +39,8 @@ class _DownloadMovieFilesState extends State<DownloadMovieFiles> {
   @override
   void initState() {
     super.initState();
-    // SystemChrome.setPreferredOrientations([
     //   DeviceOrientation.portraitUp,
     //   DeviceOrientation.portraitDown,
-    // ]);
 
     getInitalValue();
   }
@@ -74,29 +48,10 @@ class _DownloadMovieFilesState extends State<DownloadMovieFiles> {
   Future<void> getInitalValue() async {
     final pref = await SharedPreferences.getInstance();
     setState(() {
-      _id = pref.getString(AppPreferences.id) ?? '';
-      _email = pref.getString(AppPreferences.email) ?? '';
-      _phone = pref.getString(AppPreferences.phone) ?? '';
-      _name = pref.getString(AppPreferences.name) ?? '';
-      _firstname = pref.getString(AppPreferences.firstname) ?? '';
-      _lastname = pref.getString(AppPreferences.lastname) ?? '';
-      _dob = pref.getString(AppPreferences.dob) ?? '';
-      _gender = pref.getString(AppPreferences.gender) ?? '';
-      _plan = pref.getString(AppPreferences.plan) ?? '';
-      _plan_expiry = pref.getString(AppPreferences.plan_expiry) ?? '';
-      _photo = pref.getString(AppPreferences.photo) ?? '';
-      _otp = pref.getString(AppPreferences.otp) ?? '';
-      _tvcode = pref.getString(AppPreferences.tvcode) ?? '';
-      _referal_code = pref.getString(AppPreferences.referal_code) ?? '';
-      _credits_used = pref.getString(AppPreferences.credits_used) ?? '';
-      _refferer = pref.getString(AppPreferences.refferer) ?? '';
-      _token = pref.getString(AppPreferences.token) ?? '';
-
       profileName = pref.getString(AppPreferences.profileName) ?? '';
       profilePicture = pref.getString(AppPreferences.profilePicture) ?? '';
       profileID = pref.getString(AppPreferences.profileID) ?? '';
       profilePictureID = pref.getString(AppPreferences.profilePictureID) ?? '';
-      // movieID = pref.getString(AppPreferences.profilePictureID) ?? '';
     });
 
     getDownloadMovieDetails();
@@ -159,7 +114,6 @@ class _DownloadMovieFilesState extends State<DownloadMovieFiles> {
                                 backgroundColor: AppDefaultColors.appRed,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10),
-                                  // borders: Border.all(width: 1, color: Colors.grey),
                                 ),
                               ),
                               onPressed: () {
@@ -214,19 +168,6 @@ class _DownloadMovieFilesState extends State<DownloadMovieFiles> {
                                                         .thumnail
                                                         .toString(),
                                               )));
-                                  // Navigator.push(
-                                  //     context,
-                                  //     MaterialPageRoute(
-                                  //         builder: (context) =>
-                                  //             ChewieVideoScreen(
-                                  //               // getMainMovie
-                                  //               //
-                                  //               // Url: moviesDownloadedModel!.moviePath.toString(),
-                                  //               getMainMovieUrl: movieLocalPath,
-                                  //               getMainMovieID: '',
-                                  //               getWatchTime:'0',
-                                  //               playType: 2,
-                                  //             )));
                                 },
                                 child: getDownloadedWidget(
                                     downloadedMovieModel[index]),
@@ -259,20 +200,12 @@ class _DownloadMovieFilesState extends State<DownloadMovieFiles> {
                         image: NetworkImage(
                             moviesDownloadedModel.thumnail.toString()),
                         imageErrorBuilder: (context, error, stackTrace) {
-                          // Return the error image widget
                           return Image.asset('images/default_landscape.jpg');
                         },
                         width: double.infinity,
                         height: double.infinity,
                         fit: BoxFit.cover,
-                      )
-                      // Image.network(
-                      //   width: double.infinity,
-                      //   height: double.infinity,
-                      //   moviesDownloadedModel.thumnail.toString(),
-                      //   fit: BoxFit.cover,
-                      // ),
-                      ),
+                      )),
                 ),
               ),
               Container(
@@ -291,19 +224,6 @@ class _DownloadMovieFilesState extends State<DownloadMovieFiles> {
                   onPressed: () async {
                     String movieLocalPath =
                         moviesDownloadedModel.movieName.toString();
-
-                    // Navigator.push(
-                    //     context,
-                    //     MaterialPageRoute(
-                    //         builder: (context) =>
-                    //             ChewieVideoScreen(
-                    //               // getMainMovieUrl: moviesDownloadedModel!.moviePath.toString(),
-                    //               getMainMovieUrl: movieLocalPath,
-                    //               getMainMovieID: '',
-                    //               getWatchTime:'0',
-                    //               playType: 2,
-                    //             )));
-
                     Navigator.push(
                         context,
                         MaterialPageRoute(

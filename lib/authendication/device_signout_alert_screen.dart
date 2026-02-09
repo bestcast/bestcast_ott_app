@@ -1,16 +1,12 @@
-// Dart imports:
 import 'dart:convert';
 
-// Flutter imports:
 import 'package:flutter/material.dart';
 
-// Package imports:
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-// Project imports:
 import 'package:bestcaststudios/authendication/login_page.dart';
 import '../app_config/app_preferences.dart';
 import '../app_config/app_utils.dart';
@@ -19,6 +15,7 @@ import '../common_files/api_services.dart';
 import '../common_files/app_default_colors.dart';
 import '../common_files/common_widgets.dart';
 
+// ignore: must_be_immutable
 class DeviceSignOutAlertScreen extends StatefulWidget {
   String email = "";
 
@@ -33,36 +30,13 @@ class _DeviceSignOutAlertScreenState extends State<DeviceSignOutAlertScreen> {
   final AppUtils appUtils = AppUtils();
   bool isLoading = false;
   String emailDescription = "";
-  final String _loadUrl = "";
-  String _id = "";
-  String _email = "";
-  String _phone = "";
-  String _name = "";
-  String _firstname = "";
-  String _lastname = "";
-  String _dob = "";
-  String _gender = "";
-  String _plan = "";
-  String _plan_expiry = "";
-  String _photo = "";
-  String _otp = "";
-  String _tvcode = "";
-  String _referal_code = "";
-  String _credits_used = "";
-  String _refferer = "";
   String _token = "";
 
   @override
   void initState() {
     super.initState();
-    // SystemChrome.setPreferredOrientations([
-    //   DeviceOrientation.portraitUp,
-    //   DeviceOrientation.portraitDown,
-    // ]);
-
     String originalString = widget.email;
     String replacement = "*";
-
     List<String> parts = originalString.split('@');
     String username = parts[0];
     String domain = parts[1];
@@ -81,22 +55,6 @@ class _DeviceSignOutAlertScreenState extends State<DeviceSignOutAlertScreen> {
   Future<void> getInitalValue() async {
     final pref = await SharedPreferences.getInstance();
     setState(() {
-      _id = pref.getString(AppPreferences.id) ?? '';
-      _email = pref.getString(AppPreferences.email) ?? '';
-      _phone = pref.getString(AppPreferences.phone) ?? '';
-      _name = pref.getString(AppPreferences.name) ?? '';
-      _firstname = pref.getString(AppPreferences.firstname) ?? '';
-      _lastname = pref.getString(AppPreferences.lastname) ?? '';
-      _dob = pref.getString(AppPreferences.dob) ?? '';
-      _gender = pref.getString(AppPreferences.gender) ?? '';
-      _plan = pref.getString(AppPreferences.plan) ?? '';
-      _plan_expiry = pref.getString(AppPreferences.plan_expiry) ?? '';
-      _photo = pref.getString(AppPreferences.photo) ?? '';
-      _otp = pref.getString(AppPreferences.otp) ?? '';
-      _tvcode = pref.getString(AppPreferences.tvcode) ?? '';
-      _referal_code = pref.getString(AppPreferences.referal_code) ?? '';
-      _credits_used = pref.getString(AppPreferences.credits_used) ?? '';
-      _refferer = pref.getString(AppPreferences.refferer) ?? '';
       _token = pref.getString(AppPreferences.token) ?? '';
     });
   }
@@ -147,8 +105,6 @@ class _DeviceSignOutAlertScreenState extends State<DeviceSignOutAlertScreen> {
                     ),
                   ),
                 ),
-
-                //TODO hide for ios
                 Container(
                   margin:
                       EdgeInsets.only(top: 20, left: 0, right: 0, bottom: 30),
@@ -184,7 +140,6 @@ class _DeviceSignOutAlertScreenState extends State<DeviceSignOutAlertScreen> {
                                 backgroundColor: AppDefaultColors.white,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(5),
-                                  // borders: Border.all(width: 1, color: Colors.grey),
                                 ),
                               ),
                               onPressed: () {
@@ -204,7 +159,6 @@ class _DeviceSignOutAlertScreenState extends State<DeviceSignOutAlertScreen> {
                     ),
                   ),
                 ),
-
                 Container(
                   child: Align(
                     alignment: Alignment.centerRight,
@@ -265,7 +219,6 @@ class _DeviceSignOutAlertScreenState extends State<DeviceSignOutAlertScreen> {
 
             await Future.delayed(Duration(seconds: 3));
 
-            // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginPage(requiredEmail: "")));
             Navigator.pushReplacement(
                 context, MaterialPageRoute(builder: (context) => LoginPage()));
           }

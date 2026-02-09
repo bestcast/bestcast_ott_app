@@ -1,15 +1,11 @@
-// Dart imports:
 import 'dart:convert';
 
-// Flutter imports:
 import 'package:flutter/material.dart';
 
-// Package imports:
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Project imports:
 import 'package:bestcaststudios/register/profile_icon_model.dart';
 import '../app_config/app_preferences.dart';
 import '../app_config/app_utils.dart';
@@ -33,14 +29,6 @@ class _ProfileImageGridState extends State<ProfileImageGrid> {
   final AppUtils appUtils = AppUtils();
   bool isLoading = false;
 
-  final myUser = [
-    "User 1",
-    "User 2",
-    "User 3",
-    "User 4",
-    "Add New",
-  ];
-
   final myImageAndCaption = [
     "images/icon_user1.jpg",
     "images/icon_user2.jpg",
@@ -49,7 +37,6 @@ class _ProfileImageGridState extends State<ProfileImageGrid> {
     "images/icon_add.png",
   ];
 
-  String _id = "";
   String _token = "";
 
   @override
@@ -62,7 +49,6 @@ class _ProfileImageGridState extends State<ProfileImageGrid> {
   Future<void> getInitalValue() async {
     final pref = await SharedPreferences.getInstance();
     setState(() {
-      _id = pref.getString(AppPreferences.id) ?? '';
       _token = pref.getString(AppPreferences.token) ?? '';
     });
 
@@ -77,12 +63,6 @@ class _ProfileImageGridState extends State<ProfileImageGrid> {
 
   void getUserProfileListsTemp() {
     for (int i = 0; i < myImageAndCaption.length; i++) {
-      var enableAddUser = false;
-      if (i == 4) {
-        enableAddUser = true;
-      } else {
-        enableAddUser = false;
-      }
       profileIconModel.add(ProfileIconModel(
         profilePictureID: myImageAndCaption[i],
         profilePictureTitle: myImageAndCaption[i],
@@ -119,13 +99,7 @@ class _ProfileImageGridState extends State<ProfileImageGrid> {
                     return MyGridItem(
                       profileIconModel: profileIconModel[index],
                       onTap: () {
-                        var selectedPic =
-                            profileIconModel[index].profilePicture.toString();
-                        var selectedPicID =
-                            profileIconModel[index].profilePictureID.toString();
-
                         Navigator.pop(context, profileIconModel[index]);
-                        // Navigator.push(context, MaterialPageRoute(builder: (context) => MainScreen()));
                       },
                     );
                   },
@@ -194,7 +168,6 @@ class _ProfileImageGridState extends State<ProfileImageGrid> {
   void dispose() {
     super.dispose();
     isLoading = false;
-    // context.loaderOverlay.hide();
   }
 }
 
@@ -222,7 +195,6 @@ class MyGridItem extends StatelessWidget {
               child: CircleAvatar(
                 backgroundColor: AppDefaultColors.boxDarkGray,
                 // foregroundColor: Colors.green,
-                // backgroundImage: AssetImage('images/loading.gif'),
                 backgroundImage: AssetImage('images/default_profile.jpg'),
                 child: CircleAvatar(
                   radius: 65,

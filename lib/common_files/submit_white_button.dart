@@ -1,7 +1,5 @@
-// Flutter imports:
 import 'package:flutter/material.dart';
 
-// Project imports:
 import 'app_default_colors.dart';
 
 class SubmitWhiteButton extends StatelessWidget {
@@ -16,36 +14,20 @@ class SubmitWhiteButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       height: 40,
-      // child: ElevatedButton.icon(
       //   onPressed: onTap,
-      //   label: Text(
       //     text,
-      //     style: TextStyle(color: AppDefaultColors.darkGray, fontSize: 20, fontWeight: FontWeight.w500),
-      //   ),
-      //   icon: Icon(
       //     _iconData,
       //     color: AppDefaultColors.darkGray,
       //     size: 40.0,
-      //   ),
-      //   style: ElevatedButton.styleFrom(
-      //     // minimumSize: Size(0, 10),
       //     foregroundColor: AppDefaultColors.white,
       //     backgroundColor: Colors.white,
       //     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      //     shape: RoundedRectangleBorder(
-      //       borderRadius: BorderRadius.circular(7),
-      //       side: BorderSide(color: AppDefaultColors.white, width: 1),
-      //       // borders: Border.all(width: 1, color: Colors.grey),
-      //     ),
-      //   ),
-      // ),
 
       child: ElevatedButton(
         onPressed: onTap,
         style: ButtonStyle(
           backgroundColor: WidgetStateProperty.all(Colors.white),
           foregroundColor: WidgetStateProperty.all(Colors.white),
-          // padding: MaterialStateProperty.all(EdgeInsets.symmetric(vertical: 16, horizontal: 24)),
           textStyle: WidgetStateProperty.all(TextStyle(fontSize: 16)),
           shape: WidgetStateProperty.all<RoundedRectangleBorder>(
             RoundedRectangleBorder(

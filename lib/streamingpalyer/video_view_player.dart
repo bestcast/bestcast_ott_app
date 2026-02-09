@@ -1,34 +1,23 @@
-// Dart imports:
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
-// Flutter imports:
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-// Package imports:
 import 'package:encrypt/encrypt.dart' as encrypt;
-import 'package:google_fonts/google_fonts.dart';
 import 'package:helpers/helpers.dart';
 import 'package:native_device_orientation/native_device_orientation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screen_protector/screen_protector.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Project imports:
 import 'package:bestcaststudios/common_files/background_loading_widget.dart';
 import 'package:bestcaststudios/streamingpalyer/video_player_source/video_viewer.dart';
 import '../app_config/app_preferences.dart';
 import '../app_config/appconfig.dart';
 import '../common_files/api_services.dart';
 import '../common_files/app_default_colors.dart';
-
-// import 'package:flutter_windowmanager/flutter_windowmanager.dart';
-
-// import 'package:video_player/video_player.dart';
-// import 'package:video_player_source/video_viewer.dart';
-// import 'package:video_viewer.dart';
 
 /// SUMMARY
 /// 1. Models
@@ -84,29 +73,17 @@ class CustomVideoViewerStyle extends VideoViewerStyle {
           textStyle: context.textTheme.titleMedium,
           playAndPauseStyle:
               PlayAndPauseWidgetStyle(background: context.color.primary),
-          // PlayAndPauseWidgetStyle(background: AppDefaultColors.thikRed),
-          // PlayAndPauseWidgetStyle(background:  Theme.of(context).colorScheme.primary),
-
           progressBarStyle: ProgressBarStyle(
-            // bar: BarStyle.progress(color: AppDefaultColors.thikRed),
             bar: BarStyle.progress(color: context.color.primary),
-            // bar: BarStyle.progress(color: Theme.of(context).colorScheme.primary,),
           ),
           header: Container(
             width: double.infinity,
             padding: kAllPadding,
             child: Headline6(
               movie.title,
-              // style: TextStyle(color: context.textTheme.headlineMedium?.color),
               style: TextStyle(color: AppDefaultColors.white),
             ),
           ),
-          // thumbnail: Stack(children: [
-          //   Positioned.fill(child: MovieImage(movie)),
-          //   Positioned.fill(
-          //     child: Image.network(movie.thumbnail, fit: BoxFit.cover),
-          //   ),
-          // ]),
         );
 }
 
@@ -129,97 +106,10 @@ const BorderRadius kAllBorderRadius = BorderRadius.all(
 //MAIN APLICATION//
 //---------------//
 
-class VideoViewerApp extends StatelessWidget {
-  VideoViewerApp(
-      {super.key,
-      required this.movieTitle,
-      required this.thumbnail,
-      required this.getMainMovieUrl,
-      required this.getMainMovieID,
-      required this.getWatchTime,
-      required this.playType});
-
-  // const MovieVideoViewer(
-  //     this.movie, {Key? key}
-  //     ) : super(key: key);
-
-  // final Movie movie;
-
-  String getMainMovieUrl = "";
-  String movieTitle = "";
-  String thumbnail = "";
-  String getMainMovieID = "";
-  String getWatchTime = "";
-  int playType = 1;
-
-  @override
-  Widget build(BuildContext context) {
-    Misc.setSystemOverlayStyle(
-      statusBarIconBrightness: Brightness.dark,
-      statusBarColor: Colors.transparent,
-    );
-    return MaterialApp(
-      title: '',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        scaffoldBackgroundColor: Color(0xFFf9fbfe),
-        cardColor: Color(0xFFfbfafe),
-        primaryColor: Color(0xFFd81e27),
-        shadowColor: Color(0xFF324754).withOpacity(0.24),
-        textTheme: TextTheme(
-          headlineMedium: GoogleFonts.montserrat(
-            color: Colors.white,
-            fontSize: 34,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.4,
-          ),
-          headlineSmall: GoogleFonts.montserrat(
-            color: Color(0xFF324754),
-            fontSize: 24,
-            fontWeight: FontWeight.w500,
-          ),
-          titleLarge: GoogleFonts.montserrat(
-            color: Color(0xFF324754),
-            fontSize: 20,
-            fontWeight: FontWeight.w500,
-          ),
-          bodyLarge: GoogleFonts.montserrat(
-            color: Color(0xFF324754),
-            fontWeight: FontWeight.w500,
-            fontSize: 16,
-          ),
-          titleMedium: GoogleFonts.montserrat(
-            color: Colors.white,
-            fontSize: 12,
-          ),
-          titleSmall: GoogleFonts.montserrat(
-            color: Color(0xFF819ab1),
-            fontSize: 12,
-          ),
-          labelLarge: GoogleFonts.montserrat(
-            color: Colors.white,
-            letterSpacing: 0.8,
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ),
-      // home: const MainPage(),
-      home: MovieVideoViewer(
-        getMainMovieUrl: getMainMovieUrl,
-        getMainMovieID: getMainMovieID,
-        getWatchTime: getWatchTime,
-        playType: 1,
-        movieTitle: movieTitle,
-        thumbnail: thumbnail,
-      ),
-    );
-  }
-}
-
 //--------------------//
 //VIDEO VIEWER WIDGETS//
 //--------------------//
+// ignore: must_be_immutable
 class MovieVideoViewer extends StatefulWidget {
   MovieVideoViewer(
       {super.key,
@@ -229,12 +119,6 @@ class MovieVideoViewer extends StatefulWidget {
       required this.getMainMovieID,
       required this.getWatchTime,
       required this.playType});
-
-  // const MovieVideoViewer(
-  //     this.movie, {Key? key}
-  //     ) : super(key: key);
-
-  // final Movie movie;
 
   String getMainMovieUrl = "";
   String movieTitle = "";
@@ -249,25 +133,7 @@ class MovieVideoViewer extends StatefulWidget {
 
 class _MovieVideoViewerState extends State<MovieVideoViewer> {
   final VideoViewerController _controller = VideoViewerController();
-  late Timer _timer;
-  final String _downloadUrl = "";
-  final String _loadTrailerUrl = "";
-  String _id = "";
-  String _email = "";
-  String _phone = "";
-  String _name = "";
-  final String _firstname = "";
-  final String _lastname = "";
-  final String _dob = "";
-  final String _gender = "";
-  String _plan = "";
-  String _plan_expiry = "";
-  final String _photo = "";
-  final String _otp = "";
-  String _tvcode = "";
-  String _referal_code = "";
-  String _credits_used = "";
-  String _refferer = "";
+  Timer? _timer;
   String _token = "";
 
   String profileName = "";
@@ -276,7 +142,6 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
   String profilePictureID = "";
 
   bool isSeekDuration = false;
-  late final _decryptedVideo;
   bool enableController = false;
   late File _videoFile;
 
@@ -294,7 +159,6 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
     });
     super.initState();
     ScreenProtector.preventScreenshotOn();
-    // blockScreenShot();
 
     getInitalValue();
     initializeVideo();
@@ -324,9 +188,6 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
       String videoPath = '${appDocDir.path}/${widget.getMainMovieUrl}.mp4';
 
       _videoFile = File(videoPath);
-      // _decryptedVideo = await decryptFile(videFile, AppConfig.encryptionKey, widget.getMainMovieUrl + '.mp4');
-
-      // File videFile = new File(widget.getMainMovieUrl);
     }
   }
 
@@ -371,6 +232,7 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
 
   @override
   void dispose() {
+    _timer?.cancel();
     super.dispose();
     ScreenProtector.preventScreenshotOff();
     SystemChrome.setPreferredOrientations([
@@ -384,16 +246,6 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
   Future<void> getInitalValue() async {
     final pref = await SharedPreferences.getInstance();
     setState(() {
-      _id = pref.getString(AppPreferences.id) ?? '';
-      _email = pref.getString(AppPreferences.email) ?? '';
-      _phone = pref.getString(AppPreferences.phone) ?? '';
-      _name = pref.getString(AppPreferences.name) ?? '';
-      _plan = pref.getString(AppPreferences.plan) ?? '';
-      _plan_expiry = pref.getString(AppPreferences.plan_expiry) ?? '';
-      _tvcode = pref.getString(AppPreferences.tvcode) ?? '';
-      _referal_code = pref.getString(AppPreferences.referal_code) ?? '';
-      _credits_used = pref.getString(AppPreferences.credits_used) ?? '';
-      _refferer = pref.getString(AppPreferences.refferer) ?? '';
       _token = pref.getString(AppPreferences.token) ?? '';
 
       print("_userToken1: $_token");
@@ -440,10 +292,6 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
     });
   }
 
-  // Future<void> blockScreenShot() async {
-  //   await FlutterWindowManager.addFlags(FlutterWindowManager.FLAG_SECURE);
-  // }
-
   void setUserMovies(String token, String profileID, String movieID,
       Map<String, int> postValues) async {
     ApiServices()
@@ -472,7 +320,6 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
     final filePath = '${directory.path}/$outputFileName';
     final outputFile = File(filePath);
 
-    // Convert key to 32 bytes (256 bits)
     final keyBytes = encrypt.Key.fromUtf8(key.padRight(32, '0'));
     final iv = encrypt.IV.fromLength(16);
 
@@ -622,13 +469,11 @@ class _VideoViewerOrientationState extends State<VideoViewerOrientation> {
 
   @override
   void initState() {
-    //TODO enable auto orientation
     _subscription = NativeDeviceOrientationCommunicator()
         .onOrientationChanged()
         .listen(_onOrientationChanged);
     super.initState();
     ScreenProtector.preventScreenshotOn();
-    // widget.controller.openFullScreen();
   }
 
   void _onOrientationChanged(NativeDeviceOrientation orientation) {

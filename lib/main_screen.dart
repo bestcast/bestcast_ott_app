@@ -1,16 +1,12 @@
-// Dart imports:
 import 'dart:convert';
 
-// Flutter imports:
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-// Package imports:
 import 'package:back_button_interceptor/back_button_interceptor.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Project imports:
 import 'package:bestcaststudios/Dashboard/dashboard.dart';
 import 'package:bestcaststudios/notification_activity/notification_screen.dart';
 import 'package:bestcaststudios/profile_screen/profile_mainpage.dart';
@@ -44,8 +40,6 @@ class _MainScreenState extends State<MainScreen> {
     LoginPage()
   ];
 
-  String _token = "";
-
   @override
   void initState() {
     SystemChrome.setPreferredOrientations([
@@ -55,18 +49,9 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
     BackButtonInterceptor.add(myInterceptor);
 
-    // SystemChrome.setPreferredOrientations([
     //   DeviceOrientation.portraitUp,
     //   DeviceOrientation.portraitDown,
-    // ]);
 
-    //TODO will popscope
-    // SystemChannels.platform.setMethodCallHandler((call) async {
-    //   if (call.method == 'SystemNavigator.pop') {
-    //     return onWillPop();
-    //   }
-    //   return false;
-    // });
     getInitalValue();
   }
 
@@ -84,7 +69,6 @@ class _MainScreenState extends State<MainScreen> {
   Future<void> getInitalValue() async {
     final pref = await SharedPreferences.getInstance();
     loggedStatus = pref.getBool(AppPreferences.loggedStatus) ?? false;
-    _token = pref.getString(AppPreferences.token) ?? '';
   }
 
   DateTime oldTime = DateTime.now();
@@ -157,10 +141,8 @@ class _MainScreenState extends State<MainScreen> {
                 _currentIndex = index;
                 _pageIndex = index;
               } else {
-                // getTokenValid(_token,index);
                 if (loggedStatus == false) {
                   if (index == 3) {
-                    // _pageIndex = index + 1;
                     Navigator.push(context,
                         MaterialPageRoute(builder: (context) => LoginPage()));
                   }
@@ -224,44 +206,15 @@ class _MainScreenState extends State<MainScreen> {
           } else {
             _pageIndex = index;
           }
-          // isLoading = false;
         } catch (e) {
-          // isLoading = false;
           print('getTokenExistException:$e');
         }
       } else {
-        // setState(() {
-        //   isLoading = false;
-        // });
         print("geTokenResError: $response");
       }
-
-      // isLoading = false;
     });
-    // isLoading = false;
     setState(() {
       isLoading = false;
     });
-  }
-
-  Future<bool> _onWillPop() async {
-    return (await showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text('Are you sure?'),
-            content: Text('Do you want to exit an App'),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text('No'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: Text('Yes'),
-              ),
-            ],
-          ),
-        )) ??
-        false;
   }
 }

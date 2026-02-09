@@ -1,11 +1,8 @@
-// Flutter imports:
 import 'package:flutter/material.dart';
 
-// Project imports:
 import 'app_default_colors.dart';
 
 class TextEditBackground extends StatelessWidget {
-  // final Function onTap;
   final String text;
   final VoidCallback onTap;
 
@@ -23,7 +20,6 @@ class TextEditBackground extends StatelessWidget {
           backgroundColor: AppDefaultColors.boxDarkGray,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
-            // borders: Border.all(width: 1, color: Colors.grey),
           ),
         ),
         child: Text(

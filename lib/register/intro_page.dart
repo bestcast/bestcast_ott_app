@@ -1,18 +1,14 @@
-// Dart imports:
 import 'dart:convert';
 
-// Flutter imports:
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-// Package imports:
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:email_validator/email_validator.dart';
 import 'package:flutter_image_slideshow/flutter_image_slideshow.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 
-// Project imports:
 import 'package:bestcaststudios/app_config/appconfig.dart';
 import 'package:bestcaststudios/common_files/api_services.dart';
 import 'package:bestcaststudios/common_files/common_widgets.dart';
@@ -92,13 +88,8 @@ class _IntroPageState extends State<IntroPage> {
     );
 
     return Scaffold(
-      // appBar: AppBar(
-      //   title: Container(
-      //     child: const Image(image: AssetImage("images/logo_bestcast.png")),
       //     height: 30,
-      //   ),
       //   backgroundColor: Colors.transparent,
-      // ),
       body: LoaderOverlay(
         child: Form(
           key: formkey,
@@ -129,12 +120,8 @@ class _IntroPageState extends State<IntroPage> {
                       'images/slider_one.jpg',
                       fit: BoxFit.cover,
                     ),
-                    // SliderCardBackgroundView(
-                    //   Container(
                     //     width: double.infinity,
                     //     height: double.infinity,
-                    //   ),
-                    // ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -153,7 +140,6 @@ class _IntroPageState extends State<IntroPage> {
                                   child: Align(
                                     alignment: Alignment.center,
                                     child: Text(
-                                        //TODO enable in android
                                         // "Unlimited\nentertainment,\none low price",
                                         "Unlimited\nentertainment",
                                         style: TextStyle(
@@ -167,7 +153,6 @@ class _IntroPageState extends State<IntroPage> {
                               Container(
                                 alignment: Alignment.center,
                                 child: Text(
-                                    //TODO hide in ios
                                     'All of Bestcast starting at\naffordable price',
                                     // '',
                                     style: TextStyle(color: AppDefaultColors.white, fontSize: 20),
@@ -186,12 +171,8 @@ class _IntroPageState extends State<IntroPage> {
                       'images/slider_two.jpg',
                       fit: BoxFit.cover,
                     ),
-                    // SliderCardBackgroundView(
-                    //   Container(
                     //     width: double.infinity,
                     //     height: double.infinity,
-                    //   ),
-                    // ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -237,12 +218,8 @@ class _IntroPageState extends State<IntroPage> {
                       'images/slider_three.jpg',
                       fit: BoxFit.cover,
                     ),
-                    // SliderCardBackgroundView(
-                    //   Container(
                     //     width: double.infinity,
                     //     height: double.infinity,
-                    //   ),
-                    // ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -328,7 +305,6 @@ class _IntroPageState extends State<IntroPage> {
                         padding: const EdgeInsets.only(top: 10.0),
                         child: GestureDetector(
                           onTap: () {
-                            // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginPage()));
                           },
                           child: Text("LOGIN",
                               style: TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.w600)),
@@ -358,39 +334,15 @@ class _IntroPageState extends State<IntroPage> {
                     "Get Started",
                     onTap: () async {
                       //---------Enable in ios----------
-                      // Navigator.pushReplacement(
                       //     context,
-                      //     MaterialPageRoute(
                       //         builder: (context) =>
-                      //             LoginPage(requiredEmail: "")));
 
-                      // showModalBottomSheet<void>(
                       //   context: context,
-                      //   builder: (BuildContext context) {
-                      //     return SizedBox(
                       //       height: 200,
-                      //       child: Center(
-                      //         child: Column(
                       //           mainAxisAlignment: MainAxisAlignment.center,
-                      //           children: const <Widget>[
-                      //             Text(''),
-                      //             // Padding(
-                      //             //   padding: EdgeInsets.all(15.0),
-                      //             //   child: SubmitRedButton(
                       //             //     "Get Started",
-                      //             //     onTap: () async {
                       //             //
-                      //             //     },
-                      //             //   ),
-                      //             // ),
-                      //           ],
-                      //         ),
-                      //       ),
-                      //     );
-                      //   },
-                      // );
 
-                      //TODO hide for ios
                       //----------------------Hide in ios-------
                       showModalBottomSheet<void>(
                           context: context,
@@ -489,17 +441,13 @@ class _IntroPageState extends State<IntroPage> {
                                               child: SubmitRedButton(
                                                 "GET STARTED",
                                                 onTap: () async {
-                                                  // Navigator.push(context, MaterialPageRoute(builder: (context) => const Dashboard()));
 
                                                   if (await CommonWidget().isInternetConnectivity()) {
                                                     if (formkey.currentState != null &&
                                                         formkey.currentState!.validate()) {
                                                       String userName = userNameController.text;
 
-                                                      // Navigator.push(context, MaterialPageRoute(builder: (context) => CreateAccount(requiredEmail: _userName)));
-                                                      // if (validateEmail(_userName.toString())) {
                                                       if (userName.toString() != "") {
-                                                        // verifyAccountEmail(_userName);
                                                         createAccount("user", userName);
                                                       } else {
                                                         setState(() {
@@ -558,7 +506,6 @@ class _IntroPageState extends State<IntroPage> {
 
   void verifyAccountEmail(String email) async {
     context.loaderOverlay.show();
-    // final postValues = {'email': _email};
     final postValues = {'phone': email};
     ApiServices().postRequest(AppConfig.emailverifyUrl, postValues).then((response) async {
       String jsonsDataString = response.body.toString();
@@ -571,10 +518,8 @@ class _IntroPageState extends State<IntroPage> {
           if (status == "success") {
             context.loaderOverlay.hide();
             Navigator.push(context, MaterialPageRoute(builder: (context) => OTPactivity(otpEmailorPhone: email)));
-            // Navigator.push(context, MaterialPageRoute(builder: (context) => CreateAccount(requiredEmail: _email)));
           } else {
             context.loaderOverlay.hide();
-            // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginPage(requiredEmail: email)));
           }
           context.loaderOverlay.hide();
         } catch (e) {
@@ -584,7 +529,6 @@ class _IntroPageState extends State<IntroPage> {
       } else {
         print("Error: $response");
         context.loaderOverlay.hide();
-        // CommonWidget().showSnackBar(context, ContentType.failure, "Error", "Something went wrong.");
         CommonWidget().showSnackBar(context, ContentType.failure, "Error", response.toString());
       }
       context.loaderOverlay.hide();
@@ -621,8 +565,6 @@ class _IntroPageState extends State<IntroPage> {
             });
             context.loaderOverlay.hide();
             isLoading = false;
-            // appUtils.hideLoaderDialog(context);
-            // CommonWidget().showSnackBar(context, ContentType.failure, "Failed", message.toString());
           }
         } catch (e) {
           print('RegisterError:$e');
@@ -676,7 +618,6 @@ class _IntroPageState extends State<IntroPage> {
 
   bool validateEmail(String email) {
     bool isvalid = EmailValidator.validate(email);
-    // print(isvalid);
     if (isvalid) {
       setState(() {
         _isEmailPhoneValid = true;

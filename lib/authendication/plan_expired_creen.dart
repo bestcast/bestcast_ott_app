@@ -1,12 +1,9 @@
-// Flutter imports:
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-// Package imports:
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-// Project imports:
 import '../app_config/appconfig.dart';
 import '../common_files/app_default_colors.dart';
 
@@ -84,7 +81,6 @@ class _PlanExpiredScreenState extends State<PlanExpiredScreen> {
                       backgroundColor: AppDefaultColors.appRed,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
-                        // borders: Border.all(width: 1, color: Colors.grey),
                       ),
                     ),
                     onPressed: () {

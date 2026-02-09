@@ -1,4 +1,3 @@
-// Project imports:
 import '../../domain/entities/language.dart';
 import '../../domain/entities/styles/video_viewer.dart';
 import '../../domain/entities/volume_control.dart';

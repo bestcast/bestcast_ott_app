@@ -1,7 +1,5 @@
-// Dart imports:
 import 'dart:convert';
 
-// Project imports:
 import 'package:bestcaststudios/Dashboard/Models/Movie.dart';
 
 NoficationMainModel noficationMainModelFromJson(String str) =>

@@ -1,13 +1,9 @@
-// Dart imports:
 import 'dart:async';
 
-// Flutter imports:
 import 'package:flutter/material.dart';
 
-// Package imports:
 import 'package:helpers/helpers.dart';
 
-// Project imports:
 import 'package:bestcaststudios/streamingpalyer/video_player_source/data/repositories/video.dart';
 import 'package:bestcaststudios/streamingpalyer/video_player_source/ui/video_core/video_core.dart';
 

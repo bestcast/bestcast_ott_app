@@ -12,9 +12,9 @@ class CastElement {
   });
 
   factory CastElement.fromJson(Map<String, dynamic> json) => CastElement(
-        group: json["group"].toString() ?? "",
-        groupLabel: json["group_label"].toString() ?? "",
-        groupSlug: json["group_slug"].toString() ?? "",
+        group: json["group"].toString(),
+        groupLabel: json["group_label"].toString(),
+        groupSlug: json["group_slug"].toString(),
         cast: CastCast.fromJson(json["cast"]),
       );
 
@@ -46,13 +46,13 @@ class CastCast {
   });
 
   factory CastCast.fromJson(Map<String, dynamic> json) => CastCast(
-        id: json["id"].toString() ?? "",
-        name: json["name"].toString() ?? "",
-        firstname: json["firstname"].toString() ?? "",
-        lastname: json["lastname"].toString() ?? "",
-        dob: json["dob"].toString() ?? "",
-        gender: json["gender"].toString() ?? "",
-        photo: json["photo"].toString() ?? "",
+        id: json["id"].toString(),
+        name: json["name"].toString(),
+        firstname: json["firstname"].toString(),
+        lastname: json["lastname"].toString(),
+        dob: json["dob"].toString(),
+        gender: json["gender"].toString(),
+        photo: json["photo"].toString(),
       );
 
   Map<String, dynamic> toJson() => {

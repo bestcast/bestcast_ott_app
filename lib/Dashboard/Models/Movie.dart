@@ -1,7 +1,5 @@
-// Dart imports:
 import 'dart:convert';
 
-// Project imports:
 import 'package:bestcaststudios/Dashboard/Models/Usermovies.dart';
 
 Movies moviesFromJson(String str) => Movies.fromJson(json.decode(str));
@@ -43,20 +41,20 @@ class Movies {
       this.usermovies});
 
   factory Movies.fromJson(Map<String, dynamic> json) => Movies(
-        id: json['id'].toString() ?? "",
-        title: json['title'].toString() ?? "",
-        movie_access: json['movie_access'].toString() ?? "",
-        topten: json['topten'].toString() ?? "",
-        trailer: json['trailer'].toString() ?? "",
-        certificate: json['certificate'].toString() ?? "",
-        duration: json['duration'].toString() ?? "",
-        tagText: json['tag_text'].toString() ?? "",
-        publishedDate: json['published_date'].toString() ?? "",
-        userlist: json['userlist'].toString() ?? "",
-        userlike: json['userlike'].toString() ?? "",
-        thumbnail: json['thumbnail'].toString() ?? "",
-        portraitsmall: json['portraitsmall'].toString() ?? "",
-        portrait: json['portrait'].toString() ?? "",
+        id: json['id'].toString(),
+        title: json['title'].toString(),
+        movie_access: json['movie_access'].toString(),
+        topten: json['topten'].toString(),
+        trailer: json['trailer'].toString(),
+        certificate: json['certificate'].toString(),
+        duration: json['duration'].toString(),
+        tagText: json['tag_text'].toString(),
+        publishedDate: json['published_date'].toString(),
+        userlist: json['userlist'].toString(),
+        userlike: json['userlike'].toString(),
+        thumbnail: json['thumbnail'].toString(),
+        portraitsmall: json['portraitsmall'].toString(),
+        portrait: json['portrait'].toString(),
         usermovies: (json['usermovies'] != ""
             ? Usermovies.fromJson(json['usermovies'])
             : null)!,

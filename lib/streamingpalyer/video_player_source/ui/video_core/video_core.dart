@@ -1,15 +1,11 @@
-// Dart imports:
 import 'dart:async';
 
-// Flutter imports:
 import 'package:flutter/material.dart';
 
-// Package imports:
 import 'package:gesture_x_detector/gesture_x_detector.dart';
 import 'package:helpers/helpers.dart';
 import 'package:volume_controller/volume_controller.dart';
 
-// Project imports:
 import 'package:bestcaststudios/streamingpalyer/video_player_source/data/repositories/video.dart';
 import 'package:bestcaststudios/streamingpalyer/video_player_source/domain/bloc/controller.dart';
 import 'package:bestcaststudios/streamingpalyer/video_player_source/domain/entities/volume_control.dart';
@@ -29,7 +25,6 @@ import 'package:bestcaststudios/streamingpalyer/video_player_source/ui/video_cor
 import 'package:bestcaststudios/streamingpalyer/video_player_source/ui/widgets/play_and_pause.dart';
 import 'package:bestcaststudios/streamingpalyer/video_player_source/ui/widgets/transitions.dart';
 
-// import 'package:volume_watcher/volume_watcher.dart';
 
 class VideoViewerCore extends StatefulWidget {
   const VideoViewerCore({super.key});
@@ -82,7 +77,6 @@ class _VideoViewerCoreState extends State<VideoViewerCore> {
       _defaultForwardAmount = metadata.forwardAmount;
       switch (metadata.volumeManager) {
         case VideoViewerVolumeManager.device:
-          //_maxVolume = await VolumeWatcher.getMaxVolume;
           _maxVolume = 1.0;
           break;
         case VideoViewerVolumeManager.video:
@@ -288,32 +282,9 @@ class _VideoViewerCoreState extends State<VideoViewerCore> {
             //VOLUME AND FORWARD GESTURES//
             //---------------------------//
 
-            //TODO enable volume bar controller
             // onMoveUpdate: horizontal || vertical
-            //     ? (MoveEvent details) {
-            //         if (_canListenerMove()) {
-            //           final Offset position = details.localPos;
-            //           final Offset delta = details.localDelta;
-            //           if (_dragInitialDelta == Offset.zero) {
-            //             if (delta.dx.abs() > delta.dy.abs() && horizontal) {
-            //               _dragDirection = Axis.horizontal;
-            //               _forwardDragStart(position);
-            //             } else if (vertical) {
-            //               _dragDirection = Axis.vertical;
-            //               _volumeDragStart();
-            //             }
-            //             _dragInitialDelta = delta;
-            //           }
-            //           switch (_dragDirection) {
             //             case Axis.horizontal:
-            //               if (horizontal) _forwardDragUpdate(position);
-            //               break;
             //             case Axis.vertical:
-            //               if (vertical) _volumeDragUpdate(delta);
-            //               break;
-            //           }
-            //         }
-            //       }
             //     : null,
             //
             onMoveEnd: horizontal || vertical

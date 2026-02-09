@@ -1,17 +1,13 @@
-// Dart imports:
 import 'dart:convert';
 
-// Flutter imports:
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-// Package imports:
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Project imports:
 import 'package:bestcaststudios/common_files/card_view_background.dart';
 import 'package:bestcaststudios/plan_details/subscription_list_model.dart';
 import '../app_config/app_preferences.dart';
@@ -31,14 +27,10 @@ class PlanDetailsPage extends StatefulWidget {
 }
 
 class _PlanDetailsPageState extends State<PlanDetailsPage> {
-  final _razorpay = Razorpay;
 
   final AppUtils appUtils = AppUtils();
   bool isLoading = false;
   List<SubscriptionListModel> subscriptionListModel = [];
-
-  String _id = "";
-  String _email = "";
   String _phone = "";
   String _token = "";
   String _gateWayKey = "";
@@ -157,7 +149,6 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
                         backgroundColor: AppDefaultColors.appRed,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
-                          // borders: Border.all(width: 1, color: Colors.grey),
                         ),
                       ),
                       onPressed: () {
@@ -166,11 +157,9 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
                         var description =
                             subscriptionListModel.title.toString();
                         var planID = subscriptionListModel.id.toString();
-                        // var con = mobi!.title.toString();
 
                         CreateSubscription(_token, planID, subscriptionAmount,
                             description, _phone);
-                        // payRazor(subscriptionAmount, description, _phone);
                       },
                       child: Text(
                         'Buy Plan',
@@ -203,8 +192,6 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
   Future<void> getInitalValue() async {
     final pref = await SharedPreferences.getInstance();
     setState(() {
-      _id = pref.getString(AppPreferences.id) ?? '';
-      _email = pref.getString(AppPreferences.email) ?? '';
       _phone = pref.getString(AppPreferences.phone) ?? '';
       _token = pref.getString(AppPreferences.token) ?? '';
     });
@@ -252,9 +239,7 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
     * 3. Metadata
     * */
 
-    // showAlertDialog(context, "Payment Failed", "");
     appUtils.showToast("Payment Failed.");
-    // showAlertDialog(context, "Payment Failed", "Code: ${response.code}\nDescription: ${response.message}\nMetadata:${response.error.toString()}");
   }
 
   void handlePaymentSuccessResponse(PaymentSuccessResponse response) {
@@ -267,21 +252,12 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
 
     updatetransaction(_token, response.orderId.toString(),
         response.paymentId.toString(), response.signature.toString());
-    // showAlertDialog(context, "Payment Successful", "Payment ID: ${response.paymentId}");
   }
 
   void handleExternalWalletSelected(ExternalWalletResponse response) {
-    // showAlertDialog(context, "External Wallet Selected", "${response.walletName}");
-    // showAlertDialog(context, "Payment Failed", " " "");
-    // appUtils.showToast("Payment Failed.");
   }
 
   void showAlertDialog(BuildContext context, String title, String message) {
-    // set up the buttons
-    Widget continueButton = ElevatedButton(
-      child: const Text("Continue"),
-      onPressed: () {},
-    );
     // set up the AlertDialog
     AlertDialog alert = AlertDialog(
       title: Text(title),
@@ -329,14 +305,11 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
         }
       } else {
         print("PaymentInfoError: $response");
-        // context.loaderOverlay.hide();
         isLoading = false;
-        // CommonWidget().showSnackBar(context, ContentType.failure, "Error", response.toString());
       }
 
       setState(() {
         isLoading = false;
-        // context.loaderOverlay.hide();
       });
     });
   }
@@ -376,7 +349,6 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
         }
       } else {
         print("createSubscriptionError: $response");
-        // context.loaderOverlay.hide();
         isLoading = false;
         CommonWidget().showSnackBar(
             context, ContentType.failure, "Error", response.toString());
@@ -384,7 +356,6 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
 
       setState(() {
         isLoading = false;
-        // context.loaderOverlay.hide();
       });
     });
   }
@@ -471,17 +442,10 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
       print("setuserprofile_Response: $jsonsDataString");
       if (response.statusCode == 200 || response.statusCode == 201) {
         try {
-          // var jsonReponse = jsonDecode(jsonsDataString);
-          // String status = jsonReponse['status'];
 
-          // if (status == "success") {
           appUtils.showToast("Payment Successful");
 
-          // final pref = await SharedPreferences.getInstance();
-          // await pref.setString(AppPreferences.plan_status, "1");
           //
-          // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => MainScreen()));
-          // Navigator.of(context).pop('success');
 
           verifypaymentstatus(token, orderId);
         } catch (e) {
@@ -525,10 +489,7 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
       print("verifypaymentstatus_Response: $jsonsDataString");
       if (response.statusCode == 200 || response.statusCode == 201) {
         try {
-          // var jsonReponse = jsonDecode(jsonsDataString);
-          // String status = jsonReponse['status'];
 
-          // if (status == "success") {
           appUtils.showToast("Payment Successful");
 
           final pref = await SharedPreferences.getInstance();
@@ -536,7 +497,6 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
 
           Navigator.pushReplacement(
               context, MaterialPageRoute(builder: (context) => MainScreen()));
-          // Navigator.of(context).pop('success');
 
           context.loaderOverlay.hide();
         } catch (e) {

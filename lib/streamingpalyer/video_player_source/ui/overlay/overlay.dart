@@ -1,10 +1,7 @@
-// Flutter imports:
 import 'package:flutter/cupertino.dart';
 
-// Package imports:
 import 'package:helpers/helpers/widgets/align.dart';
 
-// Project imports:
 import 'package:bestcaststudios/streamingpalyer/video_player_source/data/repositories/video.dart';
 import 'package:bestcaststudios/streamingpalyer/video_player_source/ui/overlay/widgets/background.dart';
 import 'package:bestcaststudios/streamingpalyer/video_player_source/ui/overlay/widgets/bottom.dart';

@@ -1,4 +1,3 @@
-// Dart imports:
 import 'dart:convert';
 
 NotificationModel moviesModelFromJson(String str) =>
