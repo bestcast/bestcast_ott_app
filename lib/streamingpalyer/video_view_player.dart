@@ -247,6 +247,11 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
             onComplete: () {
               setState(() {
                 _isQuizActive = false;
+                try {
+                  _controller.play();
+                } catch (e) {
+                  print("DEBUG: Error resuming video after quiz: $e");
+                }
                 _currentQuizIndex++;
 
                 // Set timer for next question if available
@@ -260,6 +265,11 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
                       setState(() {
                         print("DEBUG: Activating Next Question!");
                         _isQuizActive = true;
+                        try {
+                          _controller.pause();
+                        } catch (e) {
+                          print("DEBUG: Error pausing video for quiz: $e");
+                        }
                       });
                     } else {
                       print("DEBUG: Quiz Timer Fired but aborted: mounted=$mounted, quizEnabled=$_quizEnabled");
@@ -428,8 +438,8 @@ class SerieVideoViewer extends StatefulWidget {
 }
 
 class _SerieVideoViewerState extends State<SerieVideoViewer> {
-  final VideoViewerController controller = VideoViewerController();
   String episode = "";
+  final VideoViewerController controller = VideoViewerController();
   late MapEntry<String, SerieSource> initial;
 
   @override
