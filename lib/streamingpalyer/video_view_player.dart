@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -146,6 +147,7 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
   bool _isQuizActive = false;
   int _currentQuizIndex = 0;
   Timer? _quizGapTimer;
+  QuizResponse? _quizResponse;
 
   // Import for QuizData
   // import 'package:bestcaststudios/streamingpalyer/models/quiz_data.dart';
@@ -239,11 +241,11 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
               : null,
         ),
         if (isSeekDuration) BackgroundLoadingWidget(),
-        if (_isQuizActive && _currentQuizIndex < QuizData.questions.length)
+        if (_quizResponse != null && _isQuizActive && _currentQuizIndex < _quizResponse!.questions.length)
           QuizOverlay(
-            question: QuizData.questions[_currentQuizIndex],
+            question: _quizResponse!.questions[_currentQuizIndex],
             questionIndex: _currentQuizIndex,
-            totalQuestions: QuizData.questions.length,
+            totalQuestions: _quizResponse!.questions.length,
             onComplete: () {
               setState(() {
                 _isQuizActive = false;
@@ -255,7 +257,7 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
                 _currentQuizIndex++;
 
                 // Set timer for next question if available
-                if (_currentQuizIndex < QuizData.questions.length) {
+                if (_quizResponse != null && _currentQuizIndex < _quizResponse!.questions.length) {
                   print("DEBUG: Starting 1 minute gap timer for next question (Index: $_currentQuizIndex)");
                   _quizGapTimer?.cancel();
                   // Debug: Reduced to 10 seconds for faster testing (will revert to 1 minute later)
@@ -310,6 +312,11 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
       profilePicture = pref.getString(AppPreferences.profilePicture) ?? '';
       profileID = pref.getString(AppPreferences.profileID) ?? '';
       profilePictureID = pref.getString(AppPreferences.profilePictureID) ?? '';
+
+      // Fetch Quiz Data
+      if (_token.isNotEmpty && profileID.isNotEmpty) {
+        getQuizData(_token, profileID, widget.getMainMovieID);
+      }
     });
   }
 
@@ -410,21 +417,110 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
           if (mounted) {
             setState(() {
               _quizEnabled = accepted;
-              if (accepted) {
-                _isQuizActive = true;
+              _quizEnabled = accepted;
+              if (accepted && _quizResponse != null && _quizResponse!.questions.isNotEmpty) {
+                // Schedule First Question
+                _currentQuizIndex = 0;
+                final firstQuestion = _quizResponse!.questions[0];
+                int startDelaySeconds = firstQuestion.popupTime;
+                if (startDelaySeconds <= 0) startDelaySeconds = 0; // Immediate if 0
+
+                print("DEBUG: Scheduling 1st Question in $startDelaySeconds seconds (popup_time: ${firstQuestion.popupTime})");
+
+                if (startDelaySeconds == 0) {
+                  _isQuizActive = true;
+                  // Pause immediately if showing immediately
+                  try {
+                    _controller.pause();
+                  } catch (e) {}
+                } else {
+                  _quizGapTimer?.cancel();
+                  _quizGapTimer = Timer(Duration(seconds: startDelaySeconds), () {
+                    if (mounted && _quizEnabled) {
+                      setState(() {
+                        print("DEBUG: 1st Question Timer Fired!");
+                        _isQuizActive = true;
+                        try {
+                          _controller.pause();
+                        } catch (e) {
+                          print("DEBUG: Error pausing: $e");
+                        }
+                      });
+                    }
+                  });
+                }
               }
             });
 
-            // Resume video
+            // Resume video if we are WAITING for the quiz (startDelay > 0)
+            // If startDelay == 0, we already paused above.
+            // BUT strict instruction: "Resume video" block was here.
+            // If we schedule a timer, we should Play video.
+            // If we show immediately, we should Pause.
+
+            // Refined Logic for Play/Pause:
+            // 1. If accepted and StartDelay > 0: Play Video (wait for timer).
+            // 2. If accepted and StartDelay == 0: Pause Video (show quiz).
+            // 3. If !accepted: Play Video.
+
+            bool shouldPlay = !accepted;
+            if (accepted && _quizResponse != null && _quizResponse!.questions.isNotEmpty) {
+              if (_quizResponse!.questions[0].popupTime * 60 > 0) {
+                shouldPlay = true;
+              } else {
+                shouldPlay = false; // Immediate quiz, ensure paused
+              }
+            }
+
             try {
-              _controller.play();
+              if (shouldPlay) {
+                _controller.play();
+              } else {
+                // Ensure paused if immediate
+                _controller.pause();
+              }
             } catch (e) {
-              print("DEBUG: Error resuming video: $e");
+              print("DEBUG: Error handling video state: $e");
             }
           }
         },
       ),
     );
+  }
+
+// # -----------------QUIZ-FETCH-API-----------------
+
+  void getQuizData(String token, String profileID, String movieID) {
+    final postValues = {
+      'movie_id': movieID,
+      'user_id': profileID,
+      'device_token': token.split("|")[1],
+    };
+    ApiServices().postRequestToken(AppConfig.getQuiz, postValues, _token).then((response) {
+      if (response.statusCode == 200) {
+        try {
+          final jsonResponse = jsonDecode(response.body);
+          if (jsonResponse['status'] == 'success') {
+            setState(() {
+              _quizResponse = QuizResponse.fromJson(jsonResponse);
+              print("Quiz loaded: ${_quizResponse?.total} questions");
+              // Check if we should show opt-in (if we missed the initial timer check)
+              if (mounted && !_hasAskedQuiz && enableController) {
+                // Or we can rely on the timer. But if data comes late, we might want to trigger it?
+                // For now, let's just stick to the timer trigger or user manual trigger if we had one.
+                // But wait, if data loads LATER than the timer (which is 3s), the timer check found null data and skipped.
+                // So we SHOULD trigger it here if it hasn't been asked.
+                _showQuizOptIn();
+              }
+            });
+          }
+        } catch (e) {
+          print("Quiz Parse Error: $e");
+        }
+      } else {
+        print("Quiz API Error: ${response.statusCode}");
+      }
+    });
   }
 }
 

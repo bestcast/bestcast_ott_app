@@ -8,12 +8,15 @@ class QuizOverlay extends StatefulWidget {
   final int totalQuestions;
   final VoidCallback onComplete;
 
+  final int durationSeconds;
+
   const QuizOverlay({
     super.key,
     required this.question,
     required this.questionIndex,
     required this.totalQuestions,
     required this.onComplete,
+    this.durationSeconds = 10,
   });
 
   @override
@@ -21,7 +24,7 @@ class QuizOverlay extends StatefulWidget {
 }
 
 class _QuizOverlayState extends State<QuizOverlay> {
-  int _timeLeft = 10;
+  late int _timeLeft;
   Timer? _timer;
   int? _selectedOptionIndex;
 
@@ -32,7 +35,7 @@ class _QuizOverlayState extends State<QuizOverlay> {
   }
 
   void _startTimer() {
-    _timeLeft = 10;
+    _timeLeft = widget.durationSeconds;
     _selectedOptionIndex = null;
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
