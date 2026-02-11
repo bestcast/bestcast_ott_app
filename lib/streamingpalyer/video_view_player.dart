@@ -18,6 +18,9 @@ import '../app_config/app_preferences.dart';
 import '../app_config/appconfig.dart';
 import '../common_files/api_services.dart';
 import '../common_files/app_default_colors.dart';
+import 'components/quiz_overlay.dart';
+import 'components/quiz_start_dialog.dart';
+import 'package:bestcaststudios/streamingpalyer/models/quiz_data.dart';
 
 /// SUMMARY
 /// 1. Models
@@ -71,8 +74,7 @@ class CustomVideoViewerStyle extends VideoViewerStyle {
   CustomVideoViewerStyle({required Movie movie, required BuildContext context})
       : super(
           textStyle: context.textTheme.titleMedium,
-          playAndPauseStyle:
-              PlayAndPauseWidgetStyle(background: context.color.primary),
+          playAndPauseStyle: PlayAndPauseWidgetStyle(background: context.color.primary),
           progressBarStyle: ProgressBarStyle(
             bar: BarStyle.progress(color: context.color.primary),
           ),
@@ -111,14 +113,7 @@ const BorderRadius kAllBorderRadius = BorderRadius.all(
 //--------------------//
 // ignore: must_be_immutable
 class MovieVideoViewer extends StatefulWidget {
-  MovieVideoViewer(
-      {super.key,
-      required this.movieTitle,
-      required this.thumbnail,
-      required this.getMainMovieUrl,
-      required this.getMainMovieID,
-      required this.getWatchTime,
-      required this.playType});
+  MovieVideoViewer({super.key, required this.movieTitle, required this.thumbnail, required this.getMainMovieUrl, required this.getMainMovieID, required this.getWatchTime, required this.playType});
 
   String getMainMovieUrl = "";
   String movieTitle = "";
@@ -145,6 +140,16 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
   bool enableController = false;
   late File _videoFile;
 
+  // Quiz State
+  bool _hasAskedQuiz = false;
+  bool _quizEnabled = false;
+  bool _isQuizActive = false;
+  int _currentQuizIndex = 0;
+  Timer? _quizGapTimer;
+
+  // Import for QuizData
+  // import 'package:bestcaststudios/streamingpalyer/models/quiz_data.dart';
+
   @override
   void initState() {
     SystemChrome.setPreferredOrientations([
@@ -155,6 +160,14 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
     Timer(Duration(seconds: 2), () {
       setState(() {
         enableController = true;
+      });
+      // Trigger Quiz Opt-In separate from controller enable to ensure UI is ready
+      // Future: Replace fixed delay with API configuration or specific timestamp check
+      Future.delayed(const Duration(seconds: 1), () {
+        print("DEBUG: Checking trigger condition: mounted=$mounted, _hasAskedQuiz=$_hasAskedQuiz");
+        if (mounted && !_hasAskedQuiz) {
+          _showQuizOptIn();
+        }
       });
     });
     super.initState();
@@ -226,6 +239,38 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
               : null,
         ),
         if (isSeekDuration) BackgroundLoadingWidget(),
+        if (_isQuizActive && _currentQuizIndex < QuizData.questions.length)
+          QuizOverlay(
+            question: QuizData.questions[_currentQuizIndex],
+            questionIndex: _currentQuizIndex,
+            totalQuestions: QuizData.questions.length,
+            onComplete: () {
+              setState(() {
+                _isQuizActive = false;
+                _currentQuizIndex++;
+
+                // Set timer for next question if available
+                if (_currentQuizIndex < QuizData.questions.length) {
+                  print("DEBUG: Starting 1 minute gap timer for next question (Index: $_currentQuizIndex)");
+                  _quizGapTimer?.cancel();
+                  // Debug: Reduced to 10 seconds for faster testing (will revert to 1 minute later)
+                  _quizGapTimer = Timer(const Duration(seconds: 10), () {
+                    print("DEBUG: Quiz Gap Timer Fired!");
+                    if (mounted && _quizEnabled) {
+                      setState(() {
+                        print("DEBUG: Activating Next Question!");
+                        _isQuizActive = true;
+                      });
+                    } else {
+                      print("DEBUG: Quiz Timer Fired but aborted: mounted=$mounted, quizEnabled=$_quizEnabled");
+                    }
+                  });
+                } else {
+                  print("DEBUG: Quiz sequence finished");
+                }
+              });
+            },
+          ),
       ]),
     );
   }
@@ -233,6 +278,7 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
   @override
   void dispose() {
     _timer?.cancel();
+    _quizGapTimer?.cancel();
     super.dispose();
     ScreenProtector.preventScreenshotOff();
     SystemChrome.setPreferredOrientations([
@@ -265,10 +311,8 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
           final Duration total = _controller.duration;
           var watchingSeconds = currentPostion.inSeconds;
 
-          final percentage =
-              (currentPostion.inSeconds / total.inSeconds * 100).truncate();
-          print(
-              "currentPostion:${currentPostion.inSeconds} - Total: ${total.inSeconds}");
+          final percentage = (currentPostion.inSeconds / total.inSeconds * 100).truncate();
+          print("currentPostion:${currentPostion.inSeconds} - Total: ${total.inSeconds}");
           print("Position percent:  $percentage%");
           print("_userToken: $_token");
           print("_watchingSeconds: $watchingSeconds");
@@ -277,8 +321,7 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
             final postValuesWatched = {
               'watched': 1,
             };
-            setUserMovies(
-                _token, profileID, widget.getMainMovieID, postValuesWatched);
+            setUserMovies(_token, profileID, widget.getMainMovieID, postValuesWatched);
           } else {
             final postValues = {
               'watching': 1,
@@ -292,14 +335,8 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
     });
   }
 
-  void setUserMovies(String token, String profileID, String movieID,
-      Map<String, int> postValues) async {
-    ApiServices()
-        .postRequestToken(
-            "${AppConfig.setUserMovie}$movieID?profile_id=$profileID",
-            postValues,
-            token)
-        .then((response) async {
+  void setUserMovies(String token, String profileID, String movieID, Map<String, int> postValues) async {
+    ApiServices().postRequestToken("${AppConfig.setUserMovie}$movieID?profile_id=$profileID", postValues, token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("setuserMovie_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -314,8 +351,7 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
     });
   }
 
-  Future<File> decryptFile(
-      File encryptedFile, String key, String outputFileName) async {
+  Future<File> decryptFile(File encryptedFile, String key, String outputFileName) async {
     final directory = await getApplicationDocumentsDirectory();
     final filePath = '${directory.path}/$outputFileName';
     final outputFile = File(filePath);
@@ -323,16 +359,62 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
     final keyBytes = encrypt.Key.fromUtf8(key.padRight(32, '0'));
     final iv = encrypt.IV.fromLength(16);
 
-    final encrypter =
-        encrypt.Encrypter(encrypt.AES(keyBytes, mode: encrypt.AESMode.cbc));
+    final encrypter = encrypt.Encrypter(encrypt.AES(keyBytes, mode: encrypt.AESMode.cbc));
 
     final encryptedBytes = await encryptedFile.readAsBytes();
-    final decryptedBytes =
-        encrypter.decryptBytes(encrypt.Encrypted(encryptedBytes), iv: iv);
+    final decryptedBytes = encrypter.decryptBytes(encrypt.Encrypted(encryptedBytes), iv: iv);
 
     await outputFile.writeAsBytes(decryptedBytes);
 
     return outputFile;
+  }
+
+  void _showQuizOptIn() {
+    print("DEBUG: _showQuizOptIn called");
+    if (!mounted) {
+      print("DEBUG: _showQuizOptIn aborted - widget not mounted");
+      return;
+    }
+
+    setState(() {
+      _hasAskedQuiz = true;
+    });
+
+    // Pause video while asking
+    try {
+      if (_controller.isPlaying) {
+        _controller.pause();
+        print("DEBUG: Video paused for quiz");
+      }
+    } catch (e) {
+      print("DEBUG: Error pausing video: $e");
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => QuizStartDialog(
+        onSelection: (bool accepted) {
+          print("DEBUG: Quiz selection: $accepted");
+          Navigator.of(context).pop(); // Close dialog
+          if (mounted) {
+            setState(() {
+              _quizEnabled = accepted;
+              if (accepted) {
+                _isQuizActive = true;
+              }
+            });
+
+            // Resume video
+            try {
+              _controller.play();
+            } catch (e) {
+              print("DEBUG: Error resuming video: $e");
+            }
+          }
+        },
+      ),
+    );
   }
 }
 
@@ -399,8 +481,7 @@ class _SerieVideoViewerState extends State<SerieVideoViewer> {
         enableChat: true,
         onFullscreenFixLandscape: false,
         source: VideoSource.fromNetworkVideoSources(initial.value.source),
-        style: CustomVideoViewerStyle(movie: widget.serie, context: context)
-            .copyWith(
+        style: CustomVideoViewerStyle(movie: widget.serie, context: context).copyWith(
           chatStyle: const VideoViewerChatStyle(chat: SerieChat()),
           settingsStyle: SettingsMenuStyle(
             paddingBetweenMainMenuItems: 10,
@@ -469,18 +550,14 @@ class _VideoViewerOrientationState extends State<VideoViewerOrientation> {
 
   @override
   void initState() {
-    _subscription = NativeDeviceOrientationCommunicator()
-        .onOrientationChanged()
-        .listen(_onOrientationChanged);
+    _subscription = NativeDeviceOrientationCommunicator().onOrientationChanged().listen(_onOrientationChanged);
     super.initState();
     ScreenProtector.preventScreenshotOn();
   }
 
   void _onOrientationChanged(NativeDeviceOrientation orientation) {
     final bool isFullScreen = widget.controller.isFullScreen;
-    final bool isLandscape =
-        orientation == NativeDeviceOrientation.landscapeLeft ||
-            orientation == NativeDeviceOrientation.landscapeRight;
+    final bool isLandscape = orientation == NativeDeviceOrientation.landscapeLeft || orientation == NativeDeviceOrientation.landscapeRight;
     if (!isFullScreen && isLandscape) {
       printGreen("OPEN FULLSCREEN");
       widget.controller.openFullScreen();

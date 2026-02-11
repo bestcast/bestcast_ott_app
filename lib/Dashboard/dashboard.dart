@@ -86,23 +86,16 @@ class _DashboardState extends State<Dashboard> {
         }
 
         if (i == 0) {
-          moviesModel.add(MoviesModel(
-              catogoryID: catID.toString(),
-              movieID: "1",
-              descriptions: "Action"));
+          moviesModel.add(MoviesModel(catogoryID: catID.toString(), movieID: "1", descriptions: "Action"));
         } else {
-          moviesModel.add(MoviesModel(
-              catogoryID: catID.toString(),
-              movieID: "1",
-              descriptions: "Action"));
+          moviesModel.add(MoviesModel(catogoryID: catID.toString(), movieID: "1", descriptions: "Action"));
         }
 
         if (j < 6) {
           j++;
         }
       }
-      moviesCategoryModel.add(MoviesCategoryModel(
-          catogoryID: catID.toString(), moviesModel: moviesModel));
+      moviesCategoryModel.add(MoviesCategoryModel(catogoryID: catID.toString(), moviesModel: moviesModel));
     }
   }
 
@@ -114,8 +107,7 @@ class _DashboardState extends State<Dashboard> {
       DeviceOrientation.portraitDown,
     ]);
     scrollController.addListener(() async {
-      if (scrollController.position.maxScrollExtent ==
-          scrollController.offset) {
+      if (scrollController.position.maxScrollExtent == scrollController.offset) {
         if (await CommonWidget().isInternetConnectivity()) {
           if (hasMoreScroll) {
             print("RefreshEnabled: $_page");
@@ -127,16 +119,14 @@ class _DashboardState extends State<Dashboard> {
         }
       }
 
-      if (scrollController.position.userScrollDirection ==
-          ScrollDirection.reverse) {
+      if (scrollController.position.userScrollDirection == ScrollDirection.reverse) {
         if (_isAppBarVisible) {
           setState(() {
             _isAppBarVisible = false;
             _appBarOpacity = 0.0;
           });
         }
-      } else if (scrollController.position.userScrollDirection ==
-          ScrollDirection.forward) {
+      } else if (scrollController.position.userScrollDirection == ScrollDirection.forward) {
         if (!_isAppBarVisible) {
           setState(() {
             _isAppBarVisible = true;
@@ -174,12 +164,9 @@ class _DashboardState extends State<Dashboard> {
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
         // statusBarColor: Colors.red, // You can use this as well
-        statusBarIconBrightness:
-            Brightness.light, // OR Vice Versa for ThemeMode.dark
-        statusBarBrightness:
-            Brightness.light, // OR Vice Versa for ThemeMode.dark
-        systemNavigationBarColor:
-            Colors.black, // OR Vice Versa for ThemeMode.dark
+        statusBarIconBrightness: Brightness.light, // OR Vice Versa for ThemeMode.dark
+        statusBarBrightness: Brightness.light, // OR Vice Versa for ThemeMode.dark
+        systemNavigationBarColor: Colors.black, // OR Vice Versa for ThemeMode.dark
       ),
     );
 
@@ -202,21 +189,18 @@ class _DashboardState extends State<Dashboard> {
                 ? SingleChildScrollView(
                     controller: scrollController,
                     child: Container(
-                      margin: EdgeInsets.only(
-                          top: 160, left: 15, right: 15, bottom: 10),
+                      margin: EdgeInsets.only(top: 160, left: 15, right: 15, bottom: 10),
                       child: Column(
                         children: [
                           MainCardBackgroundView(
                             Container(
                               child: SizedBox(
-                                height:
-                                    MediaQuery.of(context).size.height - 320,
+                                height: MediaQuery.of(context).size.height - 320,
                                 child: Stack(
                                   children: <Widget>[
                                     SizedBox(
                                         // height: 500,
-                                        height:
-                                            MediaQuery.of(context).size.height,
+                                        height: MediaQuery.of(context).size.height,
                                         width: double.infinity,
                                         //   width: double.infinity,
                                         //   height: double.infinity,
@@ -230,20 +214,14 @@ class _DashboardState extends State<Dashboard> {
                                         //   fit: BoxFit.cover,
 
                                         child: FadeInImage(
-                                          placeholder: AssetImage(
-                                              "images/default_portrate_large.jpg"),
-                                          image:
-                                              NetworkImage(_mainMoviePicture),
-                                          imageErrorBuilder:
-                                              (context, error, stackTrace) {
+                                          placeholder: AssetImage("images/default_portrate_large.jpg"),
+                                          image: NetworkImage(_mainMoviePicture),
+                                          imageErrorBuilder: (context, error, stackTrace) {
                                             // Return the error image widget
-                                            return Image.asset(
-                                                'images/default_portrate_large.jpg');
+                                            return Image.asset('images/default_portrate_large.jpg');
                                           },
                                           // height: 500,
-                                          height: MediaQuery.of(context)
-                                              .size
-                                              .height,
+                                          height: MediaQuery.of(context).size.height,
                                           fit: BoxFit.cover,
                                         )),
                                     Align(
@@ -253,9 +231,7 @@ class _DashboardState extends State<Dashboard> {
                                           child: SizedBox(
                                             width: double.infinity,
                                             // height: 500,
-                                            height: MediaQuery.of(context)
-                                                .size
-                                                .height,
+                                            height: MediaQuery.of(context).size.height,
                                           ),
                                         ),
                                       ),
@@ -264,55 +240,33 @@ class _DashboardState extends State<Dashboard> {
                                       alignment: Alignment.bottomCenter,
                                       child: Container(
                                         // height: 500,
-                                        height:
-                                            MediaQuery.of(context).size.height,
+                                        height: MediaQuery.of(context).size.height,
                                         padding: EdgeInsets.only(bottom: 15),
                                         child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.end,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.center,
+                                          mainAxisAlignment: MainAxisAlignment.end,
+                                          crossAxisAlignment: CrossAxisAlignment.center,
                                           children: [
                                             Padding(
-                                              padding: const EdgeInsets.only(
-                                                  bottom: 20.0),
+                                              padding: const EdgeInsets.only(bottom: 20.0),
                                               child: Text(
                                                 _mainMovieCategory,
-                                                style: const TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 15.0,
-                                                    fontWeight:
-                                                        FontWeight.normal),
+                                                style: const TextStyle(color: Colors.white, fontSize: 15.0, fontWeight: FontWeight.normal),
                                               ),
                                             ),
                                             Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.end,
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.end,
+                                              mainAxisAlignment: MainAxisAlignment.end,
+                                              crossAxisAlignment: CrossAxisAlignment.end,
                                               children: [
                                                 Expanded(
                                                   child: Padding(
-                                                    padding:
-                                                        const EdgeInsets.only(
-                                                            top: 10.0,
-                                                            right: 10,
-                                                            left: 10),
+                                                    padding: const EdgeInsets.only(top: 10.0, right: 10, left: 10),
                                                     child: Container(
-                                                      padding:
-                                                          const EdgeInsets.only(
-                                                              right: 5.0),
+                                                      padding: const EdgeInsets.only(right: 5.0),
                                                       child: SubmitWhiteButton(
                                                         "Play",
                                                         Icons.play_arrow,
                                                         onTap: () async {
-                                                          Navigator.push(
-                                                              context,
-                                                              MaterialPageRoute(
-                                                                  builder: (context) =>
-                                                                      VideoApp(
-                                                                          getMovieID:
-                                                                              _mainMovieId)));
+                                                          Navigator.push(context, MaterialPageRoute(builder: (context) => VideoApp(getMovieID: _mainMovieId)));
                                                         },
                                                       ),
                                                     ),
@@ -320,52 +274,31 @@ class _DashboardState extends State<Dashboard> {
                                                 ),
                                                 Expanded(
                                                   child: Padding(
-                                                    padding:
-                                                        const EdgeInsets.only(
-                                                            top: 10.0,
-                                                            right: 10),
+                                                    padding: const EdgeInsets.only(top: 10.0, right: 10),
                                                     child: Container(
-                                                      padding:
-                                                          const EdgeInsets.only(
-                                                              right: 5.0),
-                                                      child:
-                                                          SubmitTransparentButton(
+                                                      padding: const EdgeInsets.only(right: 5.0),
+                                                      child: SubmitTransparentButton(
                                                         "My List",
-                                                        _isAddedMyList
-                                                            ? Icons.check
-                                                            : Icons.add,
+                                                        _isAddedMyList ? Icons.check : Icons.add,
                                                         onTap: () async {
                                                           if (loggedStatus) {
                                                             setState(() {
                                                               var isMyList = 0;
                                                               if (_isAddedMyList) {
-                                                                _isAddedMyList =
-                                                                    false;
+                                                                _isAddedMyList = false;
                                                                 isMyList = 0;
                                                               } else {
-                                                                _isAddedMyList =
-                                                                    true;
+                                                                _isAddedMyList = true;
                                                                 isMyList = 1;
                                                               }
 
-                                                              final postValues =
-                                                                  {
-                                                                'mylist':
-                                                                    isMyList,
+                                                              final postValues = {
+                                                                'mylist': isMyList,
                                                               };
-                                                              setUserMovies(
-                                                                  _token,
-                                                                  profileID,
-                                                                  _mainMovieId,
-                                                                  postValues);
+                                                              setUserMovies(_token, profileID, _mainMovieId, postValues);
                                                             });
                                                           } else {
-                                                            Navigator.push(
-                                                                context,
-                                                                MaterialPageRoute(
-                                                                    builder:
-                                                                        (context) =>
-                                                                            LoginPage()));
+                                                            Navigator.push(context, MaterialPageRoute(builder: (context) => LoginPage()));
                                                           }
                                                         },
                                                       ),
@@ -391,23 +324,15 @@ class _DashboardState extends State<Dashboard> {
                               // controller: scrollController,
                               itemCount: moviesMainCategoryModelList.length + 1,
                               itemBuilder: (BuildContext context, int index) {
-                                if (index <
-                                    moviesMainCategoryModelList.length) {
+                                if (index < moviesMainCategoryModelList.length) {
                                   return Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Padding(
-                                        padding: const EdgeInsets.only(
-                                            left: 8.0, top: 5.0, bottom: 2.0),
+                                        padding: const EdgeInsets.only(left: 8.0, top: 5.0, bottom: 2.0),
                                         child: Text(
-                                          moviesMainCategoryModelList[index]
-                                              .title
-                                              .toString(),
-                                          style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 15.0,
-                                              fontWeight: FontWeight.w600),
+                                          moviesMainCategoryModelList[index].title.toString(),
+                                          style: const TextStyle(color: Colors.white, fontSize: 15.0, fontWeight: FontWeight.w600),
                                         ),
                                       ),
                                       //               color: Colors.white, fontSize: 15.0,
@@ -422,22 +347,14 @@ class _DashboardState extends State<Dashboard> {
                                             scrollDirection: Axis.horizontal,
                                             shrinkWrap: true,
                                             // itemCount: moviesCategoryModel[index].moviesModel?.length,
-                                            itemCount:
-                                                moviesMainCategoryModelList[
-                                                        index]
-                                                    .movies
-                                                    ?.length,
-                                            itemBuilder: (BuildContext context,
-                                                int index2) {
+                                            itemCount: moviesMainCategoryModelList[index].movies?.length,
+                                            itemBuilder: (BuildContext context, int index2) {
                                               return GestureDetector(
                                                 onTap: () {
                                                   // Navigator.push(context,
                                                 },
                                                 // child: moviesCategoryModel[index].catogoryID == "1"
-                                                child: getMovieCategoryWidget(
-                                                    moviesMainCategoryModelList[
-                                                            index]
-                                                        .movies![index2]),
+                                                child: getMovieCategoryWidget(moviesMainCategoryModelList[index].movies![index2]),
                                               );
                                             }),
                                       ),
@@ -448,9 +365,7 @@ class _DashboardState extends State<Dashboard> {
                                       ? Padding(
                                           padding: const EdgeInsets.all(8.0),
                                           child: const Center(
-                                            child: CircularProgressIndicator(
-                                                strokeWidth: 5,
-                                                color: Colors.red),
+                                            child: CircularProgressIndicator(strokeWidth: 5, color: Colors.red),
                                           ),
                                         )
                                       : Text("");
@@ -484,10 +399,8 @@ class _DashboardState extends State<Dashboard> {
                                     child: Padding(
                                       padding: const EdgeInsets.only(top: 10.0),
                                       child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                                        mainAxisAlignment: MainAxisAlignment.start,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Image.asset(
                                             width: 120,
@@ -505,17 +418,9 @@ class _DashboardState extends State<Dashboard> {
                                     padding: const EdgeInsets.only(top: 10.0),
                                     child: GestureDetector(
                                       onTap: () {
-                                        Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                                builder: (context) =>
-                                                    LoginPage()));
+                                        Navigator.push(context, MaterialPageRoute(builder: (context) => LoginPage()));
                                       },
-                                      child: Text("LOGIN",
-                                          style: TextStyle(
-                                              fontSize: 15,
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w600)),
+                                      child: Text("LOGIN", style: TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.w600)),
                                     ),
                                   ),
                                 ),
@@ -540,16 +445,10 @@ class _DashboardState extends State<Dashboard> {
                                     child: RoundBackgroundView(
                                       "All Movies",
                                       onTap: () async {
-                                        if (await CommonWidget()
-                                            .isInternetConnectivity()) {
-                                          getBannerMoviesDetails(
-                                              _token, profileID, "", "1");
+                                        if (await CommonWidget().isInternetConnectivity()) {
+                                          getBannerMoviesDetails(_token, profileID, "", "1");
                                         } else {
-                                          CommonWidget().showSnackBar(
-                                              context,
-                                              ContentType.warning,
-                                              "Check your internet connection.",
-                                              "");
+                                          CommonWidget().showSnackBar(context, ContentType.warning, "Check your internet connection.", "");
                                         }
                                       },
                                     ),
@@ -613,20 +512,14 @@ class _DashboardState extends State<Dashboard> {
                 child: Stack(children: <Widget>[
                   GestureDetector(
                     onTap: () {
-                      Navigator.push(
-                          context,
-                          CupertinoPageRoute(
-                              builder: (context) => VideoApp(
-                                  getMovieID: moviesModel.id.toString())));
+                      Navigator.push(context, CupertinoPageRoute(builder: (context) => VideoApp(getMovieID: moviesModel.id.toString())));
                     },
                     child: FadeInImage(
-                      placeholder:
-                          AssetImage("images/default_portrate_small.jpg"),
+                      placeholder: AssetImage("images/default_portrate_small.jpg"),
                       image: NetworkImage(moviesModel.portraitsmall.toString()),
                       imageErrorBuilder: (context, error, stackTrace) {
                         // Return the error image widget
-                        return Image.asset('images/default_portrate_small.jpg',
-                            width: 130, fit: BoxFit.cover);
+                        return Image.asset('images/default_portrate_small.jpg', width: 130, fit: BoxFit.cover);
                       },
                       width: 130,
                       height: 170,
@@ -640,8 +533,7 @@ class _DashboardState extends State<Dashboard> {
                       alignment: Alignment.topRight,
                       child: SizedBox(
                         height: 30,
-                        child: const Image(
-                            image: AssetImage("images/free_tag_img.png")),
+                        child: const Image(image: AssetImage("images/free_tag_img.png")),
                       ),
                     ),
                 ]),
@@ -709,14 +601,9 @@ class _DashboardState extends State<Dashboard> {
                 child: Padding(
                   padding: const EdgeInsets.only(left: 4.1),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(0),
-                        topRight: Radius.circular(0),
-                        bottomLeft: Radius.circular(5),
-                        bottomRight: Radius.circular(5)),
+                    borderRadius: BorderRadius.only(topLeft: Radius.circular(0), topRight: Radius.circular(0), bottomLeft: Radius.circular(5), bottomRight: Radius.circular(5)),
                     child: LinearProgressIndicator(
-                      value:
-                          double.parse(moviesModel.lastPlayedTime.toString()),
+                      value: double.parse(moviesModel.lastPlayedTime.toString()),
                       color: AppDefaultColors.thikRed,
                       backgroundColor: AppDefaultColors.textLightGray,
                     ),
@@ -731,10 +618,7 @@ class _DashboardState extends State<Dashboard> {
               moviesModel.title.toString(),
               overflow: TextOverflow.ellipsis,
               maxLines: 2,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 17.0,
-                  fontWeight: FontWeight.w900),
+              style: const TextStyle(color: Colors.white, fontSize: 17.0, fontWeight: FontWeight.w900),
             ),
           ),
         ],
@@ -758,8 +642,7 @@ class _DashboardState extends State<Dashboard> {
           duration: Duration(milliseconds: 500), // Set the animation duration
           opacity: 1.0, // Set the initial opacity to 0 for fade-out effect
           onEnd: () {
-            Navigator.pop(
-                context); // Close the bottom sheet after the animation completes
+            Navigator.pop(context); // Close the bottom sheet after the animation completes
           },
 
           child: SingleChildScrollView(
@@ -771,14 +654,10 @@ class _DashboardState extends State<Dashboard> {
                   children: [
                     Text(
                       "All categories",
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 25.0,
-                          fontWeight: FontWeight.w700),
+                      style: const TextStyle(color: Colors.white, fontSize: 25.0, fontWeight: FontWeight.w700),
                     ),
                     Container(
-                      constraints: BoxConstraints(
-                          maxHeight: MediaQuery.of(context).size.height * 0.8),
+                      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.8),
                       child: ListView.builder(
                         shrinkWrap: true,
                         itemCount: allCategoryItems.length,
@@ -788,27 +667,17 @@ class _DashboardState extends State<Dashboard> {
                               alignment: Alignment.center,
                               child: Text(
                                 allCategoryItems[index].title.toString(),
-                                style: const TextStyle(
-                                    color: AppDefaultColors.textLightGray,
-                                    fontSize: 17.0,
-                                    fontWeight: FontWeight.normal),
+                                style: const TextStyle(color: AppDefaultColors.textLightGray, fontSize: 17.0, fontWeight: FontWeight.normal),
                               ),
                             ),
                             onTap: () async {
                               // Add your onTap logic here
-                              if (await CommonWidget()
-                                  .isInternetConnectivity()) {
-                                getBannerMoviesDetails(_token, profileID,
-                                    allCategoryItems[index].id.toString(), "2");
+                              if (await CommonWidget().isInternetConnectivity()) {
+                                getBannerMoviesDetails(_token, profileID, allCategoryItems[index].id.toString(), "2");
                               } else {
-                                CommonWidget().showSnackBar(
-                                    context,
-                                    ContentType.warning,
-                                    "Check your internet connection.",
-                                    "");
+                                CommonWidget().showSnackBar(context, ContentType.warning, "Check your internet connection.", "");
                               }
-                              Navigator.pop(
-                                  context); // Close the bottom sheet when item is tapped
+                              Navigator.pop(context); // Close the bottom sheet when item is tapped
                             },
                           );
                         },
@@ -837,8 +706,7 @@ class _DashboardState extends State<Dashboard> {
     );
   }
 
-  void getBlockMoviesLits(
-      String token, String profileId, String categoryId, int pageId) async {
+  void getBlockMoviesLits(String token, String profileId, String categoryId, int pageId) async {
     isLoading = true;
     var limit = 0;
     if (scrolleEnabled == false) {
@@ -848,11 +716,7 @@ class _DashboardState extends State<Dashboard> {
     print("PageCount: $_page");
     print("PageCategoryIdCount: $categoryId");
 
-    ApiServices()
-        .getRequestData(
-            "${AppConfig.movieblockslist}1&page=$pageId&profile_id=$profileId&genre_id=$categoryId",
-            token)
-        .then((response) async {
+    ApiServices().getRequestData("${AppConfig.movieblockslist}1&page=$pageId&profile_id=$profileId&genre_id=$categoryId", token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("Movie_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -883,8 +747,7 @@ class _DashboardState extends State<Dashboard> {
                   watchTime: movieData["usermovies"]["watch_time"].toString(),
                   watching: movieData["usermovies"]["watching"].toString(),
                   watched: movieData["usermovies"]["watched"].toString(),
-                  watchedPercent:
-                      movieData["usermovies"]["watched_percent"].toString(),
+                  watchedPercent: movieData["usermovies"]["watched_percent"].toString(),
                   viewed: movieData["usermovies"]["viewed"].toString(),
                 );
               }
@@ -892,12 +755,9 @@ class _DashboardState extends State<Dashboard> {
               String movieAccess = movieData["movie_access"].toString();
               print("_movie_access$movieAccess");
 
-              String thumbnailUrl =
-                  "${AppConfig.BaseUrl}/${movieData["thumbnail"]}";
-              String portraitsmallUrl =
-                  "${AppConfig.BaseUrl}/${movieData["portraitsmall"]}";
-              String portraitUrl =
-                  "${AppConfig.BaseUrl}/${movieData["portrait"]}";
+              String thumbnailUrl = "${AppConfig.BaseUrl}/${movieData["thumbnail"]}";
+              String portraitsmallUrl = "${AppConfig.BaseUrl}/${movieData["portraitsmall"]}";
+              String portraitUrl = "${AppConfig.BaseUrl}/${movieData["portrait"]}";
 
               print("usermoviesStatus${movieData["usermovies"]}");
               print("portraitImageUrl: {$portraitUrl}}");
@@ -958,8 +818,7 @@ class _DashboardState extends State<Dashboard> {
       } else {
         print("Error: $response");
         isLoading = false;
-        CommonWidget().showSnackBar(
-            context, ContentType.failure, "Error", response.toString());
+        CommonWidget().showSnackBar(context, ContentType.failure, "Error", response.toString());
       }
 
       setState(() {
@@ -970,17 +829,13 @@ class _DashboardState extends State<Dashboard> {
     });
   }
 
-  void getBannerMoviesDetails(
-      String token, String profileId, String categoryID, String pageId) async {
+  void getBannerMoviesDetails(String token, String profileId, String categoryID, String pageId) async {
     setState(() {
       isLoading = true;
     });
 
     print("categoryID: $categoryID");
-    ApiServices()
-        .getRequestWithoutToken(
-            "${AppConfig.bannerlist}$pageId&genre_id=$categoryID")
-        .then((response) async {
+    ApiServices().getRequestWithoutToken("${AppConfig.bannerlist}$pageId&genre_id=$categoryID").then((response) async {
       String jsonsDataString = response.body.toString();
       print("Banner_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -999,18 +854,14 @@ class _DashboardState extends State<Dashboard> {
 
           String image = "${AppConfig.BaseUrl}/${data["movies"]["image"]}";
           String medium = "${AppConfig.BaseUrl}/${data["movies"]["medium"]}";
-          String thumbnail =
-              "${AppConfig.BaseUrl}/${data["movies"]["thumbnail"]}";
-          String portraitsmall =
-              "${AppConfig.BaseUrl}/${data["movies"]["portraitsmall"]}";
-          String portrait =
-              "${AppConfig.BaseUrl}/${data["movies"]["portrait"]}";
+          String thumbnail = "${AppConfig.BaseUrl}/${data["movies"]["thumbnail"]}";
+          String portraitsmall = "${AppConfig.BaseUrl}/${data["movies"]["portraitsmall"]}";
+          String portrait = "${AppConfig.BaseUrl}/${data["movies"]["portrait"]}";
 
           String duration = data["movies"]["duration"].toString();
           String durationText = data["movies"]["duration_text"].toString();
           String certificate = data["movies"]["certificate"].toString();
-          String certificateText =
-              data["movies"]["certificate_text"].toString();
+          String certificateText = data["movies"]["certificate_text"].toString();
           String tagText = data["movies"]["tag_text"].toString();
           String topten = data["movies"]["topten"].toString();
           String trailer = data["movies"]["trailer"].toString();
@@ -1083,8 +934,7 @@ class _DashboardState extends State<Dashboard> {
       } else {
         print("Error: $response");
         isLoading = false;
-        CommonWidget().showSnackBar(
-            context, ContentType.failure, "Error", response.toString());
+        CommonWidget().showSnackBar(context, ContentType.failure, "Error", response.toString());
       }
 
       setState(() {
@@ -1095,9 +945,7 @@ class _DashboardState extends State<Dashboard> {
 
   void printWrapped(String text) {
     final pattern = RegExp('.{1,800}'); // 800 is the size of each chunk
-    pattern
-        .allMatches("LongPrint: $text")
-        .forEach((match) => print(match.group(0)));
+    pattern.allMatches("LongPrint: $text").forEach((match) => print(match.group(0)));
   }
 
   void getCastegoryDetails(String token) async {
@@ -1105,9 +953,7 @@ class _DashboardState extends State<Dashboard> {
     setState(() {
       isLoading = true;
     });
-    ApiServices()
-        .getRequestData(AppConfig.genrelist, token)
-        .then((response) async {
+    ApiServices().getRequestData(AppConfig.genrelist, token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("gener_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -1142,8 +988,7 @@ class _DashboardState extends State<Dashboard> {
         setState(() {
           isLoading = false;
         });
-        CommonWidget().showSnackBar(
-            context, ContentType.failure, "Error", response.toString());
+        CommonWidget().showSnackBar(context, ContentType.failure, "Error", response.toString());
       }
 
       setState(() {
@@ -1152,16 +997,10 @@ class _DashboardState extends State<Dashboard> {
     });
   }
 
-  void setUserMovies(String token, String profileID, String movieID,
-      Map<String, int> postValues) async {
+  void setUserMovies(String token, String profileID, String movieID, Map<String, int> postValues) async {
     //   'mylist': _mylist,
 
-    ApiServices()
-        .postRequestToken(
-            "${AppConfig.setUserMovie}$movieID?profile_id=$profileID",
-            postValues,
-            token)
-        .then((response) async {
+    ApiServices().postRequestToken("${AppConfig.setUserMovie}$movieID?profile_id=$profileID", postValues, token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("setuserMovie_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -1177,9 +1016,7 @@ class _DashboardState extends State<Dashboard> {
   }
 
   void getUserDetails(String token) async {
-    ApiServices()
-        .postRequestTokenWithoutBody(AppConfig.getUserDetails, token)
-        .then((response) async {
+    ApiServices().postRequestTokenWithoutBody(AppConfig.getUserDetails, token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("getUserDetails_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -1188,17 +1025,13 @@ class _DashboardState extends State<Dashboard> {
           String status = jsonReponse['status'];
 
           if (status == "success") {
-            String? planExpiry =
-                jsonReponse['results']['user']['plan_expiry'].toString();
-            String? planStatus =
-                jsonReponse['results']['user']['plan_status'].toString();
-            String? planDeviceStatus =
-                jsonReponse['results']['user']['plan_device_status'].toString();
+            String? planExpiry = jsonReponse['results']['user']['plan_expiry'].toString();
+            String? planStatus = jsonReponse['results']['user']['plan_status'].toString();
+            String? planDeviceStatus = jsonReponse['results']['user']['plan_device_status'].toString();
 
             final pref = await SharedPreferences.getInstance();
             await pref.setString(AppPreferences.plan_expiry, planExpiry);
-            await pref.setString(
-                AppPreferences.plan_device_status, planDeviceStatus);
+            await pref.setString(AppPreferences.plan_device_status, planDeviceStatus);
             await pref.setString(AppPreferences.plan_status, planStatus);
           } else {
             if (status == "error") {
@@ -1218,9 +1051,7 @@ class _DashboardState extends State<Dashboard> {
     setState(() {
       isLoading = true;
     });
-    ApiServices()
-        .postRequestTokenWithoutBody(AppConfig.tokenexist, token)
-        .then((response) async {
+    ApiServices().postRequestTokenWithoutBody(AppConfig.tokenexist, token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("getTokenExist_Response: $jsonsDataString");
       if (response.statusCode == 200) {

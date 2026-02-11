@@ -1,4 +1,6 @@
 {
     "cmake.sourceDirectory": "C:/Users/WINDOWS/Desktop/bestcast_ott_app/linux",
-    "git.ignoreLimitWarning": true
+    "git.ignoreLimitWarning": true,
+    "dart.lineLength": 300,
+    "editor.mouseWheelZoom": true
 }

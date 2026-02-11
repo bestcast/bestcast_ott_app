@@ -45,3 +45,4 @@ app.*.map.json
 
 TODO
 analysis_output.txt
+/Extra/*
