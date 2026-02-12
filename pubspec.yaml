@@ -52,7 +52,8 @@ dependencies:
   connectivity_plus: ^6.1.5
   image: ^4.5.4
   flutter_image_slideshow: ^0.1.6
-  google_fonts: ^8.0.1
+  # google_fonts: ^8.0.1
+  google_fonts: ^6.3.0
   video_player: ^2.10.0
 #  speech_to_text: ^5.1.1
 #  speech_to_text: ^4.2.2
@@ -84,7 +85,9 @@ dependencies:
   razorpay_flutter: ^1.4.0
 
   gesture_x_detector: ^1.1.1
-  helpers: ^1.2.3
+  helpers:
+    path: packages/helpers
+  # helpers: ^1.2.3
   provider: ^6.1.5
   # volume_watcher: ^2.0.1
   volume_controller: ^3.4.0
