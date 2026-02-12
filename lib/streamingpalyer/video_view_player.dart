@@ -19,7 +19,7 @@ import '../app_config/app_preferences.dart';
 import '../app_config/appconfig.dart';
 import '../common_files/api_services.dart';
 import '../common_files/app_default_colors.dart';
-import 'components/quiz_overlay.dart';
+import 'components/quiz_dialog.dart';
 import 'components/quiz_start_dialog.dart';
 import 'package:bestcaststudios/streamingpalyer/models/quiz_data.dart';
 
@@ -392,6 +392,11 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
       print("DEBUG: _showQuizOptIn aborted - widget not mounted");
       return;
     }
+
+    // if (_quizResponse == null || _quizResponse!.questions.isEmpty) {
+    //   print("DEBUG: _showQuizOptIn aborted - No quiz data available");
+    //   return;
+    // }
 
     setState(() {
       _hasAskedQuiz = true;

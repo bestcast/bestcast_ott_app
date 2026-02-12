@@ -68,31 +68,10 @@ class _SearchScreenState extends State<SearchScreen> {
   List<MoviesModel> moviesModel = [];
 
   //------------------Temperery values-------/
-  var thumnailWishPic = [
-    "images/sample_wish_list1.jpg",
-    "images/sample_wish_list2.jpg",
-    "images/sample_wish_list3.jpg",
-    "images/sample_wish_list4.jpg",
-    "images/sample_wish_list5.jpg",
-    "images/sample_wish_list6.jpg"
-  ];
+  var thumnailWishPic = ["images/sample_wish_list1.jpg", "images/sample_wish_list2.jpg", "images/sample_wish_list3.jpg", "images/sample_wish_list4.jpg", "images/sample_wish_list5.jpg", "images/sample_wish_list6.jpg"];
 
-  var thumnailPic = [
-    "images/sample_home_screen.jpg",
-    "images/sample_movie_2.jpg",
-    "images/sample_movie_3.jpg",
-    "images/sample_movie_4.jpg",
-    "images/sample_movie_5.jpg",
-    "images/sample_movie_1.jpg"
-  ];
-  var title = [
-    "Aquaman",
-    "Hanuman",
-    "JOKER",
-    "The Marvel Wonder Women",
-    "Leo",
-    "Captain Miller"
-  ];
+  var thumnailPic = ["images/sample_home_screen.jpg", "images/sample_movie_2.jpg", "images/sample_movie_3.jpg", "images/sample_movie_4.jpg", "images/sample_movie_5.jpg", "images/sample_movie_1.jpg"];
+  var title = ["Aquaman", "Hanuman", "JOKER", "The Marvel Wonder Women", "Leo", "Captain Miller"];
 
   void getNotificationTemp() {
     for (int i = 0; i < 6; i++) {
@@ -110,13 +89,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   void getRecommendedVideosTemp() {
     for (int i = 0; i < 6; i++) {
-      moviesModel.add(MoviesModel(
-          catogoryID: i.toString(),
-          movieID: "1",
-          thumbnailPicture: thumnailPic[i],
-          lastPlayedTime: "00:00",
-          title: title[i],
-          descriptions: "Action"));
+      moviesModel.add(MoviesModel(catogoryID: i.toString(), movieID: "1", thumbnailPicture: thumnailPic[i], lastPlayedTime: "00:00", title: title[i], descriptions: "Action"));
     }
   }
 
@@ -130,10 +103,7 @@ class _SearchScreenState extends State<SearchScreen> {
           appBar: AppBar(
             title: const Text(
               "Search",
-              style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 25.0,
-                  fontWeight: FontWeight.w700),
+              style: TextStyle(color: Colors.white, fontSize: 25.0, fontWeight: FontWeight.w700),
             ),
             backgroundColor: AppDefaultColors.appColor,
           ),
@@ -155,15 +125,13 @@ class _SearchScreenState extends State<SearchScreen> {
                                 borderRadius: BorderRadius.circular(10.0),
                               ),
                               child: Padding(
-                                padding: EdgeInsets.only(
-                                    left: 15, right: 15, top: 5),
+                                padding: EdgeInsets.only(left: 15, right: 15, top: 5),
                                 child: TextFormField(
                                   cursorColor: AppDefaultColors.white,
                                   style: TextStyle(color: Colors.white),
                                   // controller: userNameController,
                                   validator: (txt) {
-                                    WidgetsBinding.instance
-                                        .addPostFrameCallback((_) {
+                                    WidgetsBinding.instance.addPostFrameCallback((_) {
                                       setState(() {
                                         if (txt?.length != 0) {
                                         } else {}
@@ -175,10 +143,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                       border: InputBorder.none,
                                       labelText: 'Search for title..',
                                       prefixIcon: IconButton(
-                                        icon: Icon(Icons.search,
-                                            size: 30,
-                                            color:
-                                                AppDefaultColors.textLightGray),
+                                        icon: Icon(Icons.search, size: 30, color: AppDefaultColors.textLightGray),
                                         onPressed: () {},
                                       ),
                                       //   onPressed: _isListening ? null : _toggleListening,
@@ -186,26 +151,19 @@ class _SearchScreenState extends State<SearchScreen> {
                                           ? SizedBox(
                                               height: 30.0,
                                               width: 30.0,
-                                              child: Center(
-                                                  child:
-                                                      CircularProgressIndicator(
-                                                          strokeWidth: 5,
-                                                          color: Colors.red)),
+                                              child: Center(child: CircularProgressIndicator(strokeWidth: 5, color: Colors.red)),
                                             )
                                           : null),
                                   onChanged: (value) {
                                     setState(() {
                                       _searchText = value;
                                       isSearchLoading = true;
-                                      print(
-                                          "SearchTextOnChanged: $_searchText");
+                                      print("SearchTextOnChanged: $_searchText");
 
                                       if (_searchText == "") {
-                                        getUserMoviesList(
-                                            _token, profileID, "");
+                                        getUserMoviesList(_token, profileID, "");
                                       } else {
-                                        getUserSearchMoviesList(
-                                            _token, profileID, _searchText);
+                                        getUserSearchMoviesList(_token, profileID, _searchText);
                                       }
                                     });
                                   },
@@ -235,13 +193,10 @@ class _SearchScreenState extends State<SearchScreen> {
                                   scrollDirection: Axis.horizontal,
                                   shrinkWrap: true,
                                   itemCount: moviesListModel.length,
-                                  itemBuilder:
-                                      (BuildContext context, int index) {
+                                  itemBuilder: (BuildContext context, int index) {
                                     return GestureDetector(
                                       onTap: () {},
-                                      child:
-                                          getMovieRecommendedHorizontalWidget(
-                                              moviesListModel[index]),
+                                      child: getMovieRecommendedHorizontalWidget(moviesListModel[index]),
                                     );
                                   }),
                             )
@@ -250,10 +205,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         padding: const EdgeInsets.all(10.0),
                         child: Text(
                           _recommendedMoviesTitle,
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 20.0,
-                              fontWeight: FontWeight.w700),
+                          style: const TextStyle(color: Colors.white, fontSize: 20.0, fontWeight: FontWeight.w700),
                         ),
                       ),
                       ListView.builder(
@@ -265,8 +217,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               onTap: () {
                                 //     context,
                               },
-                              child:
-                                  getUsersWidget(popularMoviesListModel[index]),
+                              child: getUsersWidget(popularMoviesListModel[index]),
                             );
                           }),
                     ],
@@ -295,14 +246,11 @@ class _SearchScreenState extends State<SearchScreen> {
                         width: 140,
                         alignment: Alignment.center,
                         child: FadeInImage(
-                          placeholder:
-                              AssetImage("images/default_landscape.jpg"),
-                          image:
-                              NetworkImage(popularMovies.thumbnail.toString()),
+                          placeholder: AssetImage("images/default_landscape.jpg"),
+                          image: NetworkImage(popularMovies.thumbnail.toString()),
                           imageErrorBuilder: (context, error, stackTrace) {
                             // Return the error image widget
-                            return Image.asset('images/default_landscape.jpg',
-                                height: 100, fit: BoxFit.cover);
+                            return Image.asset('images/default_landscape.jpg', height: 100, fit: BoxFit.cover);
                           },
                           width: double.infinity,
                           height: double.infinity,
@@ -317,8 +265,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         alignment: Alignment.topRight,
                         child: SizedBox(
                           height: 30,
-                          child: const Image(
-                              image: AssetImage("images/free_tag_img.png")),
+                          child: const Image(image: AssetImage("images/free_tag_img.png")),
                         ),
                       ),
                   ]),
@@ -328,14 +275,10 @@ class _SearchScreenState extends State<SearchScreen> {
             SizedBox(width: 5.0),
             Expanded(
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 5.0, horizontal: 10),
+                padding: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 10),
                 child: Text(
                   popularMovies.title.toString(),
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16.0,
-                      fontWeight: FontWeight.bold),
+                  style: const TextStyle(color: Colors.white, fontSize: 16.0, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -345,14 +288,10 @@ class _SearchScreenState extends State<SearchScreen> {
                 width: 45,
                 height: 45,
                 alignment: Alignment.center,
-                decoration: BoxDecoration(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(50.0),
-                    border: Border.all(color: Colors.white)),
+                decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(50.0), border: Border.all(color: Colors.white)),
                 child: IconButton(
                   padding: EdgeInsets.zero,
-                  icon: Icon(Icons.play_arrow,
-                      size: 30, color: AppDefaultColors.white),
+                  icon: Icon(Icons.play_arrow, size: 30, color: AppDefaultColors.white),
                   onPressed: () {
                     print("notificationModelMovieID: ${popularMovies.id}");
                     Navigator.push(
@@ -399,10 +338,8 @@ class _SearchScreenState extends State<SearchScreen> {
                         height: 150,
                         width: 130,
                         child: FadeInImage(
-                          placeholder:
-                              AssetImage("images/default_landscape.jpg"),
-                          image: NetworkImage(
-                              moviesModel.portraitsmall.toString()),
+                          placeholder: AssetImage("images/default_landscape.jpg"),
+                          image: NetworkImage(moviesModel.portraitsmall.toString()),
                           imageErrorBuilder: (context, error, stackTrace) {
                             // Return the error image widget
                             return Image.asset('images/default_landscape.jpg');
@@ -421,8 +358,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         alignment: Alignment.topRight,
                         child: SizedBox(
                           height: 30,
-                          child: const Image(
-                              image: AssetImage("images/free_tag_img.png")),
+                          child: const Image(image: AssetImage("images/free_tag_img.png")),
                         ),
                       ),
                   ]),
@@ -436,10 +372,7 @@ class _SearchScreenState extends State<SearchScreen> {
               moviesModel.title.toString(),
               overflow: TextOverflow.ellipsis,
               maxLines: 2,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13.0,
-                  fontWeight: FontWeight.w500),
+              style: const TextStyle(color: Colors.white, fontSize: 13.0, fontWeight: FontWeight.w500),
             ),
           ),
           Padding(
@@ -463,9 +396,7 @@ class _SearchScreenState extends State<SearchScreen> {
     setState(() {
       isLoading = true;
     });
-    ApiServices()
-        .getRequestData("${AppConfig.movieblockslist}4&page=1", token)
-        .then((response) async {
+    ApiServices().getRequestData("${AppConfig.movieblockslist}4&page=1", token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("Popular_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -481,17 +412,12 @@ class _SearchScreenState extends State<SearchScreen> {
             for (var movieData in mainData["movies"]) {
               print("_movieID:${movieData["id"]}");
               print("_MovieTitle${movieData['title']}");
-              String thumbnailUrl =
-                  "${AppConfig.BaseUrl}/${movieData["thumbnail"]}";
-              String portraitsmallUrl =
-                  "${AppConfig.BaseUrl}/${movieData["portraitsmall"]}";
-              String portraitUrl =
-                  "${AppConfig.BaseUrl}/${movieData["portrait"]}";
+              String thumbnailUrl = "${AppConfig.BaseUrl}/${movieData["thumbnail"]}";
+              String portraitsmallUrl = "${AppConfig.BaseUrl}/${movieData["portraitsmall"]}";
+              String portraitUrl = "${AppConfig.BaseUrl}/${movieData["portrait"]}";
 
-              RegExp exp =
-                  RegExp(r"<[^>]*>", multiLine: true, caseSensitive: true);
-              String resultTagText =
-                  movieData["tag_text"].replaceAll(exp, '  ');
+              RegExp exp = RegExp(r"<[^>]*>", multiLine: true, caseSensitive: true);
+              String resultTagText = movieData["tag_text"].replaceAll(exp, '  ');
 
               popularMoviesListModel.add(Movies(
                 id: movieData["id"].toString(),
@@ -533,8 +459,7 @@ class _SearchScreenState extends State<SearchScreen> {
       } else {
         print("Error: $response");
         isLoading = false;
-        CommonWidget().showSnackBar(
-            context, ContentType.failure, "Error", response.toString());
+        CommonWidget().showSnackBar(context, ContentType.failure, "Error", response.toString());
       }
 
       setState(() {
@@ -543,13 +468,10 @@ class _SearchScreenState extends State<SearchScreen> {
     });
   }
 
-  void getUserMoviesList(
-      String token, String profileId, String searchType) async {
+  void getUserMoviesList(String token, String profileId, String searchType) async {
     isLoading = true;
     moviesListModel.clear();
-    ApiServices()
-        .getRequestData(AppConfig.popularMovieblockslist, token)
-        .then((response) async {
+    ApiServices().getRequestData(AppConfig.popularMovieblockslist, token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("Movie_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -575,21 +497,16 @@ class _SearchScreenState extends State<SearchScreen> {
                 watchTime: movieData["usermovies"]["watchTime"].toString(),
                 watching: movieData["usermovies"]["watching"].toString(),
                 watched: movieData["usermovies"]["watched"].toString(),
-                watchedPercent:
-                    movieData["usermovies"]["watched_percent"].toString(),
+                watchedPercent: movieData["usermovies"]["watched_percent"].toString(),
                 viewed: movieData["usermovies"]["viewed"].toString(),
               );
             }
 
-            String thumbnailUrl =
-                "${AppConfig.BaseUrl}/${movieData["thumbnail"]}";
-            String portraitsmallUrl =
-                "${AppConfig.BaseUrl}/${movieData["portraitsmall"]}";
-            String portraitUrl =
-                "${AppConfig.BaseUrl}/${movieData["portrait"]}";
+            String thumbnailUrl = "${AppConfig.BaseUrl}/${movieData["thumbnail"]}";
+            String portraitsmallUrl = "${AppConfig.BaseUrl}/${movieData["portraitsmall"]}";
+            String portraitUrl = "${AppConfig.BaseUrl}/${movieData["portrait"]}";
 
-            RegExp exp =
-                RegExp(r"<[^>]*>", multiLine: true, caseSensitive: true);
+            RegExp exp = RegExp(r"<[^>]*>", multiLine: true, caseSensitive: true);
             String resultTagText = movieData["tag_text"].replaceAll(exp, '  ');
 
             print("moviesListModel $thumbnailUrl");
@@ -620,8 +537,7 @@ class _SearchScreenState extends State<SearchScreen> {
       } else {
         print("MyListError: $response");
         isLoading = false;
-        CommonWidget().showSnackBar(
-            context, ContentType.failure, "Error", response.toString());
+        CommonWidget().showSnackBar(context, ContentType.failure, "Error", response.toString());
       }
 
       setState(() {
@@ -630,14 +546,10 @@ class _SearchScreenState extends State<SearchScreen> {
     });
   }
 
-  void getUserMoviesLikes(
-      String token, String profileId, String searchType) async {
+  void getUserMoviesLikes(String token, String profileId, String searchType) async {
     isLoading = true;
     notificationModel.clear();
-    ApiServices()
-        .getRequestData(
-            "${AppConfig.usermovieslist}$profileId&likes=$searchType", token)
-        .then((response) async {
+    ApiServices().getRequestData("${AppConfig.usermovieslist}$profileId&likes=$searchType", token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("MovieLike_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -652,8 +564,7 @@ class _SearchScreenState extends State<SearchScreen> {
           for (var movieData in responseData["data"]) {
             print("MovieLTitle${movieData['title']}");
 
-            String thumbnailUrl =
-                "${AppConfig.BaseUrl}/${movieData["thumbnail"]}";
+            String thumbnailUrl = "${AppConfig.BaseUrl}/${movieData["thumbnail"]}";
 
             notificationModel.add(NotificationModel(
               notificationID: movieData["id"].toString(),
@@ -680,8 +591,7 @@ class _SearchScreenState extends State<SearchScreen> {
       } else {
         print("LikesError: $response");
         isLoading = false;
-        CommonWidget().showSnackBar(
-            context, ContentType.failure, "Error", response.toString());
+        CommonWidget().showSnackBar(context, ContentType.failure, "Error", response.toString());
       }
 
       setState(() {
@@ -690,15 +600,10 @@ class _SearchScreenState extends State<SearchScreen> {
     });
   }
 
-  void getUserSearchMoviesList(
-      String token, String profileId, String searchText) async {
+  void getUserSearchMoviesList(String token, String profileId, String searchText) async {
     isSearchLoading = true;
     moviesListModel.clear();
-    ApiServices()
-        .getRequestData(
-            "${AppConfig.searchMovieslist}$searchText&profile_id=$profileId",
-            token)
-        .then((response) async {
+    ApiServices().getRequestData("${AppConfig.searchMovieslist}$searchText&profile_id=$profileId", token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("SearchMovie_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -723,21 +628,16 @@ class _SearchScreenState extends State<SearchScreen> {
                 watchTime: movieData["usermovies"]["watchTime"].toString(),
                 watching: movieData["usermovies"]["watching"].toString(),
                 watched: movieData["usermovies"]["watched"].toString(),
-                watchedPercent:
-                    movieData["usermovies"]["watchedPercent"].toString(),
+                watchedPercent: movieData["usermovies"]["watchedPercent"].toString(),
                 viewed: movieData["usermovies"]["viewed"].toString(),
               );
             }
 
-            String thumbnailUrl =
-                "${AppConfig.BaseUrl}/${movieData["thumbnail"]}";
-            String portraitsmallUrl =
-                "${AppConfig.BaseUrl}/${movieData["portraitsmall"]}";
-            String portraitUrl =
-                "${AppConfig.BaseUrl}/${movieData["portrait"]}";
+            String thumbnailUrl = "${AppConfig.BaseUrl}/${movieData["thumbnail"]}";
+            String portraitsmallUrl = "${AppConfig.BaseUrl}/${movieData["portraitsmall"]}";
+            String portraitUrl = "${AppConfig.BaseUrl}/${movieData["portrait"]}";
 
-            RegExp exp =
-                RegExp(r"<[^>]*>", multiLine: true, caseSensitive: true);
+            RegExp exp = RegExp(r"<[^>]*>", multiLine: true, caseSensitive: true);
             String resultTagText = movieData["tag_text"].replaceAll(exp, '  ');
 
             print("moviesListModel $thumbnailUrl");
@@ -772,8 +672,7 @@ class _SearchScreenState extends State<SearchScreen> {
       } else {
         print("MyListError: $response");
         isSearchLoading = false;
-        CommonWidget().showSnackBar(
-            context, ContentType.failure, "Error", response.toString());
+        CommonWidget().showSnackBar(context, ContentType.failure, "Error", response.toString());
       }
 
       setState(() {

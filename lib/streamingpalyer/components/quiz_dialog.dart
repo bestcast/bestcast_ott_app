@@ -7,7 +7,6 @@ class QuizOverlay extends StatefulWidget {
   final int questionIndex;
   final int totalQuestions;
   final VoidCallback onComplete;
-
   final int durationSeconds;
 
   const QuizOverlay({
@@ -28,6 +27,8 @@ class _QuizOverlayState extends State<QuizOverlay> {
   Timer? _timer;
   int? _selectedOptionIndex;
 
+  final List<String> optionPrefixes = ["A", "B", "C", "D"];
+
   @override
   void initState() {
     super.initState();
@@ -36,30 +37,26 @@ class _QuizOverlayState extends State<QuizOverlay> {
 
   void _startTimer() {
     _timeLeft = widget.durationSeconds;
-    _selectedOptionIndex = null;
     _timer?.cancel();
+
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_timeLeft > 0) {
         setState(() {
           _timeLeft--;
         });
       } else {
-        _timer?.cancel();
-        // Time is up, complete this question
-        widget.onComplete();
+        _submitAnswer(); // Auto submit when time ends
       }
     });
   }
 
-  void _onOptionSelected(int index) {
-    if (_selectedOptionIndex == null) {
-      setState(() {
-        _selectedOptionIndex = index;
-      });
-      // Verification Requirement: Wait for timer even if selected
-      // Future: Send answer to backend
-      // ApiServices.submitAnswer(questionId, selectedIndex);
-    }
+  void _submitAnswer() {
+    _timer?.cancel();
+
+    // TODO: Send selected answer to backend
+    // ApiServices.submitAnswer(widget.question.id, _selectedOptionIndex);
+
+    widget.onComplete();
   }
 
   @override
@@ -73,31 +70,34 @@ class _QuizOverlayState extends State<QuizOverlay> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Container(
-        color: Colors.black54, // Semi-transparent overlay
-        padding: const EdgeInsets.all(24.0),
+        color: Colors.black.withOpacity(0.7),
+        padding: const EdgeInsets.all(24),
         child: Center(
           child: Container(
             constraints: const BoxConstraints(maxWidth: 600),
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(28),
             decoration: BoxDecoration(
-              color: Colors.black87,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white24),
+              color: const Color(0xFF1E1E1E),
+              borderRadius: BorderRadius.circular(20),
             ),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header: Question Number & Timer
+                  /// Header
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
                         "Question ${widget.questionIndex + 1}/${widget.totalQuestions}",
-                        style: const TextStyle(color: Colors.white70, fontSize: 16),
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                         decoration: BoxDecoration(
                           color: _timeLeft <= 3 ? Colors.redAccent : Colors.blueAccent,
                           borderRadius: BorderRadius.circular(20),
@@ -109,45 +109,67 @@ class _QuizOverlayState extends State<QuizOverlay> {
                       ),
                     ],
                   ),
+
                   const SizedBox(height: 24),
-                  // Question Text
+
+                  /// Question
                   Text(
                     widget.question.question,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w600,
                     ),
-                    textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 32),
-                  // Options
+
+                  const SizedBox(height: 28),
+
+                  /// Options with A, B, C, D
                   ...List.generate(widget.question.options.length, (index) {
                     final isSelected = _selectedOptionIndex == index;
+
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.only(bottom: 14),
                       child: InkWell(
-                        onTap: () => _onOptionSelected(index),
-                        borderRadius: BorderRadius.circular(8),
+                        onTap: () {
+                          setState(() {
+                            _selectedOptionIndex = index;
+                          });
+                        },
+                        borderRadius: BorderRadius.circular(12),
                         child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                           decoration: BoxDecoration(
-                            color: isSelected ? Colors.white24 : Colors.white10,
-                            borderRadius: BorderRadius.circular(8),
+                            color: isSelected ? Colors.blue.withOpacity(0.2) : Colors.white10,
+                            borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: isSelected ? Colors.greenAccent : Colors.white10,
-                              width: isSelected ? 2 : 1,
+                              color: isSelected ? Colors.blueAccent : Colors.white12,
+                              width: 1.5,
                             ),
                           ),
                           child: Row(
                             children: [
-                              Icon(
-                                isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                                color: isSelected ? Colors.greenAccent : Colors.white54,
-                                size: 20,
+                              /// Prefix Circle (A, B, C, D)
+                              Container(
+                                width: 34,
+                                height: 34,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: isSelected ? Colors.blueAccent : Colors.white24,
+                                ),
+                                child: Text(
+                                  optionPrefixes[index],
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
+
                               const SizedBox(width: 16),
+
+                              /// Option Text
                               Expanded(
                                 child: Text(
                                   widget.question.options[index],
@@ -160,6 +182,31 @@ class _QuizOverlayState extends State<QuizOverlay> {
                       ),
                     );
                   }),
+
+                  const SizedBox(height: 30),
+
+                  /// Submit Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _selectedOptionIndex == null ? null : _submitAnswer,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueAccent,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        "Submit Answer",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  )
                 ],
               ),
             ),
