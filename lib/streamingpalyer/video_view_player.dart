@@ -13,28 +13,16 @@ import 'package:path_provider/path_provider.dart';
 import 'package:screen_protector/screen_protector.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:bestcaststudios/common_files/background_loading_widget.dart';
-import 'package:bestcaststudios/streamingpalyer/video_player_source/video_viewer.dart';
+import '../common_files/background_loading_widget.dart';
+import '../streamingpalyer/video_player_source/video_viewer.dart';
+import '../streamingpalyer/models/quiz_data.dart';
 import '../app_config/app_preferences.dart';
 import '../app_config/appconfig.dart';
 import '../common_files/api_services.dart';
 import '../common_files/app_default_colors.dart';
 import 'components/quiz_dialog.dart';
 import 'components/quiz_start_dialog.dart';
-import 'package:bestcaststudios/streamingpalyer/models/quiz_data.dart';
 
-/// SUMMARY
-/// 1. Models
-/// 2. Constants
-/// 3. Main Aplications
-/// 4. Pages
-/// 5. Video Viewer Widgets
-/// 6. Movie Card Widgets
-/// 7. Misc Widgets
-
-//------//
-//MODELS//
-//------//
 enum MovieStyle { card, page }
 
 class Movie {
@@ -90,28 +78,14 @@ class CustomVideoViewerStyle extends VideoViewerStyle {
         );
 }
 
-//---------//
-//CONSTANTS//
-//---------//
 const double kButtonHeight = 48;
 const double kCardAspectRatio = 0.75;
-
 const double kPadding = 20;
 const double kSectionPadding = 40;
 const Margin kAllPadding = Margin.all(kPadding);
 const Margin kAllSectionPadding = Margin.all(kSectionPadding);
+const BorderRadius kAllBorderRadius = BorderRadius.all(Radius.circular(kPadding));
 
-const BorderRadius kAllBorderRadius = BorderRadius.all(
-  Radius.circular(kPadding),
-);
-
-//---------------//
-//MAIN APLICATION//
-//---------------//
-
-//--------------------//
-//VIDEO VIEWER WIDGETS//
-//--------------------//
 // ignore: must_be_immutable
 class MovieVideoViewer extends StatefulWidget {
   MovieVideoViewer({super.key, required this.movieTitle, required this.thumbnail, required this.getMainMovieUrl, required this.getMainMovieID, required this.getWatchTime, required this.playType});
@@ -149,9 +123,6 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
   Timer? _quizGapTimer;
   QuizResponse? _quizResponse;
 
-  // Import for QuizData
-  // import 'package:bestcaststudios/streamingpalyer/models/quiz_data.dart';
-
   @override
   void initState() {
     SystemChrome.setPreferredOrientations([
@@ -163,10 +134,7 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
       setState(() {
         enableController = true;
       });
-      // Trigger Quiz Opt-In separate from controller enable to ensure UI is ready
-      // Future: Replace fixed delay with API configuration or specific timestamp check
       Future.delayed(const Duration(seconds: 1), () {
-        print("DEBUG: Checking trigger condition: mounted=$mounted, _hasAskedQuiz=$_hasAskedQuiz");
         if (mounted && !_hasAskedQuiz) {
           _showQuizOptIn();
         }
@@ -177,8 +145,6 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
 
     getInitalValue();
     initializeVideo();
-    print("GetMainMovieUrl: ${widget.getMainMovieUrl}");
-    print("getWatchTime: ${widget.getWatchTime}");
     if (widget.playType == 1) {
       getSeekPosition();
     }
@@ -222,18 +188,13 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
           child: enableController
               ? VideoViewer(
                   controller: _controller,
-                  onFullscreenFixLandscape: true, //TODO change if need as false
+                  onFullscreenFixLandscape: true,
                   source: {
                     widget.movieTitle: VideoSource(
                       video: widget.playType == 1
-                          ? VideoPlayerController.network(
-                              // "https://bestcast-mobile-download-movies.s3.amazonaws.com/Movies/trailer-720p.mp4",
-                              widget.getMainMovieUrl,
-                            )
-                          : VideoPlayerController.file(
-                              // "https://bestcast-mobile-download-movies.s3.amazonaws.com/Movies/trailer-720p.mp4",
-                              _videoFile,
-                            ),
+                          // ignore: deprecated_member_use
+                          ? VideoPlayerController.network(widget.getMainMovieUrl)
+                          : VideoPlayerController.file(_videoFile),
                     ),
                   },
                   style: CustomVideoViewerStyle(movie: movie, context: context),
@@ -255,7 +216,6 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
                   print("DEBUG: Error resuming video after quiz: $e");
                 }
                 _currentQuizIndex++;
-
                 // Set timer for next question if available
                 if (_quizResponse != null && _currentQuizIndex < _quizResponse!.questions.length) {
                   print("DEBUG: Starting 1 minute gap timer for next question (Index: $_currentQuizIndex)");
@@ -294,8 +254,6 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
     super.dispose();
     ScreenProtector.preventScreenshotOff();
     SystemChrome.setPreferredOrientations([
-      // DeviceOrientation.landscapeRight,
-      // DeviceOrientation.landscapeLeft,
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
@@ -305,9 +263,6 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
     final pref = await SharedPreferences.getInstance();
     setState(() {
       _token = pref.getString(AppPreferences.token) ?? '';
-
-      print("_userToken1: $_token");
-
       profileName = pref.getString(AppPreferences.profileName) ?? '';
       profilePicture = pref.getString(AppPreferences.profilePicture) ?? '';
       profileID = pref.getString(AppPreferences.profileID) ?? '';
@@ -329,10 +284,6 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
           var watchingSeconds = currentPostion.inSeconds;
 
           final percentage = (currentPostion.inSeconds / total.inSeconds * 100).truncate();
-          print("currentPostion:${currentPostion.inSeconds} - Total: ${total.inSeconds}");
-          print("Position percent:  $percentage%");
-          print("_userToken: $_token");
-          print("_watchingSeconds: $watchingSeconds");
 
           if (currentPostion == total) {
             final postValuesWatched = {
@@ -372,36 +323,26 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
     final directory = await getApplicationDocumentsDirectory();
     final filePath = '${directory.path}/$outputFileName';
     final outputFile = File(filePath);
-
     final keyBytes = encrypt.Key.fromUtf8(key.padRight(32, '0'));
     final iv = encrypt.IV.fromLength(16);
-
     final encrypter = encrypt.Encrypter(encrypt.AES(keyBytes, mode: encrypt.AESMode.cbc));
-
     final encryptedBytes = await encryptedFile.readAsBytes();
     final decryptedBytes = encrypter.decryptBytes(encrypt.Encrypted(encryptedBytes), iv: iv);
 
     await outputFile.writeAsBytes(decryptedBytes);
-
     return outputFile;
   }
 
   void _showQuizOptIn() {
-    print("DEBUG: _showQuizOptIn called");
     if (!mounted) {
-      print("DEBUG: _showQuizOptIn aborted - widget not mounted");
       return;
     }
-
-    // if (_quizResponse == null || _quizResponse!.questions.isEmpty) {
-    //   print("DEBUG: _showQuizOptIn aborted - No quiz data available");
-    //   return;
-    // }
-
+    if (_quizResponse == null || _quizResponse!.questions.isEmpty) {
+      return;
+    }
     setState(() {
       _hasAskedQuiz = true;
     });
-
     // Pause video while asking
     try {
       if (_controller.isPlaying) {
@@ -429,9 +370,7 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
                 final firstQuestion = _quizResponse!.questions[0];
                 int startDelaySeconds = firstQuestion.popupTime;
                 if (startDelaySeconds <= 0) startDelaySeconds = 0; // Immediate if 0
-
                 print("DEBUG: Scheduling 1st Question in $startDelaySeconds seconds (popup_time: ${firstQuestion.popupTime})");
-
                 if (startDelaySeconds == 0) {
                   _isQuizActive = true;
                   // Pause immediately if showing immediately
@@ -457,17 +396,6 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
               }
             });
 
-            // Resume video if we are WAITING for the quiz (startDelay > 0)
-            // If startDelay == 0, we already paused above.
-            // BUT strict instruction: "Resume video" block was here.
-            // If we schedule a timer, we should Play video.
-            // If we show immediately, we should Pause.
-
-            // Refined Logic for Play/Pause:
-            // 1. If accepted and StartDelay > 0: Play Video (wait for timer).
-            // 2. If accepted and StartDelay == 0: Pause Video (show quiz).
-            // 3. If !accepted: Play Video.
-
             bool shouldPlay = !accepted;
             if (accepted && _quizResponse != null && _quizResponse!.questions.isNotEmpty) {
               if (_quizResponse!.questions[0].popupTime * 60 > 0) {
@@ -476,7 +404,6 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
                 shouldPlay = false; // Immediate quiz, ensure paused
               }
             }
-
             try {
               if (shouldPlay) {
                 _controller.play();
@@ -494,7 +421,6 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
   }
 
 // # -----------------QUIZ-FETCH-API-----------------
-
   void getQuizData(String token, String profileID, String movieID) {
     final postValues = {
       'movie_id': movieID,
@@ -509,12 +435,7 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
             setState(() {
               _quizResponse = QuizResponse.fromJson(jsonResponse);
               print("Quiz loaded: ${_quizResponse?.total} questions");
-              // Check if we should show opt-in (if we missed the initial timer check)
               if (mounted && !_hasAskedQuiz && enableController) {
-                // Or we can rely on the timer. But if data comes late, we might want to trigger it?
-                // For now, let's just stick to the timer trigger or user manual trigger if we had one.
-                // But wait, if data loads LATER than the timer (which is 3s), the timer check found null data and skipped.
-                // So we SHOULD trigger it here if it hasn't been asked.
                 _showQuizOptIn();
               }
             });
@@ -568,13 +489,11 @@ class _SerieVideoViewerState extends State<SerieVideoViewer> {
       final MapEntry<String, VideoSource> video = sources.entries.first;
 
       controller.closeSettingsMenu();
-
       await controller.changeSource(
         inheritPosition: false, //RESET SPEED TO NORMAL AND POSITION TO ZERO
         source: video.value,
         name: video.key,
       );
-
       episode = episodeName;
       controller.source = sources;
       setState(() {});
@@ -695,7 +614,6 @@ class SerieChat extends StatefulWidget {
 
 class _SerieChatState extends State<SerieChat> {
   late Timer timer;
-
   final ScrollController _scontroller = ScrollController();
   final List<String> _texts = [];
 
@@ -723,6 +641,7 @@ class _SerieChatState extends State<SerieChat> {
   Widget build(BuildContext context) {
     return Container(
       width: 160,
+      // ignore: deprecated_member_use
       color: Colors.black.withOpacity(0.8),
       child: ListView.builder(
         controller: _scontroller,
@@ -768,6 +687,7 @@ class SerieEpisodeThumbnail extends StatelessWidget {
                 filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
                 child: Container(
                   padding: padding,
+                  // ignore: deprecated_member_use
                   color: context.color.card.withOpacity(0.16),
                   child: Subtitle1(title),
                 ),
