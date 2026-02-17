@@ -110,6 +110,7 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
   String profileName = "";
   String profilePicture = "";
   String profileID = "";
+  String userID = "";
   String profilePictureID = "";
 
   bool isSeekDuration = false;
@@ -208,7 +209,7 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
             question: _quizResponse!.questions[_currentQuizIndex],
             questionIndex: _currentQuizIndex,
             totalQuestions: _quizResponse!.questions.length,
-            userId: profileID,
+            userId: userID,
             movieId: widget.getMainMovieID,
             attemptId: _quizResponse?.attemptId ?? "",
             token: _token,
@@ -266,16 +267,18 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
 
   Future<void> getInitalValue() async {
     final pref = await SharedPreferences.getInstance();
+    print("Azmat----------22: ${pref.getString(AppPreferences.id)}");
     setState(() {
       _token = pref.getString(AppPreferences.token) ?? '';
       profileName = pref.getString(AppPreferences.profileName) ?? '';
       profilePicture = pref.getString(AppPreferences.profilePicture) ?? '';
       profileID = pref.getString(AppPreferences.profileID) ?? '';
+      userID = pref.getString(AppPreferences.id) ?? '';
       profilePictureID = pref.getString(AppPreferences.profilePictureID) ?? '';
 
       // Fetch Quiz Data
-      if (_token.isNotEmpty && profileID.isNotEmpty) {
-        getQuizData(_token, profileID, widget.getMainMovieID);
+      if (_token.isNotEmpty && userID.isNotEmpty) {
+        getQuizData(_token, userID, widget.getMainMovieID);
       }
     });
   }
@@ -294,22 +297,22 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
             final postValuesWatched = {
               'watched': 1,
             };
-            setUserMovies(_token, profileID, widget.getMainMovieID, postValuesWatched);
+            setUserMovies(_token, userID, widget.getMainMovieID, postValuesWatched);
           } else {
             final postValues = {
               'watching': 1,
               'watch_time': watchingSeconds,
               'watched_percent': percentage,
             };
-            setUserMovies(_token, profileID, widget.getMainMovieID, postValues);
+            setUserMovies(_token, userID, widget.getMainMovieID, postValues);
           }
         }
       });
     });
   }
 
-  void setUserMovies(String token, String profileID, String movieID, Map<String, int> postValues) async {
-    ApiServices().postRequestToken("${AppConfig.setUserMovie}$movieID?profile_id=$profileID", postValues, token).then((response) async {
+  void setUserMovies(String token, String userID, String movieID, Map<String, int> postValues) async {
+    ApiServices().postRequestToken("${AppConfig.setUserMovie}$movieID?profile_id=$userID", postValues, token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("setuserMovie_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -426,12 +429,13 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
   }
 
 // # -----------------QUIZ-FETCH-API-----------------
-  void getQuizData(String token, String profileID, String movieID) {
+  void getQuizData(String token, String userID, String movieID) {
     final postValues = {
       'movie_id': movieID,
-      'user_id': profileID,
+      'user_id': userID,
       'device_token': token.split("|")[1],
     };
+    print("Azmat----------: ${postValues}");
     ApiServices().postRequestToken(AppConfig.getQuiz, postValues, _token).then((response) {
       if (response.statusCode == 200) {
         try {

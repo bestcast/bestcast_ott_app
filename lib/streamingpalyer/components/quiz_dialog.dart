@@ -36,8 +36,8 @@ class QuizOverlay extends StatefulWidget {
 class _QuizOverlayState extends State<QuizOverlay> {
   late int _timeLeft;
   Timer? _timer;
+  bool _isSubmitting = false;
   int? _selectedOptionIndex;
-
   final List<String> optionPrefixes = ["A", "B", "C", "D"];
 
   @override
@@ -67,18 +67,29 @@ class _QuizOverlayState extends State<QuizOverlay> {
     });
   }
 
-  void _submitAnswer() {
+  Future<void> _submitAnswer() async {
+    if (_isSubmitting) return;
+
     _timer?.cancel();
 
-    submitQuizData(
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    await submitQuizData(
       {
         "question_id": widget.question.id,
-        "option_id": _selectedOptionIndex,
+        "option_id": widget.question.options[_selectedOptionIndex!].id,
         "answered_seconds": widget.durationSeconds - _timeLeft, // Calculate time taken
       },
     );
 
-    widget.onComplete();
+    if (mounted) {
+      setState(() {
+        _isSubmitting = false;
+      });
+      widget.onComplete();
+    }
   }
 
   Future<void> submitQuizData(Map<String, dynamic> answer) async {
@@ -175,11 +186,13 @@ class _QuizOverlayState extends State<QuizOverlay> {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 14),
                       child: InkWell(
-                        onTap: () {
-                          setState(() {
-                            _selectedOptionIndex = index;
-                          });
-                        },
+                        onTap: _isSubmitting
+                            ? null
+                            : () {
+                                setState(() {
+                                  _selectedOptionIndex = index;
+                                });
+                              },
                         borderRadius: BorderRadius.circular(12),
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
@@ -216,7 +229,7 @@ class _QuizOverlayState extends State<QuizOverlay> {
                               /// Option Text
                               Expanded(
                                 child: Text(
-                                  widget.question.options[index],
+                                  widget.question.options[index].name,
                                   style: const TextStyle(color: Colors.white, fontSize: 16),
                                 ),
                               ),
@@ -233,22 +246,32 @@ class _QuizOverlayState extends State<QuizOverlay> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: _selectedOptionIndex == null ? null : _submitAnswer,
+                      onPressed: (_selectedOptionIndex == null || _isSubmitting) ? null : _submitAnswer,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blueAccent,
+                        disabledBackgroundColor: Colors.blueAccent.withOpacity(0.5),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text(
-                        "Submit Answer",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text(
+                              "Submit Answer",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
                   )
                 ],
