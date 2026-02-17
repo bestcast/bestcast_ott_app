@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:bestcaststudios/app_config/appconfig.dart';
+import 'package:bestcaststudios/common_files/api_services.dart';
 import 'package:bestcaststudios/streamingpalyer/models/quiz_data.dart';
 import 'package:flutter/material.dart';
 
@@ -8,6 +11,10 @@ class QuizOverlay extends StatefulWidget {
   final int totalQuestions;
   final VoidCallback onComplete;
   final int durationSeconds;
+  final String userId;
+  final String movieId;
+  final String attemptId;
+  final String token;
 
   const QuizOverlay({
     super.key,
@@ -15,6 +22,10 @@ class QuizOverlay extends StatefulWidget {
     required this.questionIndex,
     required this.totalQuestions,
     required this.onComplete,
+    required this.userId,
+    required this.movieId,
+    required this.attemptId,
+    required this.token,
     this.durationSeconds = 10,
   });
 
@@ -35,6 +46,12 @@ class _QuizOverlayState extends State<QuizOverlay> {
     _startTimer();
   }
 
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
   void _startTimer() {
     _timeLeft = widget.durationSeconds;
     _timer?.cancel();
@@ -53,16 +70,43 @@ class _QuizOverlayState extends State<QuizOverlay> {
   void _submitAnswer() {
     _timer?.cancel();
 
-    // TODO: Send selected answer to backend
-    // ApiServices.submitAnswer(widget.question.id, _selectedOptionIndex);
+    submitQuizData(
+      {
+        "question_id": widget.question.id,
+        "option_id": _selectedOptionIndex,
+        "answered_seconds": widget.durationSeconds - _timeLeft, // Calculate time taken
+      },
+    );
 
     widget.onComplete();
   }
 
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
+  Future<void> submitQuizData(Map<String, dynamic> answer) async {
+    final postValues = {
+      'user_id': widget.userId,
+      'movie_id': widget.movieId,
+      'attempt_id': widget.attemptId,
+      'answer': answer,
+    };
+
+    debugPrint("Submitting Quiz Answer: XXX $postValues");
+
+    try {
+      final response = await ApiServices().postRequestToken(AppConfig.submitQuiz, postValues, widget.token);
+
+      if (response.statusCode != 200) {
+        debugPrint("Quiz API Error: AAA ${response.statusCode} - ${response.body}");
+        return;
+      }
+      final jsonResponse = jsonDecode(response.body);
+      if (jsonResponse['success'] == true || jsonResponse['status'] == 'success') {
+        debugPrint("Quiz Answer Submitted Successfully YYY");
+      } else {
+        debugPrint("Server message: BBB ${jsonResponse['message']}");
+      }
+    } catch (e) {
+      debugPrint("Quiz Submit Error: CCC $e");
+    }
   }
 
   @override

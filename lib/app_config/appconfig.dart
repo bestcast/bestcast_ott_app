@@ -48,5 +48,6 @@ class AppConfig {
   static const String myAccountLoginUrl = "$BaseUrl/accountlogin/";
   static const String forgotPassword = "$BaseUrl/password/reset";
 
-  static const String getQuiz = "${rootUrl}mobilequiz";
+  static const String getQuiz = "${rootUrl}moviequiz";
+  static const String submitQuiz = "${rootUrl}mobilesubmitquiz";
 }

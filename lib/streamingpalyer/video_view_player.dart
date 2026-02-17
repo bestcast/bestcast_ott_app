@@ -22,6 +22,7 @@ import '../common_files/api_services.dart';
 import '../common_files/app_default_colors.dart';
 import 'components/quiz_dialog.dart';
 import 'components/quiz_start_dialog.dart';
+import 'package:flutter/foundation.dart';
 
 enum MovieStyle { card, page }
 
@@ -207,6 +208,10 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
             question: _quizResponse!.questions[_currentQuizIndex],
             questionIndex: _currentQuizIndex,
             totalQuestions: _quizResponse!.questions.length,
+            userId: profileID,
+            movieId: widget.getMainMovieID,
+            attemptId: _quizResponse?.attemptId ?? "",
+            token: _token,
             onComplete: () {
               setState(() {
                 _isQuizActive = false;
@@ -438,6 +443,14 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
               if (mounted && !_hasAskedQuiz && enableController) {
                 _showQuizOptIn();
               }
+              print("API Response Start:--------------");
+              debugPrint(
+                "Quiz loaded: ${jsonResponse['questions']} questions",
+                wrapWidth: 1024,
+              );
+              print("API Response End:--------------");
+              print("Quiz Attempt ID: ${_quizResponse?.attemptId}");
+              debugPrint("Full Quiz Response: $jsonResponse");
             });
           }
         } catch (e) {

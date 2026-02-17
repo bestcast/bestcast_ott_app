@@ -1,11 +1,13 @@
 class QuizResponse {
   final String status;
   final int total;
+  final String attemptId; // Added attemptId
   final List<QuizQuestion> questions;
 
   QuizResponse({
     required this.status,
     required this.total,
+    required this.attemptId,
     required this.questions,
   });
 
@@ -16,6 +18,7 @@ class QuizResponse {
     return QuizResponse(
       status: json['status'] ?? '',
       total: json['total'] ?? 0,
+      attemptId: (json['quiz_attempt_id'] ?? json['attempt_id'])?.toString() ?? '', // Parse attemptId with fallback
       questions: questionsList,
     );
   }
