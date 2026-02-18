@@ -245,6 +245,7 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
                   });
                 } else {
                   print("DEBUG: Quiz sequence finished");
+                  // getQuizResult(_token, userID, widget.getMainMovieID, _quizResponse?.attemptId ?? "");
                 }
               });
             },
@@ -267,7 +268,6 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
 
   Future<void> getInitalValue() async {
     final pref = await SharedPreferences.getInstance();
-    print("Azmat----------22: ${pref.getString(AppPreferences.id)}");
     setState(() {
       _token = pref.getString(AppPreferences.token) ?? '';
       profileName = pref.getString(AppPreferences.profileName) ?? '';
@@ -435,7 +435,6 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
       'user_id': userID,
       'device_token': token.split("|")[1],
     };
-    print("Azmat----------: ${postValues}");
     ApiServices().postRequestToken(AppConfig.getQuiz, postValues, _token).then((response) {
       if (response.statusCode == 200) {
         try {
@@ -464,6 +463,34 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
         print("Quiz API Error: ${response.statusCode}");
       }
     });
+  }
+
+// # -----------------QUIZ-RESULT-API-----------------
+  void getQuizResult(String token, String userID, String movieID, String attemptId) async {
+    final postValues = {
+      'attemptId': attemptId,
+      'tokenEncrypted': token.split("|")[1],
+      'user_id': userID,
+      'movieId': movieID,
+    };
+    print("Post Values: $postValues");
+    try {
+      final response = await ApiServices().postRequestToken(AppConfig.quizResult, postValues, _token);
+
+      if (response.statusCode != 200) {
+        debugPrint("Quiz API Error: AAA ${response.statusCode} - ${response.body}");
+        return;
+      }
+      final jsonResponse = jsonDecode(response.body);
+      if (jsonResponse['success'] == true || jsonResponse['status'] == 'success') {
+        debugPrint("Quiz Answer Submitted Successfully YYY");
+        debugPrint("Quiz Result GGG: $jsonResponse");
+      } else {
+        debugPrint("Server message: BBB ${jsonResponse['message']}");
+      }
+    } catch (e) {
+      debugPrint("Quiz Submit Error: CCC $e");
+    }
   }
 }
 

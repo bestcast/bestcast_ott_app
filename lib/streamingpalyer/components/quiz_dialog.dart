@@ -16,18 +16,7 @@ class QuizOverlay extends StatefulWidget {
   final String attemptId;
   final String token;
 
-  const QuizOverlay({
-    super.key,
-    required this.question,
-    required this.questionIndex,
-    required this.totalQuestions,
-    required this.onComplete,
-    required this.userId,
-    required this.movieId,
-    required this.attemptId,
-    required this.token,
-    this.durationSeconds = 10,
-  });
+  const QuizOverlay({super.key, required this.question, required this.questionIndex, required this.totalQuestions, required this.onComplete, required this.userId, required this.movieId, required this.attemptId, required this.token, this.durationSeconds = 10});
 
   @override
   State<QuizOverlay> createState() => _QuizOverlayState();
@@ -76,13 +65,17 @@ class _QuizOverlayState extends State<QuizOverlay> {
       _isSubmitting = true;
     });
 
-    await submitQuizData(
-      {
-        "question_id": widget.question.id,
-        "option_id": widget.question.options[_selectedOptionIndex!].id,
-        "answered_seconds": widget.durationSeconds - _timeLeft, // Calculate time taken
-      },
-    );
+    // Handle case where time runs out and no option is selected
+    String? optionId;
+    if (_selectedOptionIndex != null) {
+      optionId = widget.question.options[_selectedOptionIndex!].id.toString();
+    }
+
+    await submitQuizData({
+      "question_id": widget.question.id,
+      "option_id": optionId,
+      "answered_seconds": widget.durationSeconds - _timeLeft, // Calculate time taken
+    });
 
     if (mounted) {
       setState(() {
@@ -93,12 +86,7 @@ class _QuizOverlayState extends State<QuizOverlay> {
   }
 
   Future<void> submitQuizData(Map<String, dynamic> answer) async {
-    final postValues = {
-      'user_id': widget.userId,
-      'movie_id': widget.movieId,
-      'attempt_id': widget.attemptId,
-      'answer': answer,
-    };
+    final postValues = {'user_id': widget.userId, 'movie_id': widget.movieId, 'attempt_id': widget.attemptId, 'answer': answer};
 
     debugPrint("Submitting Quiz Answer: XXX $postValues");
 
@@ -131,10 +119,7 @@ class _QuizOverlayState extends State<QuizOverlay> {
           child: Container(
             constraints: const BoxConstraints(maxWidth: 600),
             padding: const EdgeInsets.all(28),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E1E1E),
-              borderRadius: BorderRadius.circular(20),
-            ),
+            decoration: BoxDecoration(color: const Color(0xFF1E1E1E), borderRadius: BorderRadius.circular(20)),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -144,19 +129,10 @@ class _QuizOverlayState extends State<QuizOverlay> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        "Question ${widget.questionIndex + 1}/${widget.totalQuestions}",
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                        ),
-                      ),
+                      Text("Question ${widget.questionIndex + 1}/${widget.totalQuestions}", style: const TextStyle(color: Colors.white70, fontSize: 14)),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: _timeLeft <= 3 ? Colors.redAccent : Colors.blueAccent,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
+                        decoration: BoxDecoration(color: _timeLeft <= 3 ? Colors.redAccent : Colors.blueAccent, borderRadius: BorderRadius.circular(20)),
                         child: Text(
                           "00:${_timeLeft.toString().padLeft(2, '0')}",
                           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
@@ -170,11 +146,7 @@ class _QuizOverlayState extends State<QuizOverlay> {
                   /// Question
                   Text(
                     widget.question.question,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600),
                   ),
 
                   const SizedBox(height: 28),
@@ -199,10 +171,7 @@ class _QuizOverlayState extends State<QuizOverlay> {
                           decoration: BoxDecoration(
                             color: isSelected ? Colors.blue.withOpacity(0.2) : Colors.white10,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: isSelected ? Colors.blueAccent : Colors.white12,
-                              width: 1.5,
-                            ),
+                            border: Border.all(color: isSelected ? Colors.blueAccent : Colors.white12, width: 1.5),
                           ),
                           child: Row(
                             children: [
@@ -211,16 +180,10 @@ class _QuizOverlayState extends State<QuizOverlay> {
                                 width: 34,
                                 height: 34,
                                 alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: isSelected ? Colors.blueAccent : Colors.white24,
-                                ),
+                                decoration: BoxDecoration(shape: BoxShape.circle, color: isSelected ? Colors.blueAccent : Colors.white24),
                                 child: Text(
                                   optionPrefixes[index],
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                                 ),
                               ),
 
@@ -228,10 +191,7 @@ class _QuizOverlayState extends State<QuizOverlay> {
 
                               /// Option Text
                               Expanded(
-                                child: Text(
-                                  widget.question.options[index].name,
-                                  style: const TextStyle(color: Colors.white, fontSize: 16),
-                                ),
+                                child: Text(widget.question.options[index].name, style: const TextStyle(color: Colors.white, fontSize: 16)),
                               ),
                             ],
                           ),
@@ -251,29 +211,16 @@ class _QuizOverlayState extends State<QuizOverlay> {
                         backgroundColor: Colors.blueAccent,
                         disabledBackgroundColor: Colors.blueAccent.withOpacity(0.5),
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       child: _isSubmitting
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
+                          ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                           : const Text(
                               "Submit Answer",
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                             ),
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
