@@ -51,4 +51,5 @@ class AppConfig {
   static const String getQuiz = "${rootUrl}moviequiz";
   static const String submitQuiz = "${rootUrl}mobilesubmitquiz";
   static const String quizResult = "${rootUrl}mobilequizresult";
+  static const String quizRewardClaim = "${rootUrl}mobile-reward-claim";
 }

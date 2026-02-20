@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:bestcaststudios/streamingpalyer/components/quiz_reward_claim.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -493,7 +494,7 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
             context: context,
             barrierDismissible: false,
             builder: (ctx) {
-              final bool won = (total > 0 && correct == total);
+              final bool won = (total > 0 && correct != total);
               return AlertDialog(
                 backgroundColor: const Color(0xFF1E1E1E),
                 title: Text(
@@ -516,8 +517,21 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
                     if (won)
                       ElevatedButton(
                         onPressed: () {
-                          Navigator.of(ctx).pop();
+                          // Navigator.of(ctx).pop();
                           // Resume video
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => QuizRewardClaim(
+                                userID: userID,
+                                token: _token,
+                                onSuccess: () {
+                                  // Handle success
+                                  printGreen("FORM SUBMITTED");
+                                },
+                              ),
+                            ),
+                          );
                           printGreen("CLAIM: REWARD");
                           try {
                             _controller.play();
