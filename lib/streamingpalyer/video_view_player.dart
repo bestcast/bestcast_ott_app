@@ -245,7 +245,7 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
                   });
                 } else {
                   print("DEBUG: Quiz sequence finished");
-                  // getQuizResult(_token, userID, widget.getMainMovieID, _quizResponse?.attemptId ?? "");
+                  getQuizResult(userID, widget.getMainMovieID, _quizResponse?.attemptId ?? "");
                 }
               });
             },
@@ -466,14 +466,14 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
   }
 
 // # -----------------QUIZ-RESULT-API-----------------
-  void getQuizResult(String token, String userID, String movieID, String attemptId) async {
+  void getQuizResult(String userID, String movieID, String attemptId) async {
     final postValues = {
       'attemptId': attemptId,
-      'tokenEncrypted': token.split("|")[1],
+      'tokenEncrypted': _token,
       'user_id': userID,
       'movieId': movieID,
     };
-    print("Post Values: $postValues");
+    print("Post Values GGG: $postValues");
     try {
       final response = await ApiServices().postRequestToken(AppConfig.quizResult, postValues, _token);
 
@@ -482,11 +482,73 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
         return;
       }
       final jsonResponse = jsonDecode(response.body);
-      if (jsonResponse['success'] == true || jsonResponse['status'] == 'success') {
-        debugPrint("Quiz Answer Submitted Successfully YYY");
-        debugPrint("Quiz Result GGG: $jsonResponse");
+      if (response.statusCode == 200) {
+        debugPrint("Quiz Result Success");
+
+        final int correct = jsonResponse['correctAnswerCount'] ?? 0;
+        final int total = jsonResponse['totalQuestions'] ?? 0;
+
+        if (mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (ctx) {
+              final bool won = (total > 0 && correct == total);
+              return AlertDialog(
+                backgroundColor: const Color(0xFF1E1E1E),
+                title: Text(
+                  won ? "Congratulations!" : "Quiz Completed",
+                  style: const TextStyle(color: Colors.white),
+                ),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      won ? "You won the quiz!" : "Better luck next time!",
+                      style: const TextStyle(color: Colors.white70, fontSize: 16),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      "Score: $correct / $total",
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                    ),
+                    const SizedBox(height: 10),
+                    if (won)
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(ctx).pop();
+                          // Resume video
+                          printGreen("CLAIM: REWARD");
+                          try {
+                            _controller.play();
+                          } catch (e) {
+                            printRed("DEBUG: Error resuming video: $e");
+                          }
+                        },
+                        child: const Text("Claim Reward"),
+                      ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(ctx).pop();
+                      // Resume video
+                      try {
+                        _controller.play();
+                      } catch (e) {
+                        print("DEBUG: Error resuming video: $e");
+                      }
+                    },
+                    child: const Text("OK", style: TextStyle(color: Colors.blueAccent)),
+                  ),
+                ],
+              );
+            },
+          );
+        }
       } else {
-        debugPrint("Server message: BBB ${jsonResponse['message']}");
+        debugPrint("Server message: ${jsonResponse['message']}");
       }
     } catch (e) {
       debugPrint("Quiz Submit Error: CCC $e");
