@@ -1,10 +1,17 @@
 import 'package:bestcaststudios/common_files/app_default_colors.dart';
 import 'package:flutter/material.dart';
 
-class QuizStartDialog extends StatelessWidget {
+class QuizStartDialog extends StatefulWidget {
   final Function(bool) onSelection;
 
   const QuizStartDialog({super.key, required this.onSelection});
+
+  @override
+  State<QuizStartDialog> createState() => _QuizStartDialogState();
+}
+
+class _QuizStartDialogState extends State<QuizStartDialog> {
+  bool isChecked = false;
 
   @override
   Widget build(BuildContext context) {
@@ -18,30 +25,51 @@ class QuizStartDialog extends StatelessWidget {
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           textAlign: TextAlign.center,
         ),
-        content: const Text(
-          "Do you want to play a Quiz while watching?",
-          style: TextStyle(color: Colors.white70, fontSize: 16),
-          textAlign: TextAlign.center,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              "NOTE: Once Start to play do not Forward or Rewind the movie. Your quiz appears anytime.",
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
+            Row(
+              children: [
+                Checkbox(
+                  value: isChecked,
+                  onChanged: (value) {
+                    setState(() {
+                      isChecked = value!;
+                    });
+                  },
+                ),
+                Text(
+                  "Accept Terms & Conditions",
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
+              ],
+            ),
+          ],
         ),
         actionsAlignment: MainAxisAlignment.spaceEvenly,
         actions: [
           TextButton(
-            onPressed: () => onSelection(false),
+            onPressed: () => widget.onSelection(false),
             style: TextButton.styleFrom(
-              foregroundColor: Colors.redAccent,
+              foregroundColor: Colors.black,
+              backgroundColor: Colors.redAccent,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
-            child: const Text("NO", style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text("SKIP", style: TextStyle(fontWeight: FontWeight.bold)),
           ),
           ElevatedButton(
-            onPressed: () => onSelection(true),
+            onPressed: () => widget.onSelection(true) || isChecked == true,
             style: ElevatedButton.styleFrom(
+              foregroundColor: Colors.black,
               backgroundColor: Colors.white,
-              foregroundColor: AppDefaultColors.appColor,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
-            child: const Text("YES", style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text("PLAY", style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),

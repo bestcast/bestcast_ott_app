@@ -48,3 +48,4 @@ analysis_output.txt
 /Extra/*
 
 packages/helpers
+/lib/streamingpalyer/test_component.dart

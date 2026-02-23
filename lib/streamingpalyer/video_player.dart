@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:bestcaststudios/streamingpalyer/test_component.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -697,12 +698,19 @@ class _VideoAppState extends State<VideoApp> {
                             style: const TextStyle(color: Colors.white, fontSize: 20.0, fontWeight: FontWeight.w700),
                           ),
                         ),
-
-                        //   itemCount: thumnailPic.length,
-                        //     crossAxisCount: 3, // Number of columns
-                        //     crossAxisSpacing: 0, // Spacing between columns
-                        //     mainAxisSpacing: 0, // Spacing between rows
-
+                        // TEST BUTTON START ------------------------------------------
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => TestComponent(),
+                              ),
+                            );
+                          },
+                          child: Text("TEST"),
+                        ),
+                        // TEST BUTTON END --------------------------------------------
                         MoreLikeThisGrid(
                           relatedMovieData: relatedMovieData,
                           onMovieTap: (movieId) {
@@ -713,17 +721,6 @@ class _VideoAppState extends State<VideoApp> {
                             );
                           },
                         ),
-
-                        //       itemCount: relatedMovieData.length,
-                        //         crossAxisCount: 3, // Number of columns
-                        //         crossAxisSpacing: 0, // Spacing between columns
-                        //         mainAxisSpacing: 0, // Spacing between rows
-                        //
-
-                        //       itemCount: moreLikeMoviesModel.length,
-                        //         crossAxisCount: 2, // Number of columns
-                        //         crossAxisSpacing: 0, // Spacing between columns
-                        //         mainAxisSpacing: 0, // Spacing between rows
                       ],
                     ),
                   ),
