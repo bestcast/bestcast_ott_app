@@ -132,6 +132,7 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
       DeviceOrientation.landscapeRight,
       DeviceOrientation.landscapeLeft,
     ]);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
     Timer(Duration(seconds: 2), () {
       setState(() {
@@ -265,6 +266,7 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   }
 
   Future<void> getInitalValue() async {

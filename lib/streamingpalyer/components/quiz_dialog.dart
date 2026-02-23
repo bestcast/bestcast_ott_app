@@ -108,122 +108,200 @@ class _QuizOverlayState extends State<QuizOverlay> {
     }
   }
 
+  Widget _buildOption(int displayIndex, QuizOption option) {
+    final isSelected = _selectedOptionIndex == displayIndex;
+    final Color accentColor = isSelected ? Colors.amberAccent : Colors.white;
+    final Color borderColor = isSelected ? Colors.amberAccent : Colors.blueAccent;
+
+    return InkWell(
+      onTap: _isSubmitting
+          ? null
+          : () {
+              setState(() {
+                _selectedOptionIndex = displayIndex;
+              });
+            },
+      borderRadius: BorderRadius.circular(40),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+        decoration: BoxDecoration(color: const Color(0xFF031634), borderRadius: BorderRadius.circular(40), border: Border.all(color: borderColor, width: 2), boxShadow: [
+          BoxShadow(color: borderColor.withValues(alpha: isSelected ? 0.6 : 0.3), blurRadius: 10),
+        ]),
+        child: Row(
+          children: [
+            /// Prefix Letter
+            Text(
+              optionPrefixes[displayIndex],
+              style: TextStyle(
+                color: accentColor,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(width: 16),
+
+            /// Option Text
+            Expanded(
+              child: Text(
+                option.name,
+                style: TextStyle(
+                  color: accentColor,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTwoColumns = screenWidth > 500;
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Container(
-        color: Colors.black.withOpacity(0.7),
-        padding: const EdgeInsets.all(24),
-        child: Center(
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 600),
-            padding: const EdgeInsets.all(28),
-            decoration: BoxDecoration(color: const Color(0xFF1E1E1E), borderRadius: BorderRadius.circular(20)),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+        color: const Color(0xFF020C1F).withValues(alpha: 0.85),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: Column(
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              /// Header with Timer
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  /// Header
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text("Question ${widget.questionIndex + 1}/${widget.totalQuestions}", style: const TextStyle(color: Colors.white70, fontSize: 14)),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                        decoration: BoxDecoration(color: _timeLeft <= 3 ? Colors.redAccent : Colors.blueAccent, borderRadius: BorderRadius.circular(20)),
-                        child: Text(
-                          "00:${_timeLeft.toString().padLeft(2, '0')}",
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  /// Question
-                  Text(
-                    widget.question.question,
-                    style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600),
-                  ),
-
-                  const SizedBox(height: 28),
-
-                  /// Options with A, B, C, D
-                  ...List.generate(widget.question.options.length, (index) {
-                    final isSelected = _selectedOptionIndex == index;
-
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 14),
-                      child: InkWell(
-                        onTap: _isSubmitting
-                            ? null
-                            : () {
-                                setState(() {
-                                  _selectedOptionIndex = index;
-                                });
-                              },
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                          decoration: BoxDecoration(
-                            color: isSelected ? Colors.blue.withOpacity(0.2) : Colors.white10,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: isSelected ? Colors.blueAccent : Colors.white12, width: 1.5),
-                          ),
-                          child: Row(
-                            children: [
-                              /// Prefix Circle (A, B, C, D)
-                              Container(
-                                width: 34,
-                                height: 34,
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(shape: BoxShape.circle, color: isSelected ? Colors.blueAccent : Colors.white24),
-                                child: Text(
-                                  optionPrefixes[index],
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                                ),
-                              ),
-
-                              const SizedBox(width: 16),
-
-                              /// Option Text
-                              Expanded(
-                                child: Text(widget.question.options[index].name, style: const TextStyle(color: Colors.white, fontSize: 16)),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-
-                  const SizedBox(height: 30),
-
-                  /// Submit Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: (_selectedOptionIndex == null || _isSubmitting) ? null : _submitAnswer,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueAccent,
-                        disabledBackgroundColor: Colors.blueAccent.withOpacity(0.5),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: _isSubmitting
-                          ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : const Text(
-                              "Submit Answer",
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-                            ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration:
+                        BoxDecoration(color: _timeLeft <= 3 ? Colors.redAccent.withValues(alpha: 0.2) : Colors.blueAccent.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(20), border: Border.all(color: _timeLeft <= 3 ? Colors.redAccent : Colors.blueAccent, width: 1.5), boxShadow: [
+                      BoxShadow(
+                        color: (_timeLeft <= 3 ? Colors.redAccent : Colors.blueAccent).withValues(alpha: 0.4),
+                        blurRadius: 8,
+                        spreadRadius: 1,
+                      )
+                    ]),
+                    child: Text(
+                      "00:${_timeLeft.toString().padLeft(2, '0')}",
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                   ),
                 ],
               ),
-            ),
+              const SizedBox(height: 8),
+
+              /// Question Box
+              Expanded(
+                flex: 3,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF031634),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.blueAccent, width: 2),
+                    boxShadow: [
+                      BoxShadow(color: Colors.blueAccent.withValues(alpha: 0.5), blurRadius: 10, spreadRadius: 1),
+                    ],
+                  ),
+                  child: SingleChildScrollView(
+                    child: Text(
+                      widget.question.question,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.amberAccent,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              /// Options Grid
+              Expanded(
+                flex: 5,
+                child: isTwoColumns && widget.question.options.length == 4
+                    ? Column(
+                        children: [
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Expanded(child: _buildOption(0, widget.question.options[0])),
+                                const SizedBox(width: 16),
+                                Expanded(child: _buildOption(2, widget.question.options[2])),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Expanded(child: _buildOption(1, widget.question.options[1])),
+                                const SizedBox(width: 16),
+                                Expanded(child: _buildOption(3, widget.question.options[3])),
+                              ],
+                            ),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        children: List.generate(
+                          widget.question.options.length,
+                          (index) => Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 8.0),
+                              child: _buildOption(index, widget.question.options[index]),
+                            ),
+                          ),
+                        ),
+                      ),
+              ),
+
+              const SizedBox(height: 12),
+
+              /// Submit Button
+              SizedBox(
+                width: 300,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: (_selectedOptionIndex == null || _isSubmitting) ? null : _submitAnswer,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blueAccent.withValues(alpha: 0.2),
+                    disabledBackgroundColor: Colors.grey.withValues(alpha: 0.1),
+                    padding: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                      side: BorderSide(
+                        color: (_selectedOptionIndex != null) ? Colors.blueAccent : Colors.grey,
+                        width: 2,
+                      ),
+                    ),
+                    elevation: 10,
+                  ),
+                  child: _isSubmitting
+                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.blueAccent))
+                      : Text(
+                          "Submit",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: (_selectedOptionIndex != null) ? Colors.white : Colors.grey,
+                          ),
+                        ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
