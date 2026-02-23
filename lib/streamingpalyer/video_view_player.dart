@@ -497,68 +497,122 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
             barrierDismissible: false,
             builder: (ctx) {
               final bool won = (total > 0 && correct != total);
-              return AlertDialog(
-                backgroundColor: const Color(0xFF1E1E1E),
-                title: Text(
-                  won ? "Congratulations!" : "Quiz Completed",
-                  style: const TextStyle(color: Colors.white),
-                ),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      won ? "You won the quiz!" : "Better luck next time!",
-                      style: const TextStyle(color: Colors.white70, fontSize: 16),
+              return Dialog(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                insetPadding: const EdgeInsets.all(20),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 500),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF031634),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.blueAccent, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.blueAccent.withValues(alpha: 0.5),
+                          blurRadius: 10,
+                          spreadRadius: 1,
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 10),
-                    Text(
-                      "Score: $correct / $total",
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
-                    ),
-                    const SizedBox(height: 10),
-                    if (won)
-                      ElevatedButton(
-                        onPressed: () {
-                          // Navigator.of(ctx).pop();
-                          // Resume video
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => QuizRewardClaim(
-                                userID: userID,
-                                token: _token,
-                                onSuccess: () {
-                                  // Handle success
-                                  printGreen("FORM SUBMITTED");
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          won ? "Congratulations!" : "Quiz Completed",
+                          style: const TextStyle(
+                            color: Colors.amberAccent,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          won ? "You won the quiz!" : "Better luck next time!",
+                          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          children: [
+                            if (won) ...[
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    // Navigator.of(ctx).pop();
+                                    // Resume video
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => QuizRewardClaim(
+                                          userID: userID,
+                                          token: _token,
+                                          onSuccess: () {
+                                            // Handle success
+                                            printGreen("FORM SUBMITTED");
+                                          },
+                                        ),
+                                      ),
+                                    );
+                                    printGreen("CLAIM: REWARD");
+                                    try {
+                                      _controller.play();
+                                    } catch (e) {
+                                      printRed("DEBUG: Error resuming video: $e");
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.amberAccent.withValues(alpha: 0.2),
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(30),
+                                      side: const BorderSide(color: Colors.amberAccent, width: 2),
+                                    ),
+                                    elevation: 10,
+                                  ),
+                                  child: const Text(
+                                    "Claim Reward",
+                                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.amberAccent, fontSize: 16),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                            ],
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  Navigator.of(ctx).pop();
+                                  // Resume video
+                                  try {
+                                    _controller.play();
+                                  } catch (e) {
+                                    print("DEBUG: Error resuming video: $e");
+                                  }
                                 },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.blueAccent.withValues(alpha: 0.2),
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(30),
+                                    side: const BorderSide(color: Colors.blueAccent, width: 2),
+                                  ),
+                                  elevation: 10,
+                                ),
+                                child: const Text(
+                                  "OK",
+                                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 16),
+                                ),
                               ),
                             ),
-                          );
-                          printGreen("CLAIM: REWARD");
-                          try {
-                            _controller.play();
-                          } catch (e) {
-                            printRed("DEBUG: Error resuming video: $e");
-                          }
-                        },
-                        child: const Text("Claim Reward"),
-                      ),
-                  ],
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(ctx).pop();
-                      // Resume video
-                      try {
-                        _controller.play();
-                      } catch (e) {
-                        print("DEBUG: Error resuming video: $e");
-                      }
-                    },
-                    child: const Text("OK", style: TextStyle(color: Colors.blueAccent)),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ],
+                ),
               );
             },
           );
