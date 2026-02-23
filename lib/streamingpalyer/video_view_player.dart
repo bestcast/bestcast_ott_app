@@ -541,10 +541,17 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
                             if (won) ...[
                               Expanded(
                                 child: ElevatedButton(
-                                  onPressed: () {
-                                    // Navigator.of(ctx).pop();
-                                    // Resume video
-                                    Navigator.push(
+                                  onPressed: () async {
+                                    // Pause video before navigating to the reward claim
+                                    try {
+                                      _controller.pause();
+                                      printGreen("DEBUG: Paused video for Reward Claim dialog");
+                                    } catch (e) {
+                                      printRed("DEBUG: Error pausing video: $e");
+                                    }
+
+                                    // Navigate to QuizRewardClaim and wait for return
+                                    await Navigator.push(
                                       context,
                                       MaterialPageRoute(
                                         builder: (context) => QuizRewardClaim(
@@ -553,11 +560,14 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
                                           onSuccess: () {
                                             // Handle success
                                             printGreen("FORM SUBMITTED");
+                                            Navigator.of(ctx).pop(); // Also close the completed quiz dialog
                                           },
                                         ),
                                       ),
                                     );
-                                    printGreen("CLAIM: REWARD");
+
+                                    // Resume video after returning
+                                    printGreen("DEBUG: Returned from Reward Claim, resuming video");
                                     try {
                                       _controller.play();
                                     } catch (e) {

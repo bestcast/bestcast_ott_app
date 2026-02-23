@@ -110,24 +110,23 @@ class _QuizRewardClaimState extends State<QuizRewardClaim> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black.withOpacity(0.8), // Overlay background
-      appBar: AppBar(
-        title: const Text("Claim Reward"),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
+      backgroundColor: Colors.transparent, // Let dialog background show
       body: Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 600),
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           margin: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: const Color(0xFF1E1E1E),
-            borderRadius: BorderRadius.circular(16),
+            color: const Color(0xFF031634),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.blueAccent, width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.blueAccent.withValues(alpha: 0.5),
+                blurRadius: 10,
+                spreadRadius: 1,
+              ),
+            ],
           ),
           child: SingleChildScrollView(
             child: Form(
@@ -135,49 +134,107 @@ class _QuizRewardClaimState extends State<QuizRewardClaim> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    "Enter Your Details",
-                    style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "Claim Reward",
+                        style: TextStyle(
+                          color: Colors.amberAccent,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white70),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 8),
+                  const Text(
+                    "Enter your shipping details carefully",
+                    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 24),
                   _buildTextField("Full Name", _fullNameController),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(child: _buildTextField("Door No", _doorNoController)),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 12),
                       Expanded(child: _buildTextField("Street Name", _streetNameController)),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(child: _buildTextField("City", _cityController)),
-                      const SizedBox(width: 10),
-                      Expanded(child: _buildTextField("Pin Code", _pinCodeController, isNumber: true)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildTextField(
+                          "Pin Code",
+                          _pinCodeController,
+                          isNumber: true,
+                          maxLength: 6,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) return "Required";
+                            if (value.length != 6) return "Must be 6 digits";
+                            return null;
+                          },
+                        ),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(child: _buildTextField("State", _stateController)),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 12),
                       Expanded(child: _buildTextField("Country", _countryController)),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  _buildTextField("Mobile No", _mobileNoController, isNumber: true),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 12),
+                  _buildTextField(
+                    "Mobile No",
+                    _mobileNoController,
+                    isNumber: true,
+                    maxLength: 10,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) return "Mobile No is required";
+                      if (value.length != 10) return "Must be exactly 10 digits";
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 32),
                   SizedBox(
                     width: double.infinity,
+                    height: 50,
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _submitClaim,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueAccent,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        backgroundColor: Colors.blueAccent.withValues(alpha: 0.2),
+                        disabledBackgroundColor: Colors.grey.withValues(alpha: 0.1),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                          side: const BorderSide(color: Colors.blueAccent, width: 2),
+                        ),
+                        elevation: 10,
                       ),
-                      child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text("Submit Claim", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 24,
+                              width: 24,
+                              child: CircularProgressIndicator(color: Colors.blueAccent, strokeWidth: 2),
+                            )
+                          : const Text(
+                              "Submit Claim",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                     ),
                   ),
                 ],
@@ -189,24 +246,48 @@ class _QuizRewardClaimState extends State<QuizRewardClaim> {
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller, {bool isNumber = false}) {
+  Widget _buildTextField(
+    String label,
+    TextEditingController controller, {
+    bool isNumber = false,
+    int? maxLength,
+    String? Function(String?)? validator,
+  }) {
     return TextFormField(
       controller: controller,
       keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+      maxLength: maxLength,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(color: Colors.white70),
         filled: true,
-        fillColor: Colors.white10,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+        fillColor: const Color(0xFF020C1F),
+        counterText: "", // Hide character counter
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.blueAccent.withValues(alpha: 0.3)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.blueAccent, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 2),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 2),
+        ),
       ),
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return "$label is required";
-        }
-        return null;
-      },
+      validator: validator ??
+          (value) {
+            if (value == null || value.trim().isEmpty) {
+              return "$label is required";
+            }
+            return null;
+          },
     );
   }
 }
