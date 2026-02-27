@@ -1021,35 +1021,37 @@ class _VideoAppState extends State<VideoApp> {
           }
 
           var staringNamesArray = [];
-          for (var castsData in data["casts"]) {
-            print("castsDataCasts${castsData["cast"]}");
-            CastCast? castCast;
-            if (castsData['cast'] != "") {
-              print("castsDataCastName:${castsData["cast"]["name"]}");
-              castCast = CastCast(
-                id: castsData["cast"]["id"].toString(),
-                name: castsData["cast"]["name"].toString(),
-                firstname: castsData["cast"]["firstname"].toString(),
-                lastname: castsData["cast"]["lastname"].toString(),
-                dob: castsData["cast"]["dob"].toString(),
-                gender: castsData["cast"]["gender"].toString(),
-                photo: castsData["cast"]["photo"].toString(),
-              );
+          if (data["casts"] != null && data["casts"] is Iterable) {
+            for (var castsData in data["casts"]) {
+              print("castsDataCasts${castsData["cast"]}");
+              CastCast? castCast;
+              if (castsData['cast'] != "") {
+                print("castsDataCastName:${castsData["cast"]["name"]}");
+                castCast = CastCast(
+                  id: castsData["cast"]["id"].toString(),
+                  name: castsData["cast"]["name"].toString(),
+                  firstname: castsData["cast"]["firstname"].toString(),
+                  lastname: castsData["cast"]["lastname"].toString(),
+                  dob: castsData["cast"]["dob"].toString(),
+                  gender: castsData["cast"]["gender"].toString(),
+                  photo: castsData["cast"]["photo"].toString(),
+                );
 
-              if (castsData["group_label"] == "Producer") {
-                setState(() {
-                  _DirectorName = castsData["group_label"].toString();
-                });
+                if (castsData["group_label"] == "Producer") {
+                  setState(() {
+                    _DirectorName = castsData["group_label"].toString();
+                  });
+                }
+                staringNamesArray.add(castsData["cast"]["name"].toString());
               }
-              staringNamesArray.add(castsData["cast"]["name"].toString());
+
+              CastElement castElement = CastElement(group: castsData["group"].toString(), groupLabel: castsData["group_label"].toString(), groupSlug: castsData["group_slug"].toString(), cast: castCast);
+
+              castElementList.add(castElement);
             }
-
-            CastElement castElement = CastElement(group: castsData["group"].toString(), groupLabel: castsData["group_label"].toString(), groupSlug: castsData["group_slug"].toString(), cast: castCast);
-
-            castElementList.add(castElement);
           }
 
-          if (data["related"] != "" && data["related"] != null) {
+          if (data["related"] != null && data["related"] is Iterable) {
             for (var castsData in data["related"]) {
               Usermovies? usermovies;
 
