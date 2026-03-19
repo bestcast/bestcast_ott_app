@@ -27,8 +27,7 @@ class AppConfig {
   static const String genrelist = "${rootUrl}guest/genrelist";
   static const String usermovieslist = "${rootUrl}usermovieslist?profile_id=";
   static const String movieblockslist = "${rootUrl}guest/blockslist?page_id=";
-  static const String popularMovieblockslist =
-      "${rootUrl}guest/blockslist?page_id=4";
+  static const String popularMovieblockslist = "${rootUrl}guest/blockslist?page_id=4";
   static const String userMovieDetails = "${rootUrl}guest/getusermovie/";
   static const String userMainMovieDetails = "${rootUrl}getusermovie/";
   static const String setUserMovie = "${rootUrl}setusermovie/";
@@ -48,4 +47,10 @@ class AppConfig {
   static const String myAccountUrl = "$BaseUrl/my-account/";
   static const String myAccountLoginUrl = "$BaseUrl/accountlogin/";
   static const String forgotPassword = "$BaseUrl/password/reset";
+
+  static const String getQuiz = "${rootUrl}moviequiz";
+  static const String submitQuiz = "${rootUrl}mobilesubmitquiz";
+  static const String quizResult = "${rootUrl}mobilequizresult";
+  static const String rewardClaimCreate = "${rootUrl}reward-claim";
+  static const String rewardClaimUpdate = "${rootUrl}reward-claim/";
 }

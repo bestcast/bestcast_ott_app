@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:bestcaststudios/streamingpalyer/components/quiz_reward_claim.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -12,25 +14,17 @@ import 'package:path_provider/path_provider.dart';
 import 'package:screen_protector/screen_protector.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:bestcaststudios/common_files/background_loading_widget.dart';
-import 'package:bestcaststudios/streamingpalyer/video_player_source/video_viewer.dart';
+import '../common_files/background_loading_widget.dart';
+import '../streamingpalyer/video_player_source/video_viewer.dart';
+import '../streamingpalyer/models/quiz_data.dart';
 import '../app_config/app_preferences.dart';
 import '../app_config/appconfig.dart';
 import '../common_files/api_services.dart';
 import '../common_files/app_default_colors.dart';
+import 'components/quiz_dialog.dart';
+import 'components/quiz_start_dialog.dart';
+import 'package:flutter/foundation.dart';
 
-/// SUMMARY
-/// 1. Models
-/// 2. Constants
-/// 3. Main Aplications
-/// 4. Pages
-/// 5. Video Viewer Widgets
-/// 6. Movie Card Widgets
-/// 7. Misc Widgets
-
-//------//
-//MODELS//
-//------//
 enum MovieStyle { card, page }
 
 class Movie {
@@ -71,8 +65,7 @@ class CustomVideoViewerStyle extends VideoViewerStyle {
   CustomVideoViewerStyle({required Movie movie, required BuildContext context})
       : super(
           textStyle: context.textTheme.titleMedium,
-          playAndPauseStyle:
-              PlayAndPauseWidgetStyle(background: context.color.primary),
+          playAndPauseStyle: PlayAndPauseWidgetStyle(background: context.color.primary),
           progressBarStyle: ProgressBarStyle(
             bar: BarStyle.progress(color: context.color.primary),
           ),
@@ -87,38 +80,17 @@ class CustomVideoViewerStyle extends VideoViewerStyle {
         );
 }
 
-//---------//
-//CONSTANTS//
-//---------//
 const double kButtonHeight = 48;
 const double kCardAspectRatio = 0.75;
-
 const double kPadding = 20;
 const double kSectionPadding = 40;
 const Margin kAllPadding = Margin.all(kPadding);
 const Margin kAllSectionPadding = Margin.all(kSectionPadding);
+const BorderRadius kAllBorderRadius = BorderRadius.all(Radius.circular(kPadding));
 
-const BorderRadius kAllBorderRadius = BorderRadius.all(
-  Radius.circular(kPadding),
-);
-
-//---------------//
-//MAIN APLICATION//
-//---------------//
-
-//--------------------//
-//VIDEO VIEWER WIDGETS//
-//--------------------//
 // ignore: must_be_immutable
 class MovieVideoViewer extends StatefulWidget {
-  MovieVideoViewer(
-      {super.key,
-      required this.movieTitle,
-      required this.thumbnail,
-      required this.getMainMovieUrl,
-      required this.getMainMovieID,
-      required this.getWatchTime,
-      required this.playType});
+  MovieVideoViewer({super.key, required this.movieTitle, required this.thumbnail, required this.getMainMovieUrl, required this.getMainMovieID, required this.getWatchTime, required this.playType});
 
   String getMainMovieUrl = "";
   String movieTitle = "";
@@ -139,11 +111,20 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
   String profileName = "";
   String profilePicture = "";
   String profileID = "";
+  String userID = "";
   String profilePictureID = "";
 
   bool isSeekDuration = false;
   bool enableController = false;
   late File _videoFile;
+
+  // Quiz State
+  bool _hasAskedQuiz = false;
+  bool _quizEnabled = false;
+  bool _isQuizActive = false;
+  int _currentQuizIndex = 0;
+  Timer? _quizGapTimer;
+  QuizResponse? _quizResponse;
 
   @override
   void initState() {
@@ -151,10 +132,16 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
       DeviceOrientation.landscapeRight,
       DeviceOrientation.landscapeLeft,
     ]);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
     Timer(Duration(seconds: 2), () {
       setState(() {
         enableController = true;
+      });
+      Future.delayed(const Duration(seconds: 1), () {
+        if (mounted && !_hasAskedQuiz) {
+          _showQuizOptIn();
+        }
       });
     });
     super.initState();
@@ -162,8 +149,6 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
 
     getInitalValue();
     initializeVideo();
-    print("GetMainMovieUrl: ${widget.getMainMovieUrl}");
-    print("getWatchTime: ${widget.getWatchTime}");
     if (widget.playType == 1) {
       getSeekPosition();
     }
@@ -207,18 +192,13 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
           child: enableController
               ? VideoViewer(
                   controller: _controller,
-                  onFullscreenFixLandscape: true, //TODO change if need as false
+                  onFullscreenFixLandscape: true,
                   source: {
                     widget.movieTitle: VideoSource(
                       video: widget.playType == 1
-                          ? VideoPlayerController.network(
-                              // "https://bestcast-mobile-download-movies.s3.amazonaws.com/Movies/trailer-720p.mp4",
-                              widget.getMainMovieUrl,
-                            )
-                          : VideoPlayerController.file(
-                              // "https://bestcast-mobile-download-movies.s3.amazonaws.com/Movies/trailer-720p.mp4",
-                              _videoFile,
-                            ),
+                          // ignore: deprecated_member_use
+                          ? VideoPlayerController.network(widget.getMainMovieUrl)
+                          : VideoPlayerController.file(_videoFile),
                     ),
                   },
                   style: CustomVideoViewerStyle(movie: movie, context: context),
@@ -226,6 +206,52 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
               : null,
         ),
         if (isSeekDuration) BackgroundLoadingWidget(),
+        if (_quizResponse != null && _isQuizActive && _currentQuizIndex < _quizResponse!.questions.length)
+          QuizOverlay(
+            question: _quizResponse!.questions[_currentQuizIndex],
+            questionIndex: _currentQuizIndex,
+            totalQuestions: _quizResponse!.questions.length,
+            userId: userID,
+            movieId: widget.getMainMovieID,
+            attemptId: _quizResponse?.attemptId ?? "",
+            token: _token,
+            onComplete: () {
+              setState(() {
+                _isQuizActive = false;
+                try {
+                  _controller.play();
+                } catch (e) {
+                  print("DEBUG: Error resuming video after quiz: $e");
+                }
+                _currentQuizIndex++;
+                // Set timer for next question if available
+                if (_quizResponse != null && _currentQuizIndex < _quizResponse!.questions.length) {
+                  print("DEBUG: Starting 1 minute gap timer for next question (Index: $_currentQuizIndex)");
+                  _quizGapTimer?.cancel();
+                  // Debug: Reduced to 10 seconds for faster testing (will revert to 1 minute later)
+                  _quizGapTimer = Timer(const Duration(seconds: 10), () {
+                    print("DEBUG: Quiz Gap Timer Fired!");
+                    if (mounted && _quizEnabled) {
+                      setState(() {
+                        print("DEBUG: Activating Next Question!");
+                        _isQuizActive = true;
+                        try {
+                          _controller.pause();
+                        } catch (e) {
+                          print("DEBUG: Error pausing video for quiz: $e");
+                        }
+                      });
+                    } else {
+                      print("DEBUG: Quiz Timer Fired but aborted: mounted=$mounted, quizEnabled=$_quizEnabled");
+                    }
+                  });
+                } else {
+                  print("DEBUG: Quiz sequence finished");
+                  getQuizResult(userID, widget.getMainMovieID, _quizResponse?.attemptId ?? "");
+                }
+              });
+            },
+          ),
       ]),
     );
   }
@@ -233,27 +259,30 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
   @override
   void dispose() {
     _timer?.cancel();
+    _quizGapTimer?.cancel();
     super.dispose();
     ScreenProtector.preventScreenshotOff();
     SystemChrome.setPreferredOrientations([
-      // DeviceOrientation.landscapeRight,
-      // DeviceOrientation.landscapeLeft,
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   }
 
   Future<void> getInitalValue() async {
     final pref = await SharedPreferences.getInstance();
     setState(() {
       _token = pref.getString(AppPreferences.token) ?? '';
-
-      print("_userToken1: $_token");
-
       profileName = pref.getString(AppPreferences.profileName) ?? '';
       profilePicture = pref.getString(AppPreferences.profilePicture) ?? '';
       profileID = pref.getString(AppPreferences.profileID) ?? '';
+      userID = pref.getString(AppPreferences.id) ?? '';
       profilePictureID = pref.getString(AppPreferences.profilePictureID) ?? '';
+
+      // Fetch Quiz Data
+      if (_token.isNotEmpty && userID.isNotEmpty) {
+        getQuizData(_token, userID, widget.getMainMovieID);
+      }
     });
   }
 
@@ -265,41 +294,28 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
           final Duration total = _controller.duration;
           var watchingSeconds = currentPostion.inSeconds;
 
-          final percentage =
-              (currentPostion.inSeconds / total.inSeconds * 100).truncate();
-          print(
-              "currentPostion:${currentPostion.inSeconds} - Total: ${total.inSeconds}");
-          print("Position percent:  $percentage%");
-          print("_userToken: $_token");
-          print("_watchingSeconds: $watchingSeconds");
+          final percentage = (currentPostion.inSeconds / total.inSeconds * 100).truncate();
 
           if (currentPostion == total) {
             final postValuesWatched = {
               'watched': 1,
             };
-            setUserMovies(
-                _token, profileID, widget.getMainMovieID, postValuesWatched);
+            setUserMovies(_token, userID, widget.getMainMovieID, postValuesWatched);
           } else {
             final postValues = {
               'watching': 1,
               'watch_time': watchingSeconds,
               'watched_percent': percentage,
             };
-            setUserMovies(_token, profileID, widget.getMainMovieID, postValues);
+            setUserMovies(_token, userID, widget.getMainMovieID, postValues);
           }
         }
       });
     });
   }
 
-  void setUserMovies(String token, String profileID, String movieID,
-      Map<String, int> postValues) async {
-    ApiServices()
-        .postRequestToken(
-            "${AppConfig.setUserMovie}$movieID?profile_id=$profileID",
-            postValues,
-            token)
-        .then((response) async {
+  void setUserMovies(String token, String userID, String movieID, Map<String, int> postValues) async {
+    ApiServices().postRequestToken("${AppConfig.setUserMovie}$movieID?profile_id=$userID", postValues, token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("setuserMovie_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -314,25 +330,309 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
     });
   }
 
-  Future<File> decryptFile(
-      File encryptedFile, String key, String outputFileName) async {
+  Future<File> decryptFile(File encryptedFile, String key, String outputFileName) async {
     final directory = await getApplicationDocumentsDirectory();
     final filePath = '${directory.path}/$outputFileName';
     final outputFile = File(filePath);
-
     final keyBytes = encrypt.Key.fromUtf8(key.padRight(32, '0'));
     final iv = encrypt.IV.fromLength(16);
-
-    final encrypter =
-        encrypt.Encrypter(encrypt.AES(keyBytes, mode: encrypt.AESMode.cbc));
-
+    final encrypter = encrypt.Encrypter(encrypt.AES(keyBytes, mode: encrypt.AESMode.cbc));
     final encryptedBytes = await encryptedFile.readAsBytes();
-    final decryptedBytes =
-        encrypter.decryptBytes(encrypt.Encrypted(encryptedBytes), iv: iv);
+    final decryptedBytes = encrypter.decryptBytes(encrypt.Encrypted(encryptedBytes), iv: iv);
 
     await outputFile.writeAsBytes(decryptedBytes);
-
     return outputFile;
+  }
+
+  void _showQuizOptIn() {
+    if (!mounted) {
+      return;
+    }
+    if (_quizResponse == null || _quizResponse!.questions.isEmpty) {
+      return;
+    }
+    setState(() {
+      _hasAskedQuiz = true;
+    });
+    // Pause video while asking
+    try {
+      if (_controller.isPlaying) {
+        _controller.pause();
+        print("DEBUG: Video paused for quiz");
+      }
+    } catch (e) {
+      print("DEBUG: Error pausing video: $e");
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => QuizStartDialog(
+        onSelection: (bool accepted) {
+          print("DEBUG: Quiz selection: $accepted");
+          Navigator.of(context).pop(); // Close dialog
+          if (mounted) {
+            setState(() {
+              _quizEnabled = accepted;
+              _quizEnabled = accepted;
+              if (accepted && _quizResponse != null && _quizResponse!.questions.isNotEmpty) {
+                // Schedule First Question
+                _currentQuizIndex = 0;
+                final firstQuestion = _quizResponse!.questions[0];
+                int startDelaySeconds = firstQuestion.popupTime;
+                if (startDelaySeconds <= 0) startDelaySeconds = 0; // Immediate if 0
+                print("DEBUG: Scheduling 1st Question in $startDelaySeconds seconds (popup_time: ${firstQuestion.popupTime})");
+                if (startDelaySeconds == 0) {
+                  _isQuizActive = true;
+                  // Pause immediately if showing immediately
+                  try {
+                    _controller.pause();
+                  } catch (e) {}
+                } else {
+                  _quizGapTimer?.cancel();
+                  _quizGapTimer = Timer(Duration(seconds: startDelaySeconds), () {
+                    if (mounted && _quizEnabled) {
+                      setState(() {
+                        print("DEBUG: 1st Question Timer Fired!");
+                        _isQuizActive = true;
+                        try {
+                          _controller.pause();
+                        } catch (e) {
+                          print("DEBUG: Error pausing: $e");
+                        }
+                      });
+                    }
+                  });
+                }
+              }
+            });
+
+            bool shouldPlay = !accepted;
+            if (accepted && _quizResponse != null && _quizResponse!.questions.isNotEmpty) {
+              if (_quizResponse!.questions[0].popupTime * 60 > 0) {
+                shouldPlay = true;
+              } else {
+                shouldPlay = false; // Immediate quiz, ensure paused
+              }
+            }
+            try {
+              if (shouldPlay) {
+                _controller.play();
+              } else {
+                // Ensure paused if immediate
+                _controller.pause();
+              }
+            } catch (e) {
+              print("DEBUG: Error handling video state: $e");
+            }
+          }
+        },
+      ),
+    );
+  }
+
+// # -----------------QUIZ-FETCH-API-----------------
+  void getQuizData(String token, String userID, String movieID) {
+    final postValues = {
+      'movie_id': movieID,
+      'user_id': userID,
+      'device_token': token.split("|")[1],
+    };
+    ApiServices().postRequestToken(AppConfig.getQuiz, postValues, _token).then((response) {
+      if (response.statusCode == 200) {
+        try {
+          final jsonResponse = jsonDecode(response.body);
+          if (jsonResponse['status'] == 'success') {
+            setState(() {
+              _quizResponse = QuizResponse.fromJson(jsonResponse);
+              print("Quiz loaded: ${_quizResponse?.total} questions");
+              if (mounted && !_hasAskedQuiz && enableController) {
+                _showQuizOptIn();
+              }
+              print("API Response Start:--------------");
+              debugPrint(
+                "Quiz loaded: ${jsonResponse['questions']} questions",
+                wrapWidth: 1024,
+              );
+              print("API Response End:--------------");
+              print("Quiz Attempt ID: ${_quizResponse?.attemptId}");
+              debugPrint("Full Quiz Response: $jsonResponse");
+            });
+          }
+        } catch (e) {
+          print("Quiz Parse Error: $e");
+        }
+      } else {
+        print("Quiz API Error: ${response.statusCode}");
+      }
+    });
+  }
+
+// # -----------------QUIZ-RESULT-API-----------------
+  void getQuizResult(String userID, String movieID, String attemptId) async {
+    final postValues = {
+      'attemptId': attemptId,
+      'tokenEncrypted': _token,
+      'user_id': userID,
+      'movieId': movieID,
+    };
+    print("Post Values GGG: $postValues");
+    try {
+      final response = await ApiServices().postRequestToken(AppConfig.quizResult, postValues, _token);
+
+      if (response.statusCode != 200) {
+        debugPrint("Quiz API Error: AAA ${response.statusCode} - ${response.body}");
+        return;
+      }
+      final jsonResponse = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        debugPrint("Quiz Result Success");
+
+        final int correct = jsonResponse['correctAnswerCount'] ?? 0;
+        final int total = jsonResponse['totalQuestions'] ?? 0;
+
+        if (mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (ctx) {
+              final bool won = (total > 0 && correct != total);
+              return Dialog(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                insetPadding: const EdgeInsets.all(20),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 500),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF031634),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.blueAccent, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.blueAccent.withValues(alpha: 0.5),
+                          blurRadius: 10,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          won ? "Congratulations!" : "Quiz Completed",
+                          style: const TextStyle(
+                            color: Colors.amberAccent,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          won ? "You won the quiz!" : "Better luck next time!",
+                          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          children: [
+                            if (won) ...[
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: () async {
+                                    // Pause video before navigating to the reward claim
+                                    try {
+                                      _controller.pause();
+                                      printGreen("DEBUG: Paused video for Reward Claim dialog");
+                                    } catch (e) {
+                                      printRed("DEBUG: Error pausing video: $e");
+                                    }
+
+                                    // Navigate to QuizRewardClaim and wait for return
+                                    await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => QuizRewardClaim(
+                                          userID: userID,
+                                          token: _token,
+                                          onSuccess: () {
+                                            // Handle success
+                                            printGreen("FORM SUBMITTED");
+                                            Navigator.of(ctx).pop(); // Also close the completed quiz dialog
+                                          },
+                                        ),
+                                      ),
+                                    );
+
+                                    // Resume video after returning
+                                    printGreen("DEBUG: Returned from Reward Claim, resuming video");
+                                    try {
+                                      _controller.play();
+                                    } catch (e) {
+                                      printRed("DEBUG: Error resuming video: $e");
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.amberAccent.withValues(alpha: 0.2),
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(30),
+                                      side: const BorderSide(color: Colors.amberAccent, width: 2),
+                                    ),
+                                    elevation: 10,
+                                  ),
+                                  child: const Text(
+                                    "Claim Reward",
+                                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.amberAccent, fontSize: 16),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                            ],
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  Navigator.of(ctx).pop();
+                                  // Resume video
+                                  try {
+                                    _controller.play();
+                                  } catch (e) {
+                                    print("DEBUG: Error resuming video: $e");
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.blueAccent.withValues(alpha: 0.2),
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(30),
+                                    side: const BorderSide(color: Colors.blueAccent, width: 2),
+                                  ),
+                                  elevation: 10,
+                                ),
+                                child: const Text(
+                                  "OK",
+                                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 16),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        }
+      } else {
+        debugPrint("Server message: ${jsonResponse['message']}");
+      }
+    } catch (e) {
+      debugPrint("Quiz Submit Error: CCC $e");
+    }
   }
 }
 
@@ -346,8 +646,8 @@ class SerieVideoViewer extends StatefulWidget {
 }
 
 class _SerieVideoViewerState extends State<SerieVideoViewer> {
-  final VideoViewerController controller = VideoViewerController();
   String episode = "";
+  final VideoViewerController controller = VideoViewerController();
   late MapEntry<String, SerieSource> initial;
 
   @override
@@ -375,13 +675,11 @@ class _SerieVideoViewerState extends State<SerieVideoViewer> {
       final MapEntry<String, VideoSource> video = sources.entries.first;
 
       controller.closeSettingsMenu();
-
       await controller.changeSource(
         inheritPosition: false, //RESET SPEED TO NORMAL AND POSITION TO ZERO
         source: video.value,
         name: video.key,
       );
-
       episode = episodeName;
       controller.source = sources;
       setState(() {});
@@ -399,8 +697,7 @@ class _SerieVideoViewerState extends State<SerieVideoViewer> {
         enableChat: true,
         onFullscreenFixLandscape: false,
         source: VideoSource.fromNetworkVideoSources(initial.value.source),
-        style: CustomVideoViewerStyle(movie: widget.serie, context: context)
-            .copyWith(
+        style: CustomVideoViewerStyle(movie: widget.serie, context: context).copyWith(
           chatStyle: const VideoViewerChatStyle(chat: SerieChat()),
           settingsStyle: SettingsMenuStyle(
             paddingBetweenMainMenuItems: 10,
@@ -469,18 +766,14 @@ class _VideoViewerOrientationState extends State<VideoViewerOrientation> {
 
   @override
   void initState() {
-    _subscription = NativeDeviceOrientationCommunicator()
-        .onOrientationChanged()
-        .listen(_onOrientationChanged);
+    _subscription = NativeDeviceOrientationCommunicator().onOrientationChanged().listen(_onOrientationChanged);
     super.initState();
     ScreenProtector.preventScreenshotOn();
   }
 
   void _onOrientationChanged(NativeDeviceOrientation orientation) {
     final bool isFullScreen = widget.controller.isFullScreen;
-    final bool isLandscape =
-        orientation == NativeDeviceOrientation.landscapeLeft ||
-            orientation == NativeDeviceOrientation.landscapeRight;
+    final bool isLandscape = orientation == NativeDeviceOrientation.landscapeLeft || orientation == NativeDeviceOrientation.landscapeRight;
     if (!isFullScreen && isLandscape) {
       printGreen("OPEN FULLSCREEN");
       widget.controller.openFullScreen();
@@ -507,7 +800,6 @@ class SerieChat extends StatefulWidget {
 
 class _SerieChatState extends State<SerieChat> {
   late Timer timer;
-
   final ScrollController _scontroller = ScrollController();
   final List<String> _texts = [];
 
@@ -535,6 +827,7 @@ class _SerieChatState extends State<SerieChat> {
   Widget build(BuildContext context) {
     return Container(
       width: 160,
+      // ignore: deprecated_member_use
       color: Colors.black.withOpacity(0.8),
       child: ListView.builder(
         controller: _scontroller,
@@ -580,6 +873,7 @@ class SerieEpisodeThumbnail extends StatelessWidget {
                 filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
                 child: Container(
                   padding: padding,
+                  // ignore: deprecated_member_use
                   color: context.color.card.withOpacity(0.16),
                   child: Subtitle1(title),
                 ),

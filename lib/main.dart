@@ -34,25 +34,17 @@ class MyApp extends StatelessWidget {
           floatingLabelStyle: TextStyle(color: AppDefaultColors.white),
           focusColor: AppDefaultColors.white,
         ),
-        textSelectionTheme: TextSelectionThemeData(
-            selectionColor: Colors.grey, selectionHandleColor: Colors.white),
+        textSelectionTheme: TextSelectionThemeData(selectionColor: Colors.grey, selectionHandleColor: Colors.white),
 
         switchTheme: SwitchThemeData(
-            trackOutlineWidth: WidgetStateProperty.resolveWith<double?>(
-                (Set<WidgetState> states) {
+            trackOutlineWidth: WidgetStateProperty.resolveWith<double?>((Set<WidgetState> states) {
               if (states.contains(WidgetState.disabled)) {
                 return 1.0;
               }
               return 0; // Use the default width.
             }),
-            trackColor: WidgetStateProperty.resolveWith((states) =>
-                states.contains(WidgetState.selected)
-                    ? AppDefaultColors.helpBlue
-                    : AppDefaultColors.boxDarkGray),
-            thumbColor: WidgetStateProperty.resolveWith((states) =>
-                states.contains(WidgetState.selected)
-                    ? AppDefaultColors.textLightGray
-                    : AppDefaultColors.textLightGray)),
+            trackColor: WidgetStateProperty.resolveWith((states) => states.contains(WidgetState.selected) ? AppDefaultColors.helpBlue : AppDefaultColors.boxDarkGray),
+            thumbColor: WidgetStateProperty.resolveWith((states) => states.contains(WidgetState.selected) ? AppDefaultColors.textLightGray : AppDefaultColors.textLightGray)),
 
         //Player Theme
         scaffoldBackgroundColor: Color(0xFFf9fbfe),
@@ -148,12 +140,9 @@ class _MyHomePageState extends State<MyHomePage> {
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
         // statusBarColor: Colors.red, // You can use this as well
-        statusBarIconBrightness:
-            Brightness.light, // OR Vice Versa for ThemeMode.dark
-        statusBarBrightness:
-            Brightness.light, // OR Vice Versa for ThemeMode.dark
-        systemNavigationBarColor:
-            Colors.black, // OR Vice Versa for ThemeMode.dark
+        statusBarIconBrightness: Brightness.light, // OR Vice Versa for ThemeMode.dark
+        statusBarBrightness: Brightness.light, // OR Vice Versa for ThemeMode.dark
+        systemNavigationBarColor: Colors.black, // OR Vice Versa for ThemeMode.dark
       ),
     );
 

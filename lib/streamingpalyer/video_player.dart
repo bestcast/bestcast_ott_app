@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:bestcaststudios/streamingpalyer/test_component.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -52,16 +53,14 @@ class VideoApp extends StatefulWidget {
 class _VideoAppState extends State<VideoApp> {
   late VideoPlayerController _controller;
 
-  late final SimulatedDownloadController _downloadControllers =
-      SimulatedDownloadController(
-          onOpenDownload: () {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (context) => DownloadMovieFiles()));
-          },
-          downloadUrl: movieData!.moviesource.toString(),
-          downloadMovieID: movieData!.id.toString(),
-          downloadThumnail: movieData!.thumbnail.toString(),
-          downloadMovieTitle: movieData!.title.toString());
+  late final SimulatedDownloadController _downloadControllers = SimulatedDownloadController(
+      onOpenDownload: () {
+        Navigator.push(context, MaterialPageRoute(builder: (context) => DownloadMovieFiles()));
+      },
+      downloadUrl: movieData!.moviesource.toString(),
+      downloadMovieID: movieData!.id.toString(),
+      downloadThumnail: movieData!.thumbnail.toString(),
+      downloadMovieTitle: movieData!.title.toString());
 
   bool _isMuted = false;
   bool _isPlaying = false;
@@ -103,14 +102,7 @@ class _VideoAppState extends State<VideoApp> {
   List<MoreLikeMoviesModel> moreLikeMoviesModel = [];
 
   var staringNames = "";
-  var thumnailPic = [
-    "images/sample_home_screen.jpg",
-    "images/sample_movie_2.jpg",
-    "images/sample_movie_3.jpg",
-    "images/sample_movie_4.jpg",
-    "images/sample_movie_5.jpg",
-    "images/sample_movie_1.jpg"
-  ];
+  var thumnailPic = ["images/sample_home_screen.jpg", "images/sample_movie_2.jpg", "images/sample_movie_3.jpg", "images/sample_movie_4.jpg", "images/sample_movie_5.jpg", "images/sample_movie_1.jpg"];
 
   final dbHelper = DatabaseHelper();
 
@@ -137,8 +129,7 @@ class _VideoAppState extends State<VideoApp> {
         setState(() {});
         _controller.addListener(() {
           setState(() {
-            _progressValue = _controller.value.position.inSeconds.toDouble() /
-                _controller.value.duration.inSeconds.toDouble();
+            _progressValue = _controller.value.position.inSeconds.toDouble() / _controller.value.duration.inSeconds.toDouble();
           });
         });
       });
@@ -171,10 +162,8 @@ class _VideoAppState extends State<VideoApp> {
       profilePictureID = pref.getString(AppPreferences.profilePictureID) ?? '';
 
       mobileDataUsage = pref.getString(AppPreferences.mobileDataUsage) ?? '';
-      enabelNotification =
-          pref.getBool(AppPreferences.enabelNotification) ?? false;
-      downloadDataOption =
-          pref.getBool(AppPreferences.downloadDataOption) ?? false;
+      enabelNotification = pref.getBool(AppPreferences.enabelNotification) ?? false;
+      downloadDataOption = pref.getBool(AppPreferences.downloadDataOption) ?? false;
       downloadQuality = pref.getString(AppPreferences.downloadQuality) ?? '';
       loggedStatus = pref.getBool(AppPreferences.loggedStatus) ?? false;
     });
@@ -194,10 +183,7 @@ class _VideoAppState extends State<VideoApp> {
 
   void getMoreMovieListsTemp() {
     for (int i = 0; i < thumnailPic.length; i++) {
-      moreLikeMoviesModel.add(MoreLikeMoviesModel(
-          movieID: i.toString(),
-          movieName: "Movie Name",
-          thumnailPicture: thumnailPic[i]));
+      moreLikeMoviesModel.add(MoreLikeMoviesModel(movieID: i.toString(), movieName: "Movie Name", thumnailPicture: thumnailPic[i]));
     }
   }
 
@@ -241,30 +227,25 @@ class _VideoAppState extends State<VideoApp> {
                                         onTap: () {
                                           setState(() {
                                             _showControls = !_showControls;
-                                            if (_showControls &&
-                                                _controller.value.isPlaying) {
+                                            if (_showControls && _controller.value.isPlaying) {
                                               _startHideControlsTimer();
                                             }
                                           });
                                         },
                                         child: AspectRatio(
-                                          aspectRatio:
-                                              _controller.value.aspectRatio,
+                                          aspectRatio: _controller.value.aspectRatio,
                                           child: VideoPlayer(_controller),
                                         ),
                                       ),
                                       IconButton(
                                         icon: Icon(
-                                          _isMuted
-                                              ? Icons.volume_off
-                                              : Icons.volume_up,
+                                          _isMuted ? Icons.volume_off : Icons.volume_up,
                                           color: Colors.white,
                                         ),
                                         onPressed: () {
                                           setState(() {
                                             _isMuted = !_isMuted;
-                                            _controller.setVolume(
-                                                _isMuted ? 0.0 : 1.0);
+                                            _controller.setVolume(_isMuted ? 0.0 : 1.0);
                                           });
                                         },
                                       ),
@@ -272,25 +253,15 @@ class _VideoAppState extends State<VideoApp> {
                                         bottom: 0,
                                         left: -10,
                                         right: -10,
-                                        child: LayoutBuilder(
-                                            builder: (context, constraints) {
+                                        child: LayoutBuilder(builder: (context, constraints) {
                                           return Slider(
                                             value: _progressValue,
-                                            activeColor:
-                                                AppDefaultColors.thikRed,
-                                            inactiveColor:
-                                                AppDefaultColors.white,
+                                            activeColor: AppDefaultColors.thikRed,
+                                            inactiveColor: AppDefaultColors.white,
                                             onChanged: (double value) {
                                               setState(() {
                                                 _progressValue = value;
-                                                final Duration newPosition =
-                                                    Duration(
-                                                        seconds: (_controller
-                                                                    .value
-                                                                    .duration
-                                                                    .inSeconds *
-                                                                _progressValue)
-                                                            .toInt());
+                                                final Duration newPosition = Duration(seconds: (_controller.value.duration.inSeconds * _progressValue).toInt());
                                                 _controller.seekTo(newPosition);
                                               });
                                             },
@@ -305,42 +276,29 @@ class _VideoAppState extends State<VideoApp> {
                                           right: 0,
                                           child: AnimatedOpacity(
                                             opacity: _showControls ? 1.0 : 0.0,
-                                            duration:
-                                                Duration(milliseconds: 1000),
+                                            duration: Duration(milliseconds: 1000),
                                             child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.center,
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              crossAxisAlignment: CrossAxisAlignment.center,
                                               children: [
                                                 IconButton(
                                                   icon: Image(
-                                                    image: AssetImage(
-                                                        "images/rotate_left.png"),
+                                                    image: AssetImage("images/rotate_left.png"),
                                                     height: 30,
                                                   ),
                                                   onPressed: () {
-                                                    _controller.seekTo(Duration(
-                                                        seconds: _controller
-                                                                .value
-                                                                .position
-                                                                .inSeconds -
-                                                            10));
+                                                    _controller.seekTo(Duration(seconds: _controller.value.position.inSeconds - 10));
                                                   },
                                                 ),
                                                 IconButton(
                                                   icon: Icon(
-                                                    _isPlaying
-                                                        ? Icons.pause
-                                                        : Icons.play_arrow,
+                                                    _isPlaying ? Icons.pause : Icons.play_arrow,
                                                     color: Colors.white,
                                                     size: 40,
                                                   ),
                                                   onPressed: () {
                                                     setState(() {
-                                                      _isPlaying
-                                                          ? _controller.pause()
-                                                          : _controller.play();
+                                                      _isPlaying ? _controller.pause() : _controller.play();
                                                       _isPlaying = !_isPlaying;
                                                       _startHideControlsTimer();
                                                     });
@@ -348,17 +306,11 @@ class _VideoAppState extends State<VideoApp> {
                                                 ),
                                                 IconButton(
                                                   icon: Image(
-                                                    image: AssetImage(
-                                                        "images/rotate_right.png"),
+                                                    image: AssetImage("images/rotate_right.png"),
                                                     height: 30,
                                                   ),
                                                   onPressed: () {
-                                                    _controller.seekTo(Duration(
-                                                        seconds: _controller
-                                                                .value
-                                                                .position
-                                                                .inSeconds +
-                                                            10));
+                                                    _controller.seekTo(Duration(seconds: _controller.value.position.inSeconds + 10));
                                                   },
                                                 ),
                                               ],
@@ -397,10 +349,7 @@ class _VideoAppState extends State<VideoApp> {
                             // "Movie Time Name",
                             overflow: TextOverflow.ellipsis,
                             maxLines: 2,
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 25.0,
-                                fontWeight: FontWeight.w900),
+                            style: const TextStyle(color: Colors.white, fontSize: 25.0, fontWeight: FontWeight.w900),
                           ),
                         ),
                         Row(
@@ -408,22 +357,18 @@ class _VideoAppState extends State<VideoApp> {
                             Padding(
                               padding: EdgeInsets.only(left: 10),
                               child: Text(
-                                appUtils.getDateTimeToYear(
-                                    movieData!.releaseDate.toString()),
+                                appUtils.getDateTimeToYear(movieData!.releaseDate.toString()),
                                 // '2024 2h 22m',
-                                style: TextStyle(
-                                    color: AppDefaultColors.textLightGray),
+                                style: TextStyle(color: AppDefaultColors.textLightGray),
                               ),
                             ),
                             Padding(
-                              padding: const EdgeInsets.only(
-                                  left: 8.0, top: 8.0, bottom: 8.0, right: 3.0),
+                              padding: const EdgeInsets.only(left: 8.0, top: 8.0, bottom: 8.0, right: 3.0),
                               child: Container(
                                 height: 25,
                                 decoration: BoxDecoration(
                                   border: Border.all(
-                                    color: AppDefaultColors
-                                        .textLightGray, // Border color
+                                    color: AppDefaultColors.textLightGray, // Border color
                                     width: 1.0, // Border width
                                   ),
                                 ),
@@ -433,9 +378,7 @@ class _VideoAppState extends State<VideoApp> {
                                     child: Text(
                                       movieData!.certificate.toString(),
                                       // '2024 2h 22m',
-                                      style: TextStyle(
-                                          color: AppDefaultColors.textLightGray,
-                                          fontSize: 12),
+                                      style: TextStyle(color: AppDefaultColors.textLightGray, fontSize: 12),
                                     ),
                                   ),
                                 ), // Your content inside the container
@@ -445,8 +388,7 @@ class _VideoAppState extends State<VideoApp> {
                               padding: EdgeInsets.only(left: 5),
                               child: Text(
                                 movieData!.durationText.toString(),
-                                style: TextStyle(
-                                    color: AppDefaultColors.textLightGray),
+                                style: TextStyle(color: AppDefaultColors.textLightGray),
                               ),
                             ),
                           ],
@@ -473,8 +415,7 @@ class _VideoAppState extends State<VideoApp> {
                                   maxLines: 1,
                                   // 'Starring: Tovino Thomas, Siddique, Vineeth Thattil David.',
                                   'Starring: $staringNames',
-                                  style:
-                                      TextStyle(color: AppDefaultColors.white),
+                                  style: TextStyle(color: AppDefaultColors.white),
                                 ),
                               ),
                               Expanded(
@@ -485,10 +426,7 @@ class _VideoAppState extends State<VideoApp> {
                                   child: Text(
                                     maxLines: 1,
                                     'more.',
-                                    style: TextStyle(
-                                        color: AppDefaultColors.white,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500),
+                                    style: TextStyle(color: AppDefaultColors.white, fontSize: 16, fontWeight: FontWeight.w500),
                                   ),
                                 ),
                               ),
@@ -516,10 +454,7 @@ class _VideoAppState extends State<VideoApp> {
                             margin: EdgeInsets.only(top: 20),
                             padding: const EdgeInsets.only(right: 5.0),
                             child: SubmitWhiteButton(
-                              _plan_status == "1" ||
-                                      movieData!.movie_access == "1"
-                                  ? "Play"
-                                  : "Subscribe to Watch",
+                              _plan_status == "1" || movieData!.movie_access == "1" ? "Play" : "Subscribe to Watch",
                               Icons.play_arrow,
                               onTap: () async {
                                 //     context,
@@ -528,72 +463,47 @@ class _VideoAppState extends State<VideoApp> {
 
                                 if (loggedStatus) {
                                   if (mobileDataUsage == "Wi-FiOnly") {
-                                    if (await CommonWidget()
-                                        .isWifiConnectivity()) {
+                                    if (await CommonWidget().isWifiConnectivity()) {
                                       if (_plan_status == "0") {
                                         if (movieData!.movie_access == "1") {
                                           Navigator.push(
                                               context,
                                               MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      MovieVideoViewer(
-                                                        getMainMovieUrl:
-                                                            movieData!.videoUrl
-                                                                .toString(),
-                                                        getMainMovieID:
-                                                            movieData!.id
-                                                                .toString(),
+                                                  builder: (context) => MovieVideoViewer(
+                                                        getMainMovieUrl: movieData!.videoUrl.toString(),
+                                                        getMainMovieID: movieData!.id.toString(),
                                                         getWatchTime: watchTime,
                                                         playType: 1,
-                                                        movieTitle:
-                                                            movieData!.title,
-                                                        thumbnail: movieData!
-                                                            .thumbnail,
+                                                        movieTitle: movieData!.title,
+                                                        thumbnail: movieData!.thumbnail,
                                                       ))).then((value) {
                                             setState(() {
-                                              getUserWatchingMoviesDetails(
-                                                  _token,
-                                                  profileID,
-                                                  widget.getMovieID);
+                                              getUserWatchingMoviesDetails(_token, profileID, widget.getMovieID);
                                             });
                                           });
                                         } else {
-                                          Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      PlanDetailsPage()));
+                                          Navigator.push(context, MaterialPageRoute(builder: (context) => PlanDetailsPage()));
                                         }
                                       } else {
                                         Navigator.push(
                                             context,
                                             MaterialPageRoute(
-                                                builder: (context) =>
-                                                    MovieVideoViewer(
-                                                      getMainMovieUrl:
-                                                          movieData!.videoUrl
-                                                              .toString(),
-                                                      getMainMovieID: movieData!
-                                                          .id
-                                                          .toString(),
+                                                builder: (context) => MovieVideoViewer(
+                                                      getMainMovieUrl: movieData!.videoUrl.toString(),
+                                                      getMainMovieID: movieData!.id.toString(),
                                                       getWatchTime: watchTime,
                                                       playType: 1,
-                                                      movieTitle:
-                                                          movieData!.title,
-                                                      thumbnail:
-                                                          movieData!.thumbnail,
+                                                      movieTitle: movieData!.title,
+                                                      thumbnail: movieData!.thumbnail,
                                                     ))).then((value) {
                                           setState(() {
-                                            getUserWatchingMoviesDetails(_token,
-                                                profileID, widget.getMovieID);
+                                            getUserWatchingMoviesDetails(_token, profileID, widget.getMovieID);
                                           });
                                         });
                                       }
                                     } else {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(SnackBar(
-                                        content: Text(
-                                            'Enable Wi-fi on your device.\nYour settings enabled wifi video playback option'),
+                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                        content: Text('Enable Wi-fi on your device.\nYour settings enabled wifi video playback option'),
                                         duration: Duration(seconds: 2),
                                       ));
                                     }
@@ -612,43 +522,28 @@ class _VideoAppState extends State<VideoApp> {
                                         Navigator.push(
                                             context,
                                             MaterialPageRoute(
-                                                builder: (context) =>
-                                                    MovieVideoViewer(
-                                                      getMainMovieUrl:
-                                                          movieData!.videoUrl
-                                                              .toString(),
-                                                      getMainMovieID: movieData!
-                                                          .id
-                                                          .toString(),
+                                                builder: (context) => MovieVideoViewer(
+                                                      getMainMovieUrl: movieData!.videoUrl.toString(),
+                                                      getMainMovieID: movieData!.id.toString(),
                                                       getWatchTime: watchTime,
                                                       playType: 1,
-                                                      movieTitle:
-                                                          movieData!.title,
-                                                      thumbnail:
-                                                          movieData!.thumbnail,
+                                                      movieTitle: movieData!.title,
+                                                      thumbnail: movieData!.thumbnail,
                                                     ))).then((value) {
                                           setState(() {
-                                            getUserWatchingMoviesDetails(_token,
-                                                profileID, widget.getMovieID);
+                                            getUserWatchingMoviesDetails(_token, profileID, widget.getMovieID);
                                           });
                                         });
                                       } else {
-                                        Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                                builder: (context) =>
-                                                    PlanDetailsPage()));
+                                        Navigator.push(context, MaterialPageRoute(builder: (context) => PlanDetailsPage()));
                                       }
                                     } else {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (context) =>
-                                              MovieVideoViewer(
-                                            getMainMovieUrl:
-                                                movieData!.videoUrl.toString(),
-                                            getMainMovieID:
-                                                movieData!.id.toString(),
+                                          builder: (context) => MovieVideoViewer(
+                                            getMainMovieUrl: movieData!.videoUrl.toString(),
+                                            getMainMovieID: movieData!.id.toString(),
                                             getWatchTime: watchTime,
                                             playType: 1,
                                             movieTitle: movieData!.title,
@@ -657,17 +552,13 @@ class _VideoAppState extends State<VideoApp> {
                                         ),
                                       ).then((value) {
                                         setState(() {
-                                          getUserWatchingMoviesDetails(_token,
-                                              profileID, widget.getMovieID);
+                                          getUserWatchingMoviesDetails(_token, profileID, widget.getMovieID);
                                         });
                                       });
                                     }
                                   }
                                 } else {
-                                  Navigator.pushReplacement(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (context) => LoginPage()));
+                                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginPage()));
                                 }
                               },
                             ),
@@ -687,30 +578,23 @@ class _VideoAppState extends State<VideoApp> {
                                     child: Container(
                                       width: double.infinity,
                                       height: 50,
-                                      padding:
-                                          const EdgeInsets.only(right: 5.0),
+                                      padding: const EdgeInsets.only(right: 5.0),
                                       child: SubmitTransparentButton(
                                         "Play Downloaded movie",
                                         Icons.play_circle,
                                         onTap: () async {
-                                          var movieId =
-                                              widget.getMovieID.toString();
-                                          var movieLocalTitle = await dbHelper
-                                              .getMovieTitle(movieId);
+                                          var movieId = widget.getMovieID.toString();
+                                          var movieLocalTitle = await dbHelper.getMovieTitle(movieId);
                                           Navigator.push(
                                               context,
                                               MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      MovieVideoViewer(
-                                                        getMainMovieUrl:
-                                                            movieLocalTitle,
+                                                  builder: (context) => MovieVideoViewer(
+                                                        getMainMovieUrl: movieLocalTitle,
                                                         getMainMovieID: '',
                                                         getWatchTime: '0',
                                                         playType: 2,
-                                                        movieTitle:
-                                                            movieData!.title,
-                                                        thumbnail: movieData!
-                                                            .thumbnail,
+                                                        movieTitle: movieData!.title,
+                                                        thumbnail: movieData!.thumbnail,
                                                       )));
                                         },
                                       ),
@@ -725,16 +609,11 @@ class _VideoAppState extends State<VideoApp> {
                                         animation: _downloadControllers,
                                         builder: (context, child) {
                                           return DownloadButton(
-                                            status: _downloadControllers
-                                                .downloadStatus,
-                                            downloadProgress:
-                                                _downloadControllers.progress,
-                                            onDownload: _downloadControllers
-                                                .startDownload,
-                                            onCancel: _downloadControllers
-                                                .stopDownload,
-                                            onOpen: _downloadControllers
-                                                .openDownload,
+                                            status: _downloadControllers.downloadStatus,
+                                            downloadProgress: _downloadControllers.progress,
+                                            onDownload: _downloadControllers.startDownload,
+                                            onCancel: _downloadControllers.stopDownload,
+                                            onOpen: _downloadControllers.openDownload,
                                           );
                                         },
                                       ),
@@ -764,8 +643,7 @@ class _VideoAppState extends State<VideoApp> {
                               final postValues = {
                                 'mylist': isMyList,
                               };
-                              setUserMovies(_token, profileID,
-                                  movieData!.id.toString(), postValues);
+                              setUserMovies(_token, profileID, movieData!.id.toString(), postValues);
                             },
                             onLike: () {
                               var isLikeValue = 0;
@@ -783,8 +661,7 @@ class _VideoAppState extends State<VideoApp> {
                               final postValues = {
                                 'likes': isLikeValue,
                               };
-                              setUserMovies(_token, profileID,
-                                  movieData!.id.toString(), postValues);
+                              setUserMovies(_token, profileID, movieData!.id.toString(), postValues);
                             },
                             onDislike: () {
                               var isDisLikeValue = 0;
@@ -802,14 +679,11 @@ class _VideoAppState extends State<VideoApp> {
                               final postValues = {
                                 'likes': isDisLikeValue,
                               };
-                              setUserMovies(_token, profileID,
-                                  movieData!.id.toString(), postValues);
+                              setUserMovies(_token, profileID, movieData!.id.toString(), postValues);
                             },
                             onShare: () {
-                              final encodedTitle = Uri.encodeComponent(
-                                  movieData!.title.toString());
-                              Share.share(
-                                  'Watch ${movieData!.title} on Bestcast OTT, \n\nCheck it out here: ${AppConfig.BaseUrl}/search?search=$encodedTitle');
+                              final encodedTitle = Uri.encodeComponent(movieData!.title.toString());
+                              Share.share('Watch ${movieData!.title} on Bestcast OTT, \n\nCheck it out here: ${AppConfig.BaseUrl}/search?search=$encodedTitle');
                             },
                           ),
 
@@ -821,18 +695,22 @@ class _VideoAppState extends State<VideoApp> {
                           padding: const EdgeInsets.all(8.0),
                           child: Text(
                             "More Like This",
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 20.0,
-                                fontWeight: FontWeight.w700),
+                            style: const TextStyle(color: Colors.white, fontSize: 20.0, fontWeight: FontWeight.w700),
                           ),
                         ),
-
-                        //   itemCount: thumnailPic.length,
-                        //     crossAxisCount: 3, // Number of columns
-                        //     crossAxisSpacing: 0, // Spacing between columns
-                        //     mainAxisSpacing: 0, // Spacing between rows
-
+                        // TEST BUTTON START ------------------------------------------
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => TestComponent(),
+                              ),
+                            );
+                          },
+                          child: Text("TEST"),
+                        ),
+                        // TEST BUTTON END --------------------------------------------
                         MoreLikeThisGrid(
                           relatedMovieData: relatedMovieData,
                           onMovieTap: (movieId) {
@@ -843,17 +721,6 @@ class _VideoAppState extends State<VideoApp> {
                             );
                           },
                         ),
-
-                        //       itemCount: relatedMovieData.length,
-                        //         crossAxisCount: 3, // Number of columns
-                        //         crossAxisSpacing: 0, // Spacing between columns
-                        //         mainAxisSpacing: 0, // Spacing between rows
-                        //
-
-                        //       itemCount: moreLikeMoviesModel.length,
-                        //         crossAxisCount: 2, // Number of columns
-                        //         crossAxisSpacing: 0, // Spacing between columns
-                        //         mainAxisSpacing: 0, // Spacing between rows
                       ],
                     ),
                   ),
@@ -879,8 +746,7 @@ class _VideoAppState extends State<VideoApp> {
           duration: Duration(milliseconds: 500), // Set the animation duration
           opacity: 1.0, // Set the initial opacity to 0 for fade-out effect
           onEnd: () {
-            Navigator.pop(
-                context); // Close the bottom sheet after the animation completes
+            Navigator.pop(context); // Close the bottom sheet after the animation completes
           },
 
           child: SingleChildScrollView(
@@ -892,14 +758,10 @@ class _VideoAppState extends State<VideoApp> {
                   children: [
                     Text(
                       "Staring",
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 25.0,
-                          fontWeight: FontWeight.w700),
+                      style: const TextStyle(color: Colors.white, fontSize: 25.0, fontWeight: FontWeight.w700),
                     ),
                     Container(
-                      constraints: BoxConstraints(
-                          maxHeight: MediaQuery.of(context).size.height * 0.8),
+                      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.8),
                       child: ListView.builder(
                         shrinkWrap: true,
                         // itemCount: staringNames.length,
@@ -910,16 +772,12 @@ class _VideoAppState extends State<VideoApp> {
                               alignment: Alignment.center,
                               child: Text(
                                 castElementList[index].cast!.name.toString(),
-                                style: const TextStyle(
-                                    color: AppDefaultColors.textLightGray,
-                                    fontSize: 17.0,
-                                    fontWeight: FontWeight.normal),
+                                style: const TextStyle(color: AppDefaultColors.textLightGray, fontSize: 17.0, fontWeight: FontWeight.normal),
                               ),
                             ),
                             onTap: () {
                               // Add your onTap logic here
-                              Navigator.pop(
-                                  context); // Close the bottom sheet when item is tapped
+                              Navigator.pop(context); // Close the bottom sheet when item is tapped
                             },
                           );
                         },
@@ -962,8 +820,7 @@ class _VideoAppState extends State<VideoApp> {
         builder: (BuildContext context) {
           return AlertDialog(
             backgroundColor: AppDefaultColors.appColor..withOpacity(0.2),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(Radius.circular(50.0))),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(50.0))),
             contentPadding: EdgeInsets.only(top: 10.0),
             content: SizedBox(
               height: 90.0,
@@ -988,9 +845,7 @@ class _VideoAppState extends State<VideoApp> {
                           padding: EdgeInsets.all(5),
                           child: Text(
                             'Not for me',
-                            style: TextStyle(
-                                fontSize: 12,
-                                color: AppDefaultColors.textLightGray),
+                            style: TextStyle(fontSize: 12, color: AppDefaultColors.textLightGray),
                           ),
                         ),
                       ],
@@ -1008,9 +863,7 @@ class _VideoAppState extends State<VideoApp> {
                           padding: EdgeInsets.all(5),
                           child: Text(
                             'I like this',
-                            style: TextStyle(
-                                fontSize: 12,
-                                color: AppDefaultColors.textLightGray),
+                            style: TextStyle(fontSize: 12, color: AppDefaultColors.textLightGray),
                           ),
                         ),
                       ],
@@ -1029,9 +882,7 @@ class _VideoAppState extends State<VideoApp> {
                           padding: EdgeInsets.all(5),
                           child: Text(
                             'I love this',
-                            style: TextStyle(
-                                fontSize: 12,
-                                color: AppDefaultColors.textLightGray),
+                            style: TextStyle(fontSize: 12, color: AppDefaultColors.textLightGray),
                           ),
                         ),
                       ],
@@ -1048,8 +899,7 @@ class _VideoAppState extends State<VideoApp> {
     Dio dio = Dio();
     try {
       var dir = await getApplicationDocumentsDirectory();
-      await dio.download(url, "${dir.path}/$moveTitle.mp4",
-          onReceiveProgress: (rec, total) {
+      await dio.download(url, "${dir.path}/$moveTitle.mp4", onReceiveProgress: (rec, total) {
         print("Rec: $rec , Total: $total");
       });
     } catch (e) {
@@ -1058,8 +908,7 @@ class _VideoAppState extends State<VideoApp> {
     print("Download completed");
   }
 
-  void getUserMoviesDetails(
-      String token, String profileId, String movieID) async {
+  void getUserMoviesDetails(String token, String profileId, String movieID) async {
     setState(() {
       isLoading = true;
     });
@@ -1075,9 +924,7 @@ class _VideoAppState extends State<VideoApp> {
     }
     print("TOKen$token\n$profileId\n$url");
 
-    ApiServices()
-        .getRequestData("$url$movieID?profile_id=$profileId", token)
-        .then((response) async {
+    ApiServices().getRequestData("$url$movieID?profile_id=$profileId", token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("MovieDetailes_Response: $jsonsDataString");
 
@@ -1103,8 +950,7 @@ class _VideoAppState extends State<VideoApp> {
           String image = "${AppConfig.BaseUrl}/${data["image"]}";
           String medium = "${AppConfig.BaseUrl}/${data["medium"]}";
           String thumbnail = "${AppConfig.BaseUrl}/${data["thumbnail"]}";
-          String portraitsmall =
-              "${AppConfig.BaseUrl}/${data["portraitsmall"]}";
+          String portraitsmall = "${AppConfig.BaseUrl}/${data["portraitsmall"]}";
           String portrait = "${AppConfig.BaseUrl}/${data["portrait"]}";
 
           String duration = data["duration"].toString();
@@ -1175,70 +1021,58 @@ class _VideoAppState extends State<VideoApp> {
           }
 
           var staringNamesArray = [];
-          for (var castsData in data["casts"]) {
-            print("castsDataCasts${castsData["cast"]}");
-            CastCast? castCast;
-            if (castsData['cast'] != "") {
-              print("castsDataCastName:${castsData["cast"]["name"]}");
-              castCast = CastCast(
-                id: castsData["cast"]["id"].toString(),
-                name: castsData["cast"]["name"].toString(),
-                firstname: castsData["cast"]["firstname"].toString(),
-                lastname: castsData["cast"]["lastname"].toString(),
-                dob: castsData["cast"]["dob"].toString(),
-                gender: castsData["cast"]["gender"].toString(),
-                photo: castsData["cast"]["photo"].toString(),
-              );
+          if (data["casts"] != null && data["casts"] is Iterable) {
+            for (var castsData in data["casts"]) {
+              print("castsDataCasts${castsData["cast"]}");
+              CastCast? castCast;
+              if (castsData['cast'] != "") {
+                print("castsDataCastName:${castsData["cast"]["name"]}");
+                castCast = CastCast(
+                  id: castsData["cast"]["id"].toString(),
+                  name: castsData["cast"]["name"].toString(),
+                  firstname: castsData["cast"]["firstname"].toString(),
+                  lastname: castsData["cast"]["lastname"].toString(),
+                  dob: castsData["cast"]["dob"].toString(),
+                  gender: castsData["cast"]["gender"].toString(),
+                  photo: castsData["cast"]["photo"].toString(),
+                );
 
-              if (castsData["group_label"] == "Producer") {
-                setState(() {
-                  _DirectorName = castsData["group_label"].toString();
-                });
+                if (castsData["group_label"] == "Producer") {
+                  setState(() {
+                    _DirectorName = castsData["group_label"].toString();
+                  });
+                }
+                staringNamesArray.add(castsData["cast"]["name"].toString());
               }
-              staringNamesArray.add(castsData["cast"]["name"].toString());
+
+              CastElement castElement = CastElement(group: castsData["group"].toString(), groupLabel: castsData["group_label"].toString(), groupSlug: castsData["group_slug"].toString(), cast: castCast);
+
+              castElementList.add(castElement);
             }
-
-            CastElement castElement = CastElement(
-                group: castsData["group"].toString(),
-                groupLabel: castsData["group_label"].toString(),
-                groupSlug: castsData["group_slug"].toString(),
-                cast: castCast);
-
-            castElementList.add(castElement);
           }
 
-          if (data["related"] != "" && data["related"] != null) {
+          if (data["related"] != null && data["related"] is Iterable) {
             for (var castsData in data["related"]) {
               Usermovies? usermovies;
 
               if (castsData["movie"]['usermovies'] != "") {
-                print(
-                    "usermoviesDetailsPage: ${castsData["movie"]["usermovies"]["id"]}");
+                print("usermoviesDetailsPage: ${castsData["movie"]["usermovies"]["id"]}");
                 usermovies = Usermovies(
                   id: castsData["movie"]["usermovies"]["id"].toString(),
-                  movieId:
-                      castsData["movie"]["usermovies"]["movieId"].toString(),
+                  movieId: castsData["movie"]["usermovies"]["movieId"].toString(),
                   mylist: castsData["movie"]["usermovies"]["mylist"].toString(),
                   likes: castsData["movie"]["usermovies"]["likes"].toString(),
-                  watchTime:
-                      castsData["movie"]["usermovies"]["watchTime"].toString(),
-                  watching:
-                      castsData["movie"]["usermovies"]["watching"].toString(),
-                  watched:
-                      castsData["movie"]["usermovies"]["watched"].toString(),
-                  watchedPercent: castsData["movie"]["usermovies"]
-                          ["watchedPercent"]
-                      .toString(),
+                  watchTime: castsData["movie"]["usermovies"]["watchTime"].toString(),
+                  watching: castsData["movie"]["usermovies"]["watching"].toString(),
+                  watched: castsData["movie"]["usermovies"]["watched"].toString(),
+                  watchedPercent: castsData["movie"]["usermovies"]["watchedPercent"].toString(),
                   viewed: castsData["movie"]["usermovies"]["viewed"].toString(),
                 );
               }
 
-              String thumbnailUrl =
-                  "${AppConfig.BaseUrl}/${castsData["movie"]["thumbnail"]}";
-              String portraitsmallUrl =
-                  "${AppConfig.BaseUrl}/${castsData["movie"]["portraitsmall"]}";
-              String portraitUrl =
-                  "${AppConfig.BaseUrl}/${castsData["movie"]["portrait"]}";
+              String thumbnailUrl = "${AppConfig.BaseUrl}/${castsData["movie"]["thumbnail"]}";
+              String portraitsmallUrl = "${AppConfig.BaseUrl}/${castsData["movie"]["portraitsmall"]}";
+              String portraitUrl = "${AppConfig.BaseUrl}/${castsData["movie"]["portrait"]}";
 
               relatedMovieData.add(RelatedMovieData(
                   movie: Movies(
@@ -1286,8 +1120,7 @@ class _VideoAppState extends State<VideoApp> {
     });
   }
 
-  void getUserWatchingMoviesDetails(
-      String token, String profileId, String movieID) async {
+  void getUserWatchingMoviesDetails(String token, String profileId, String movieID) async {
     setState(() {
       isLoading = true;
     });
@@ -1298,9 +1131,7 @@ class _VideoAppState extends State<VideoApp> {
       url = AppConfig.userMovieDetails;
     }
 
-    ApiServices()
-        .getRequestData("$url$movieID?profile_id=$profileId", token)
-        .then((response) async {
+    ApiServices().getRequestData("$url$movieID?profile_id=$profileId", token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("MovieWatched_Response: $jsonsDataString");
 
@@ -1350,9 +1181,7 @@ class _VideoAppState extends State<VideoApp> {
     setState(() {
       isLoading = true;
     });
-    ApiServices()
-        .postRequestTokenWithoutBody(AppConfig.tokenexist, token)
-        .then((response) async {
+    ApiServices().postRequestTokenWithoutBody(AppConfig.tokenexist, token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("getTokenExist_Response: $jsonsDataString");
       print("getTokenExist_Token: $token");
@@ -1383,14 +1212,8 @@ class _VideoAppState extends State<VideoApp> {
     });
   }
 
-  void setUserMovies(String token, String profileID, String movieID,
-      Map<String, int> postValues) async {
-    ApiServices()
-        .postRequestToken(
-            "${AppConfig.setUserMovie}$movieID?profile_id=$profileID",
-            postValues,
-            token)
-        .then((response) async {
+  void setUserMovies(String token, String profileID, String movieID, Map<String, int> postValues) async {
+    ApiServices().postRequestToken("${AppConfig.setUserMovie}$movieID?profile_id=$profileID", postValues, token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("setuserMovie_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -1433,8 +1256,7 @@ Dialog rateDialog = Dialog(
               ),
               Text(
                 'Not for me',
-                style: TextStyle(
-                    fontSize: 12, color: AppDefaultColors.textLightGray),
+                style: TextStyle(fontSize: 12, color: AppDefaultColors.textLightGray),
               ),
             ],
           ),
@@ -1449,8 +1271,7 @@ Dialog rateDialog = Dialog(
               ),
               Text(
                 'I like this',
-                style: TextStyle(
-                    fontSize: 12, color: AppDefaultColors.textLightGray),
+                style: TextStyle(fontSize: 12, color: AppDefaultColors.textLightGray),
               ),
             ],
           ),
@@ -1466,8 +1287,7 @@ Dialog rateDialog = Dialog(
               ),
               Text(
                 'I love this',
-                style: TextStyle(
-                    fontSize: 12, color: AppDefaultColors.textLightGray),
+                style: TextStyle(fontSize: 12, color: AppDefaultColors.textLightGray),
               ),
             ],
           ),
@@ -1569,11 +1389,9 @@ class ButtonShapeWidget extends StatelessWidget {
       child: ElevatedButton(
         onPressed: onTap,
         style: ButtonStyle(
-          backgroundColor: WidgetStateProperty.all(
-              AppDefaultColors.boxDarkGray.withOpacity(0.5)),
+          backgroundColor: WidgetStateProperty.all(AppDefaultColors.boxDarkGray.withOpacity(0.5)),
           foregroundColor: WidgetStateProperty.all(Colors.transparent),
-          padding: WidgetStateProperty.all(
-              EdgeInsets.symmetric(vertical: 0, horizontal: 0)),
+          padding: WidgetStateProperty.all(EdgeInsets.symmetric(vertical: 0, horizontal: 0)),
           textStyle: WidgetStateProperty.all(TextStyle(fontSize: 16)),
           shape: WidgetStateProperty.all<RoundedRectangleBorder>(
             RoundedRectangleBorder(
@@ -1619,10 +1437,7 @@ class ButtonShapeWidget extends StatelessWidget {
             ),
             Text(
               isDownloaded ? 'Download Completed' : 'Download',
-              style: TextStyle(
-                  color: AppDefaultColors.white,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w500),
+              style: TextStyle(color: AppDefaultColors.white, fontSize: 17, fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -1653,12 +1468,8 @@ class ProgressIndicatorWidget extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         builder: (context, progress, child) {
           return CircularProgressIndicator(
-            backgroundColor: isDownloading
-                ? CupertinoColors.lightBackgroundGray
-                : Colors.white.withOpacity(0),
-            valueColor: AlwaysStoppedAnimation(isFetching
-                ? CupertinoColors.lightBackgroundGray
-                : AppDefaultColors.thikRed),
+            backgroundColor: isDownloading ? CupertinoColors.lightBackgroundGray : Colors.white.withOpacity(0),
+            valueColor: AlwaysStoppedAnimation(isFetching ? CupertinoColors.lightBackgroundGray : AppDefaultColors.thikRed),
             strokeWidth: 2,
             value: isFetching ? null : progress,
           );
@@ -1687,8 +1498,7 @@ abstract class DownloadController implements ChangeNotifier {
   void openDownload();
 }
 
-class SimulatedDownloadController extends DownloadController
-    with ChangeNotifier {
+class SimulatedDownloadController extends DownloadController with ChangeNotifier {
   SimulatedDownloadController({
     DownloadStatus downloadStatus = DownloadStatus.notDownloaded,
     double progress = 0.0,
@@ -1799,13 +1609,10 @@ class SimulatedDownloadController extends DownloadController
           print("DownloadDirectory: ${dir.path}");
           print("_downloadUrl: $_downloadUrl");
           movieDirPath = "${dir.path}/$_downloadMovieTitle.mp4";
-          await dio.download(
-              _downloadUrl, "${dir.path}/$_downloadMovieTitle.mp4",
-              cancelToken: cancelToken, onReceiveProgress: (rec, total) {
+          await dio.download(_downloadUrl, "${dir.path}/$_downloadMovieTitle.mp4", cancelToken: cancelToken, onReceiveProgress: (rec, total) {
             _onReceiveProgress(rec, total);
             downloadProgress = ((rec / total) * 100.toInt()) / 100;
-            print(
-                "Rec: $rec , Total: $total, Progress percent: $downloadProgress");
+            print("Rec: $rec , Total: $total, Progress percent: $downloadProgress");
 
             if (rec == total) {
               downloadProgress = 1;
@@ -1841,30 +1648,21 @@ class SimulatedDownloadController extends DownloadController
         _downloadStatus = DownloadStatus.downloaded;
         _isDownloading = false;
 
-        var dbValue = {
-          'movieUrl': movieDirPath.toString(),
-          'movieID': _downloadMovieID.toString(),
-          'movieThumnail': _downloadThumnail.toString(),
-          'movieTitle': _downloadMovieTitle.toString()
-        };
+        var dbValue = {'movieUrl': movieDirPath.toString(), 'movieID': _downloadMovieID.toString(), 'movieThumnail': _downloadThumnail.toString(), 'movieTitle': _downloadMovieTitle.toString()};
         await dbHelper.insertData(dbValue);
 
         notifyListeners();
       } else {
-        Fluttertoast.showToast(
-            msg: "Download option not enabled for this movie");
+        Fluttertoast.showToast(msg: "Download option not enabled for this movie");
       }
     } else {
-      Fluttertoast.showToast(
-          msg:
-              "Enable Wi-fi on your device.\nYour settings enabled wifi dowload option");
+      Fluttertoast.showToast(msg: "Enable Wi-fi on your device.\nYour settings enabled wifi dowload option");
     }
   }
 
   Future<bool> verifyDataOption() async {
     final pref = await SharedPreferences.getInstance();
-    var downloadDataOption =
-        pref.getBool(AppPreferences.downloadDataOption) ?? false;
+    var downloadDataOption = pref.getBool(AppPreferences.downloadDataOption) ?? false;
 
     if (downloadDataOption) {
       if (await CommonWidget().isWifiConnectivity()) {
@@ -1880,8 +1678,7 @@ class SimulatedDownloadController extends DownloadController
     }
   }
 
-  Future<File> encryptFile(
-      File inputFile, String key, String outputFileName) async {
+  Future<File> encryptFile(File inputFile, String key, String outputFileName) async {
     final directory = await getApplicationDocumentsDirectory();
     final filePath = '${directory.path}/$outputFileName';
     final outputFile = File(filePath);
@@ -1889,8 +1686,7 @@ class SimulatedDownloadController extends DownloadController
     final keyBytes = encrypt.Key.fromUtf8(key.padRight(32, '0'));
     final iv = encrypt.IV.fromLength(16);
 
-    final encrypter =
-        encrypt.Encrypter(encrypt.AES(keyBytes, mode: encrypt.AESMode.cbc));
+    final encrypter = encrypt.Encrypter(encrypt.AES(keyBytes, mode: encrypt.AESMode.cbc));
 
     final inputBytes = await inputFile.readAsBytes();
     final encryptedBytes = encrypter.encryptBytes(inputBytes, iv: iv).bytes;

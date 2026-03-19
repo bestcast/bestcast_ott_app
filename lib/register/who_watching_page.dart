@@ -21,11 +21,9 @@ import '../common_files/loading_widget.dart';
 
 // ignore: must_be_immutable
 class WhosWatchingPage extends StatefulWidget {
-
   String activityType = "";
 
   WhosWatchingPage({super.key, required this.activityType});
-
 
   @override
   State<WhosWatchingPage> createState() => _WhosWatchingPageState();
@@ -75,7 +73,6 @@ class _WhosWatchingPageState extends State<WhosWatchingPage> {
     }
 
     print("EditModeStatus: $editMode");
-
   }
 
   Future<void> getInitalValue() async {
@@ -89,8 +86,7 @@ class _WhosWatchingPageState extends State<WhosWatchingPage> {
       print("whowa_token: $_token");
       getUserProfiles(_token);
     } else {
-      CommonWidget().showSnackBar(
-          context, ContentType.warning, "Check your internet connection.", "");
+      CommonWidget().showSnackBar(context, ContentType.warning, "Check your internet connection.", "");
     }
   }
 
@@ -123,16 +119,9 @@ class _WhosWatchingPageState extends State<WhosWatchingPage> {
     return Scaffold(
       backgroundColor: AppDefaultColors.appColor,
       appBar: AppBar(
-        title: Text(
-            widget.activityType == "New" ? "Who's Watching" : "Manage Profile",
-            style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.w600)),
+        title: Text(widget.activityType == "New" ? "Who's Watching" : "Manage Profile", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600)),
         backgroundColor: AppDefaultColors.appColor,
-        leading: widget.activityType != "New"
-            ? const BackButton(color: Colors.white)
-            : null,
+        leading: widget.activityType != "New" ? const BackButton(color: Colors.white) : null,
         actions: <Widget>[
           Padding(
             padding: const EdgeInsets.all(10.0),
@@ -154,9 +143,7 @@ class _WhosWatchingPageState extends State<WhosWatchingPage> {
               },
               child: Row(
                 children: [
-                  Icon(
-                      editMode ? Icons.close : Icons.mode_edit_outline_outlined,
-                      color: Colors.white),
+                  Icon(editMode ? Icons.close : Icons.mode_edit_outline_outlined, color: Colors.white),
                   SizedBox(
                     // sized box with width 10
                     width: 20,
@@ -182,12 +169,10 @@ class _WhosWatchingPageState extends State<WhosWatchingPage> {
                     return MyGridItem(
                       whoWatchingModel: whoWatchingModel[index],
                       onTap: () async {
-
                         if (widget.activityType == "New") {
                           _awaitProfile(context, whoWatchingModel[index]);
                         } else {
-                          if (whoWatchingModel[index].editable == true &&
-                              whoWatchingModel[index].enableAddUser == false) {
+                          if (whoWatchingModel[index].editable == true && whoWatchingModel[index].enableAddUser == false) {
                             _awaitEditProfile(context, whoWatchingModel[index]);
                           } else {
                             _awaitProfile(context, whoWatchingModel[index]);
@@ -223,9 +208,7 @@ class _WhosWatchingPageState extends State<WhosWatchingPage> {
     isLoading = true;
     context.loaderOverlay.show();
     whoWatchingModel.clear();
-    ApiServices()
-        .getRequestData(AppConfig.userProfileList, token)
-        .then((response) async {
+    ApiServices().getRequestData(AppConfig.userProfileList, token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("getUserprofile_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -240,8 +223,7 @@ class _WhosWatchingPageState extends State<WhosWatchingPage> {
           for (var profileUser in responseData["data"]) {
             print("ProfileID:${profileUser["id"]}");
 
-            String profilePicUrl =
-                "${AppConfig.BaseUrl}/${profileUser["profileicon"]["thumbnail"]}";
+            String profilePicUrl = "${AppConfig.BaseUrl}/${profileUser["profileicon"]["thumbnail"]}";
 
             bool? editModeStatus;
             if (editMode) {
@@ -253,8 +235,7 @@ class _WhosWatchingPageState extends State<WhosWatchingPage> {
               profileID: profileUser["id"].toString(),
               profileName: profileUser["name"].toString(),
               profilePictureID: profileUser["profileicon"]["id"].toString(),
-              profilePictureTitle:
-                  profileUser["profileicon"]["title"].toString(),
+              profilePictureTitle: profileUser["profileicon"]["title"].toString(),
               profilePicture: profilePicUrl,
               lastLogin: profileUser["last_login"].toString(),
               language: profileUser["language"].toInt(),
@@ -297,8 +278,7 @@ class _WhosWatchingPageState extends State<WhosWatchingPage> {
       } else {
         print("Error: $response");
         context.loaderOverlay.hide();
-        CommonWidget().showSnackBar(
-            context, ContentType.failure, "Error", response.toString());
+        CommonWidget().showSnackBar(context, ContentType.failure, "Error", response.toString());
       }
       isLoading = false;
       context.loaderOverlay.hide();
@@ -311,9 +291,7 @@ class _WhosWatchingPageState extends State<WhosWatchingPage> {
     setState(() {
       isLoading = true;
     });
-    ApiServices()
-        .postRequestTokenWithoutBody(AppConfig.getUserDetails, token)
-        .then((response) async {
+    ApiServices().postRequestTokenWithoutBody(AppConfig.getUserDetails, token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("getUserDetails_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -322,14 +300,11 @@ class _WhosWatchingPageState extends State<WhosWatchingPage> {
           String status = jsonReponse['status'];
 
           if (status == "success") {
-            String? planStatus =
-                jsonReponse['results']['user']['plan_status'].toString();
-            String? planDeviceStatus =
-                jsonReponse['results']['user']['plan_device_status'].toString();
+            String? planStatus = jsonReponse['results']['user']['plan_status'].toString();
+            String? planDeviceStatus = jsonReponse['results']['user']['plan_device_status'].toString();
 
             if (planStatus == "0") {
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => PlanExpiredScreen()));
+              Navigator.push(context, MaterialPageRoute(builder: (context) => PlanExpiredScreen()));
             } else if (planDeviceStatus == "0") {
               Navigator.push(
                   context,
@@ -353,8 +328,7 @@ class _WhosWatchingPageState extends State<WhosWatchingPage> {
           isLoading = false;
         });
         print("geUserError: $response");
-        CommonWidget().showSnackBar(
-            context, ContentType.failure, "Error", response.toString());
+        CommonWidget().showSnackBar(context, ContentType.failure, "Error", response.toString());
       }
 
       isLoading = false;
@@ -371,21 +345,13 @@ class _WhosWatchingPageState extends State<WhosWatchingPage> {
 
   Future<void> _awaitProfile(BuildContext context, whoWatchingModel) async {
     if (whoWatchingModel.enableAddUser == true) {
-      final value = await Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) =>
-                  AddUserPage(pageType: 'New', userData: whoWatchingModel)));
+      final value = await Navigator.push(context, MaterialPageRoute(builder: (context) => AddUserPage(pageType: 'New', userData: whoWatchingModel)));
       print("Profilestatus$value");
       if (value != null) {
         getUserProfiles(_token);
       }
     } else if (whoWatchingModel.editable == true) {
-      final value = Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) =>
-                  AddUserPage(pageType: 'Edit', userData: whoWatchingModel)));
+      final value = Navigator.push(context, MaterialPageRoute(builder: (context) => AddUserPage(pageType: 'Edit', userData: whoWatchingModel)));
 
       print("ProfileEditStatus$value");
       getUserProfiles(_token);
@@ -395,18 +361,12 @@ class _WhosWatchingPageState extends State<WhosWatchingPage> {
       print("userProfileID: " + userProfileData.profileID!);
 
       final pref = await SharedPreferences.getInstance();
-      await pref.setString(
-          AppPreferences.profileID, userProfileData.profileID!);
-      await pref.setString(
-          AppPreferences.profileName, userProfileData.profileName!);
-      await pref.setString(
-          AppPreferences.profilePictureID, userProfileData.profilePictureID!);
-      await pref.setString(AppPreferences.profilePictureTitle,
-          userProfileData.profilePictureTitle!);
-      await pref.setString(
-          AppPreferences.profilePicture, userProfileData.profilePicture!);
-      await pref.setString(
-          AppPreferences.isChild, userProfileData.isChild!.toString());
+      await pref.setString(AppPreferences.profileID, userProfileData.profileID!);
+      await pref.setString(AppPreferences.profileName, userProfileData.profileName!);
+      await pref.setString(AppPreferences.profilePictureID, userProfileData.profilePictureID!);
+      await pref.setString(AppPreferences.profilePictureTitle, userProfileData.profilePictureTitle!);
+      await pref.setString(AppPreferences.profilePicture, userProfileData.profilePicture!);
+      await pref.setString(AppPreferences.isChild, userProfileData.isChild!.toString());
       Navigator.of(context).pushNamedAndRemoveUntil(
         'mainscreen',
         (route) => false, // Removes all routes from the stack
@@ -417,9 +377,7 @@ class _WhosWatchingPageState extends State<WhosWatchingPage> {
   Future<void> _awaitEditProfile(BuildContext context, whoWatchingModel) async {
     Navigator.of(context)
         .push(
-          MaterialPageRoute(
-              builder: (_) =>
-                  AddUserPage(pageType: 'Edit', userData: whoWatchingModel)),
+          MaterialPageRoute(builder: (_) => AddUserPage(pageType: 'Edit', userData: whoWatchingModel)),
         )
         .then((val) => val == "success" ? getUserProfiles(_token) : null);
   }
@@ -429,8 +387,7 @@ class MyGridItem extends StatelessWidget {
   final WhoWatchingModel whoWatchingModel;
   final VoidCallback onTap;
 
-  const MyGridItem(
-      {super.key, required this.whoWatchingModel, required this.onTap});
+  const MyGridItem({super.key, required this.whoWatchingModel, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -451,13 +408,11 @@ class MyGridItem extends StatelessWidget {
                     ? CircleAvatar(
                         backgroundColor: AppDefaultColors.boxDarkGray,
                         // foregroundColor: Colors.green,
-                        backgroundImage:
-                            AssetImage('images/default_profile.jpg'),
+                        backgroundImage: AssetImage('images/default_profile.jpg'),
                         child: CircleAvatar(
                           radius: 65,
                           backgroundColor: Colors.transparent,
-                          backgroundImage: NetworkImage(
-                              whoWatchingModel.profilePicture.toString()),
+                          backgroundImage: NetworkImage(whoWatchingModel.profilePicture.toString()),
                         ),
                       )
                     : CircleAvatar(
@@ -467,26 +422,20 @@ class MyGridItem extends StatelessWidget {
                       ),
               ),
             ),
-            if ((whoWatchingModel.editable == true) &&
-                (whoWatchingModel.enableAddUser == false) &&
-                whoWatchingModel.profileName != "Add New")
+            if ((whoWatchingModel.editable == true) && (whoWatchingModel.enableAddUser == false) && whoWatchingModel.profileName != "Add New")
               SizedBox(
                 height: 100,
                 width: 100,
                 child: ElevatedButton(
                   onPressed: onTap,
                   style: ButtonStyle(
-                    backgroundColor: WidgetStateProperty.all(
-                        AppDefaultColors.darkGray.withOpacity(0.6)),
-                    foregroundColor:
-                        WidgetStateProperty.all(Colors.transparent),
-                    padding: WidgetStateProperty.all(
-                        EdgeInsets.symmetric(vertical: 0, horizontal: 0)),
+                    backgroundColor: WidgetStateProperty.all(AppDefaultColors.darkGray.withOpacity(0.6)),
+                    foregroundColor: WidgetStateProperty.all(Colors.transparent),
+                    padding: WidgetStateProperty.all(EdgeInsets.symmetric(vertical: 0, horizontal: 0)),
                     textStyle: WidgetStateProperty.all(TextStyle(fontSize: 16)),
                     shape: WidgetStateProperty.all<RoundedRectangleBorder>(
                       RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(100), // BorderRadius
+                        borderRadius: BorderRadius.circular(100), // BorderRadius
                       ),
                     ),
                   ),
@@ -508,8 +457,7 @@ class MyGridItem extends StatelessWidget {
               fit: BoxFit.fitWidth,
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: Text(whoWatchingModel.profileName.toString(),
-                    style: TextStyle(color: Colors.white, fontSize: 17)),
+                child: Text(whoWatchingModel.profileName.toString(), style: TextStyle(color: Colors.white, fontSize: 17)),
               ),
             ),
           ),
