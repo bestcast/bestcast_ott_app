@@ -63,27 +63,40 @@ class _QuizRewardClaimState extends State<QuizRewardClaim> {
       "mobile_no": _mobileNoController.text.trim(),
     };
 
-    // final String url = "${AppConfig.quizRewardClaim}${widget.userID}";
-
     try {
-      final response = await ApiServices().putRequestToken(
-        AppConfig.quizRewardClaim,
+      // 1. First attempt to Create (POST)
+      var response = await ApiServices().postRequestToken(
+        AppConfig.rewardClaimCreate,
         requestBody,
         widget.token,
       );
 
-      if (response.statusCode == 200) {
-        final jsonResponse = jsonDecode(response.body);
+      var jsonResponse = jsonDecode(response.body);
+
+      // 2. If backend indicates already submitted, fallback to Update (PUT) using userID
+      if (jsonResponse['success'] == false && jsonResponse['message'] != null && jsonResponse['message'].toString().toLowerCase().contains("already submitted")) {
+        print("Reward Claim Create Response 111: ${AppConfig.rewardClaimUpdate}${widget.userID}");
+        print("Azmat: ${widget.userID}");
+        response = await ApiServices().putRequestToken(
+          "${AppConfig.rewardClaimUpdate}${widget.userID}",
+          requestBody,
+          widget.token,
+        );
+        print("Reward Claim Update Response: ${response.body}");
+        jsonResponse = jsonDecode(response.body);
+      }
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
         if (jsonResponse['success'] == true) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(jsonResponse['message'] ?? "Reward claim updated successfully!")),
+              SnackBar(content: Text(jsonResponse['message'] ?? "Reward claim processed successfully!")),
             );
             widget.onSuccess();
             Navigator.of(context).pop(); // Close the dialog/screen
           }
         } else {
-          _showError(jsonResponse['message'] ?? "Failed to update reward claim.");
+          _showError(jsonResponse['message'] ?? "Failed to process reward claim.");
         }
       } else {
         _showError("Server Error: ${response.statusCode}");
