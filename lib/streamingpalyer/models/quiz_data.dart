@@ -70,7 +70,7 @@ class QuizQuestion {
       id: int.tryParse(json['id'].toString()) ?? 0,
       question: json['question'] ?? '',
       options: optionsObjs,
-      popupTime: int.tryParse(json['popup_time'].toString()) ?? 0,
+      popupTime: (int.tryParse(json['popup_time'].toString()) ?? 0) * 60,
       showQuestionTime: int.tryParse(json['show_question_time'].toString()) ?? 10,
     );
   }

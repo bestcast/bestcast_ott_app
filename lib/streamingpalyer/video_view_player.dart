@@ -119,6 +119,7 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
   late File _videoFile;
 
   // Quiz State
+  bool _useStaticQuizTimeForTesting = false; // Toggle to true to force exactly 10 seconds between popups
   bool _hasAskedQuiz = false;
   bool _quizEnabled = false;
   bool _isQuizActive = false;
@@ -226,10 +227,15 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
                 _currentQuizIndex++;
                 // Set timer for next question if available
                 if (_quizResponse != null && _currentQuizIndex < _quizResponse!.questions.length) {
-                  print("DEBUG: Starting 1 minute gap timer for next question (Index: $_currentQuizIndex)");
+                  final nextQuestion = _quizResponse!.questions[_currentQuizIndex];
+                  // int nextDelaySeconds = _useStaticQuizTimeForTesting ? 10 : (nextQuestion.popupTime > 0 ? nextQuestion.popupTime : 0);
+                  final previousQuestion = _quizResponse!.questions[_currentQuizIndex - 1];
+                  int gapSeconds = nextQuestion.popupTime - previousQuestion.popupTime;
+
+                  int nextDelaySeconds = _useStaticQuizTimeForTesting ? 10 : (gapSeconds > 0 ? gapSeconds : 0);
+                  print("DEBUG: Starting $nextDelaySeconds seconds gap timer for next question (Index: $_currentQuizIndex)");
                   _quizGapTimer?.cancel();
-                  // Debug: Reduced to 10 seconds for faster testing (will revert to 1 minute later)
-                  _quizGapTimer = Timer(const Duration(seconds: 10), () {
+                  _quizGapTimer = Timer(Duration(seconds: nextDelaySeconds), () {
                     print("DEBUG: Quiz Gap Timer Fired!");
                     if (mounted && _quizEnabled) {
                       setState(() {
@@ -379,9 +385,8 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
                 // Schedule First Question
                 _currentQuizIndex = 0;
                 final firstQuestion = _quizResponse!.questions[0];
-                int startDelaySeconds = firstQuestion.popupTime;
-                if (startDelaySeconds <= 0) startDelaySeconds = 0; // Immediate if 0
-                print("DEBUG: Scheduling 1st Question in $startDelaySeconds seconds (popup_time: ${firstQuestion.popupTime})");
+                int startDelaySeconds = _useStaticQuizTimeForTesting ? 10 : (firstQuestion.popupTime > 0 ? firstQuestion.popupTime : 0);
+                print("DEBUG: Scheduling 1st Question in $startDelaySeconds seconds (popup_time: ${firstQuestion.popupTime}, static override: $_useStaticQuizTimeForTesting)");
                 if (startDelaySeconds == 0) {
                   _isQuizActive = true;
                   // Pause immediately if showing immediately
@@ -409,7 +414,8 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
 
             bool shouldPlay = !accepted;
             if (accepted && _quizResponse != null && _quizResponse!.questions.isNotEmpty) {
-              if (_quizResponse!.questions[0].popupTime * 60 > 0) {
+              int initialDelay = _useStaticQuizTimeForTesting ? 10 : _quizResponse!.questions[0].popupTime;
+              if (initialDelay > 0) {
                 shouldPlay = true;
               } else {
                 shouldPlay = false; // Immediate quiz, ensure paused
