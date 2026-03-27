@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:bestcaststudios/streamingpalyer/test_component.dart';
+// import 'package:bestcaststudios/streamingpalyer/test_component.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -699,17 +699,17 @@ class _VideoAppState extends State<VideoApp> {
                           ),
                         ),
                         // TEST BUTTON START ------------------------------------------
-                        ElevatedButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => TestComponent(),
-                              ),
-                            );
-                          },
-                          child: Text("TEST"),
-                        ),
+                        // ElevatedButton(
+                        //   onPressed: () {
+                        //     Navigator.push(
+                        //       context,
+                        //       MaterialPageRoute(
+                        //         builder: (context) => TestComponent(),
+                        //       ),
+                        //     );
+                        //   },
+                        //   child: Text("TEST"),
+                        // ),
                         // TEST BUTTON END --------------------------------------------
                         MoreLikeThisGrid(
                           relatedMovieData: relatedMovieData,

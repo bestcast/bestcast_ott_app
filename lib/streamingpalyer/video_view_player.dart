@@ -216,6 +216,7 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
             movieId: widget.getMainMovieID,
             attemptId: _quizResponse?.attemptId ?? "",
             token: _token,
+            durationSeconds: _quizResponse!.questions[_currentQuizIndex].showQuestionTime,
             onComplete: () {
               setState(() {
                 _isQuizActive = false;
@@ -228,7 +229,6 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
                 // Set timer for next question if available
                 if (_quizResponse != null && _currentQuizIndex < _quizResponse!.questions.length) {
                   final nextQuestion = _quizResponse!.questions[_currentQuizIndex];
-                  // int nextDelaySeconds = _useStaticQuizTimeForTesting ? 10 : (nextQuestion.popupTime > 0 ? nextQuestion.popupTime : 0);
                   final previousQuestion = _quizResponse!.questions[_currentQuizIndex - 1];
                   int gapSeconds = nextQuestion.popupTime - previousQuestion.popupTime;
 
@@ -243,6 +243,9 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
                         _isQuizActive = true;
                         try {
                           _controller.pause();
+                          if (_controller.isFullScreen) {
+                            _controller.closeFullScreen();
+                          }
                         } catch (e) {
                           print("DEBUG: Error pausing video for quiz: $e");
                         }
@@ -392,6 +395,9 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
                   // Pause immediately if showing immediately
                   try {
                     _controller.pause();
+                    if (_controller.isFullScreen) {
+                      _controller.closeFullScreen();
+                    }
                   } catch (e) {}
                 } else {
                   _quizGapTimer?.cancel();
@@ -402,6 +408,9 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
                         _isQuizActive = true;
                         try {
                           _controller.pause();
+                          if (_controller.isFullScreen) {
+                            _controller.closeFullScreen();
+                          }
                         } catch (e) {
                           print("DEBUG: Error pausing: $e");
                         }
@@ -502,7 +511,7 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
             context: context,
             barrierDismissible: false,
             builder: (ctx) {
-              final bool won = (total > 0 && correct != total);
+              final bool won = (total > 0 && correct == total); // Correct question Logic
               return Dialog(
                 backgroundColor: Colors.transparent,
                 elevation: 0,
