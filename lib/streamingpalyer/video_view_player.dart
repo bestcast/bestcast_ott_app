@@ -126,6 +126,7 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
   int _currentQuizIndex = 0;
   Timer? _quizGapTimer;
   QuizResponse? _quizResponse;
+  bool _isLoadingQuiz = false;
 
   @override
   void initState() {
@@ -207,6 +208,15 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
               : null,
         ),
         if (isSeekDuration) BackgroundLoadingWidget(),
+        if (_isLoadingQuiz)
+          Container(
+            color: Colors.black.withValues(alpha: 0.5),
+            child: const Center(
+              child: CircularProgressIndicator(
+                color: Colors.amberAccent,
+              ),
+            ),
+          ),
         if (_quizResponse != null && _isQuizActive && _currentQuizIndex < _quizResponse!.questions.length)
           QuizOverlay(
             question: _quizResponse!.questions[_currentQuizIndex],
@@ -377,68 +387,90 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
       context: context,
       barrierDismissible: false,
       builder: (context) => QuizStartDialog(
-        onSelection: (bool accepted) {
-          print("DEBUG: Quiz selection: $accepted");
+        onSelection: (bool accepted, String language) async {
+          print("DEBUG: Quiz selection: $accepted, language: $language");
           Navigator.of(context).pop(); // Close dialog
           if (mounted) {
-            setState(() {
-              _quizEnabled = accepted;
-              _quizEnabled = accepted;
-              if (accepted && _quizResponse != null && _quizResponse!.questions.isNotEmpty) {
-                // Schedule First Question
-                _currentQuizIndex = 0;
-                final firstQuestion = _quizResponse!.questions[0];
-                int startDelaySeconds = _useStaticQuizTimeForTesting ? 10 : (firstQuestion.popupTime > 0 ? firstQuestion.popupTime : 0);
-                print("DEBUG: Scheduling 1st Question in $startDelaySeconds seconds (popup_time: ${firstQuestion.popupTime}, static override: $_useStaticQuizTimeForTesting)");
-                if (startDelaySeconds == 0) {
-                  _isQuizActive = true;
-                  // Pause immediately if showing immediately
-                  try {
-                    _controller.pause();
-                    if (_controller.isFullScreen) {
-                      _controller.closeFullScreen();
-                    }
-                  } catch (e) {}
-                } else {
-                  _quizGapTimer?.cancel();
-                  _quizGapTimer = Timer(Duration(seconds: startDelaySeconds), () {
-                    if (mounted && _quizEnabled) {
-                      setState(() {
-                        print("DEBUG: 1st Question Timer Fired!");
-                        _isQuizActive = true;
-                        try {
-                          _controller.pause();
-                          if (_controller.isFullScreen) {
-                            _controller.closeFullScreen();
+            if (accepted) {
+              setState(() {
+                _isLoadingQuiz = true;
+              });
+
+              await getQuizData(_token, userID, widget.getMainMovieID, language: language);
+
+              if (mounted) {
+                setState(() {
+                  _isLoadingQuiz = false;
+                });
+              }
+
+              setState(() {
+                _quizEnabled = accepted;
+                _controller.enableSkip = !accepted;
+                if (accepted && _quizResponse != null && _quizResponse!.questions.isNotEmpty) {
+                  // Schedule First Question
+                  _currentQuizIndex = 0;
+                  final firstQuestion = _quizResponse!.questions[0];
+                  int startDelaySeconds = _useStaticQuizTimeForTesting ? 10 : (firstQuestion.popupTime > 0 ? firstQuestion.popupTime : 0);
+                  print("DEBUG: Scheduling 1st Question in $startDelaySeconds seconds (popup_time: ${firstQuestion.popupTime}, static override: $_useStaticQuizTimeForTesting)");
+                  if (startDelaySeconds == 0) {
+                    _isQuizActive = true;
+                    // Pause immediately if showing immediately
+                    try {
+                      _controller.pause();
+                      if (_controller.isFullScreen) {
+                        _controller.closeFullScreen();
+                      }
+                    } catch (e) {}
+                  } else {
+                    _quizGapTimer?.cancel();
+                    _quizGapTimer = Timer(Duration(seconds: startDelaySeconds), () {
+                      if (mounted && _quizEnabled) {
+                        setState(() {
+                          print("DEBUG: 1st Question Timer Fired!");
+                          _isQuizActive = true;
+                          try {
+                            _controller.pause();
+                            if (_controller.isFullScreen) {
+                              _controller.closeFullScreen();
+                            }
+                          } catch (e) {
+                            print("DEBUG: Error pausing: $e");
                           }
-                        } catch (e) {
-                          print("DEBUG: Error pausing: $e");
-                        }
-                      });
-                    }
-                  });
+                        });
+                      }
+                    });
+                  }
+                }
+              });
+
+              bool shouldPlay = true;
+              if (accepted && _quizResponse != null && _quizResponse!.questions.isNotEmpty) {
+                int initialDelay = _useStaticQuizTimeForTesting ? 10 : _quizResponse!.questions[0].popupTime;
+                if (initialDelay == 0) {
+                  shouldPlay = false; // Immediate quiz, ensure paused
                 }
               }
-            });
-
-            bool shouldPlay = !accepted;
-            if (accepted && _quizResponse != null && _quizResponse!.questions.isNotEmpty) {
-              int initialDelay = _useStaticQuizTimeForTesting ? 10 : _quizResponse!.questions[0].popupTime;
-              if (initialDelay > 0) {
-                shouldPlay = true;
-              } else {
-                shouldPlay = false; // Immediate quiz, ensure paused
+              try {
+                if (shouldPlay) {
+                  _controller.play();
+                } else {
+                  // Ensure paused if immediate
+                  _controller.pause();
+                }
+              } catch (e) {
+                print("DEBUG: Error handling video state: $e");
               }
-            }
-            try {
-              if (shouldPlay) {
+            } else {
+              setState(() {
+                _quizEnabled = false;
+                _controller.enableSkip = true;
+              });
+              try {
                 _controller.play();
-              } else {
-                // Ensure paused if immediate
-                _controller.pause();
+              } catch (e) {
+                print("DEBUG: Error resuming video: $e");
               }
-            } catch (e) {
-              print("DEBUG: Error handling video state: $e");
             }
           }
         },
@@ -447,40 +479,40 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
   }
 
 // # -----------------QUIZ-FETCH-API-----------------
-  void getQuizData(String token, String userID, String movieID) {
+  Future<void> getQuizData(String token, String userID, String movieID, {String language = 'english'}) async {
     final postValues = {
       'movie_id': movieID,
       'user_id': userID,
       'device_token': token.split("|")[1],
+      'language': language,
     };
-    ApiServices().postRequestToken(AppConfig.getQuiz, postValues, _token).then((response) {
+    try {
+      final response = await ApiServices().postRequestToken(AppConfig.getQuiz, postValues, _token);
       if (response.statusCode == 200) {
-        try {
-          final jsonResponse = jsonDecode(response.body);
-          if (jsonResponse['status'] == 'success') {
-            setState(() {
-              _quizResponse = QuizResponse.fromJson(jsonResponse);
-              print("Quiz loaded: ${_quizResponse?.total} questions");
-              if (mounted && !_hasAskedQuiz && enableController) {
-                _showQuizOptIn();
-              }
-              print("API Response Start:--------------");
-              debugPrint(
-                "Quiz loaded: ${jsonResponse['questions']} questions",
-                wrapWidth: 1024,
-              );
-              print("API Response End:--------------");
-              print("Quiz Attempt ID: ${_quizResponse?.attemptId}");
-              debugPrint("Full Quiz Response: $jsonResponse");
-            });
-          }
-        } catch (e) {
-          print("Quiz Parse Error: $e");
+        final jsonResponse = jsonDecode(response.body);
+        if (jsonResponse['status'] == 'success') {
+          setState(() {
+            _quizResponse = QuizResponse.fromJson(jsonResponse);
+            print("Quiz loaded: ${_quizResponse?.total} questions");
+            if (mounted && !_hasAskedQuiz && enableController) {
+              _showQuizOptIn();
+            }
+            print("API Response Start:--------------");
+            debugPrint(
+              "Quiz loaded: ${jsonResponse['questions']} questions",
+              wrapWidth: 1024,
+            );
+            print("API Response End:--------------");
+            print("Quiz Attempt ID: ${_quizResponse?.attemptId}");
+            debugPrint("Full Quiz Response: $jsonResponse");
+          });
         }
       } else {
         print("Quiz API Error: ${response.statusCode}");
       }
-    });
+    } catch (e) {
+      print("Quiz Parse Error: $e");
+    }
   }
 
 // # -----------------QUIZ-RESULT-API-----------------

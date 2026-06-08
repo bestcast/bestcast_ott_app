@@ -116,8 +116,12 @@ class _VideoViewerCoreState extends State<VideoViewerCore> {
   //-------------------------------//
   //FORWARD AND REWIND (DOUBLE TAP)//
   //-------------------------------//
-  void _rewind() => _showRewindAndForward(0, _defaultRewindAmount);
-  void _forward() => _showRewindAndForward(1, _defaultForwardAmount);
+  void _rewind() {
+    if (_query.video(context).enableSkip) _showRewindAndForward(0, _defaultRewindAmount);
+  }
+  void _forward() {
+    if (_query.video(context).enableSkip) _showRewindAndForward(1, _defaultForwardAmount);
+  }
 
   Future<void> _videoSeekToNextSeconds(int seconds) async {
     final controller = _query.video(context);
@@ -154,6 +158,7 @@ class _VideoViewerCoreState extends State<VideoViewerCore> {
   //------------------------------------//
   void _forwardDragStart(Offset globalPosition) async {
     final controller = _query.video(context);
+    if (!controller.enableSkip) return;
     await controller.pause();
     if (!controller.isShowingSettingsMenu) {
       Misc.delayed(50, () {

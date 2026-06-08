@@ -47,6 +47,6 @@ TODO
 analysis_output.txt
 /Extra/*
 
-packages/helpers
+# packages/helpers
 /lib/streamingpalyer/test_component.dart
 
