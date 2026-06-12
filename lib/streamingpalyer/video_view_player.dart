@@ -226,7 +226,7 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
             movieId: widget.getMainMovieID,
             attemptId: _quizResponse?.attemptId ?? "",
             token: _token,
-            durationSeconds: 10, // Hardecoded 10 sec question popup time
+            durationSeconds: 20, // Hardecoded 10 sec question popup time
             onComplete: () {
               setState(() {
                 _isQuizActive = false;

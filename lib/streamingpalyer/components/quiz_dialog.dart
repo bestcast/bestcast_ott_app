@@ -16,7 +16,7 @@ class QuizOverlay extends StatefulWidget {
   final String attemptId;
   final String token;
 
-  const QuizOverlay({super.key, required this.question, required this.questionIndex, required this.totalQuestions, required this.onComplete, required this.userId, required this.movieId, required this.attemptId, required this.token, this.durationSeconds = 10});
+  const QuizOverlay({super.key, required this.question, required this.questionIndex, required this.totalQuestions, required this.onComplete, required this.userId, required this.movieId, required this.attemptId, required this.token, this.durationSeconds = 20});
 
   @override
   State<QuizOverlay> createState() => _QuizOverlayState();
@@ -28,6 +28,9 @@ class _QuizOverlayState extends State<QuizOverlay> {
   bool _isSubmitting = false;
   int? _selectedOptionIndex;
   final List<String> optionPrefixes = ["A", "B", "C", "D"];
+
+  int get _elapsedSeconds => widget.durationSeconds - _timeLeft;
+  bool get _shouldShowOptions => _elapsedSeconds >= 5 || widget.durationSeconds < 5;
 
   @override
   void initState() {
@@ -231,39 +234,65 @@ class _QuizOverlayState extends State<QuizOverlay> {
               /// Options Grid
               Expanded(
                 flex: 5,
-                child: isTwoColumns && widget.question.options.length == 4
-                    ? Column(
-                        children: [
-                          Expanded(
-                            child: Row(
-                              children: [
-                                Expanded(child: _buildOption(0, widget.question.options[0])),
-                                const SizedBox(width: 16),
-                                Expanded(child: _buildOption(2, widget.question.options[2])),
-                              ],
+                child: _shouldShowOptions
+                    ? (isTwoColumns && widget.question.options.length == 4
+                        ? Column(
+                            children: [
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    Expanded(child: _buildOption(0, widget.question.options[0])),
+                                    const SizedBox(width: 16),
+                                    Expanded(child: _buildOption(2, widget.question.options[2])),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    Expanded(child: _buildOption(1, widget.question.options[1])),
+                                    const SizedBox(width: 16),
+                                    Expanded(child: _buildOption(3, widget.question.options[3])),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          )
+                        : Column(
+                            children: List.generate(
+                              widget.question.options.length,
+                              (index) => Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(bottom: 8.0),
+                                  child: _buildOption(index, widget.question.options[index]),
+                                ),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 12),
-                          Expanded(
-                            child: Row(
-                              children: [
-                                Expanded(child: _buildOption(1, widget.question.options[1])),
-                                const SizedBox(width: 16),
-                                Expanded(child: _buildOption(3, widget.question.options[3])),
-                              ],
+                          ))
+                    : Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const SizedBox(
+                              height: 32,
+                              width: 32,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 3,
+                                color: Colors.amberAccent,
+                              ),
                             ),
-                          ),
-                        ],
-                      )
-                    : Column(
-                        children: List.generate(
-                          widget.question.options.length,
-                          (index) => Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.only(bottom: 8.0),
-                              child: _buildOption(index, widget.question.options[index]),
+                            const SizedBox(height: 16),
+                            Text(
+                              "Options will appear in ${5 - _elapsedSeconds}s",
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
                             ),
-                          ),
+                          ],
                         ),
                       ),
               ),
@@ -274,32 +303,34 @@ class _QuizOverlayState extends State<QuizOverlay> {
               SizedBox(
                 width: 300,
                 height: 48,
-                child: ElevatedButton(
-                  onPressed: (_selectedOptionIndex == null || _isSubmitting) ? null : _submitAnswer,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueAccent.withValues(alpha: 0.2),
-                    disabledBackgroundColor: Colors.grey.withValues(alpha: 0.1),
-                    padding: EdgeInsets.zero,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                      side: BorderSide(
-                        color: (_selectedOptionIndex != null) ? Colors.blueAccent : Colors.grey,
-                        width: 2,
-                      ),
-                    ),
-                    elevation: 10,
-                  ),
-                  child: _isSubmitting
-                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.blueAccent))
-                      : Text(
-                          "Submit",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: (_selectedOptionIndex != null) ? Colors.white : Colors.grey,
+                child: _shouldShowOptions
+                    ? ElevatedButton(
+                        onPressed: (_selectedOptionIndex == null || _isSubmitting) ? null : _submitAnswer,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueAccent.withValues(alpha: 0.2),
+                          disabledBackgroundColor: Colors.grey.withValues(alpha: 0.1),
+                          padding: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                            side: BorderSide(
+                              color: (_selectedOptionIndex != null) ? Colors.blueAccent : Colors.grey,
+                              width: 2,
+                            ),
                           ),
+                          elevation: 10,
                         ),
-                ),
+                        child: _isSubmitting
+                            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.blueAccent))
+                            : Text(
+                                "Submit",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: (_selectedOptionIndex != null) ? Colors.white : Colors.grey,
+                                ),
+                              ),
+                      )
+                    : const SizedBox.shrink(),
               ),
             ],
           ),
