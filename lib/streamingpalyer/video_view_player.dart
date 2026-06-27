@@ -119,7 +119,7 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
   late File _videoFile;
 
   // Quiz State
-  bool _useStaticQuizTimeForTesting = false; // Toggle to true to force exactly 10 seconds between popups
+  bool _useStaticQuizTimeForTesting = true; // Toggle to true to force exactly 10 seconds between popups
   bool _hasAskedQuiz = false;
   bool _quizEnabled = false;
   bool _isQuizActive = false;
@@ -127,6 +127,74 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
   Timer? _quizGapTimer;
   QuizResponse? _quizResponse;
   bool _isLoadingQuiz = false;
+
+  // New variables for pause/resume validation
+  Duration? _quizGapRemaining;
+  DateTime? _quizGapStartedAt;
+  bool? _wasPlayingLast;
+
+  void _startQuizGapTimer(Duration duration) {
+    _quizGapTimer?.cancel();
+    _quizGapRemaining = duration;
+    _quizGapStartedAt = DateTime.now();
+    print("DEBUG: Starting quiz gap timer for ${duration.inSeconds} seconds");
+    _quizGapTimer = Timer(duration, _onQuizGapTimerFired);
+  }
+
+  void _onQuizGapTimerFired() {
+    if (mounted && _quizEnabled) {
+      setState(() {
+        print("DEBUG: Quiz Gap Timer Fired!");
+        _isQuizActive = true;
+        _quizGapRemaining = null;
+        _quizGapStartedAt = null;
+        try {
+          _controller.pause();
+          if (_controller.isFullScreen) {
+            _controller.closeFullScreen();
+          }
+        } catch (e) {
+          print("DEBUG: Error pausing video for quiz: $e");
+        }
+      });
+    } else {
+      print("DEBUG: Quiz Timer Fired but aborted: mounted=$mounted, quizEnabled=$_quizEnabled");
+    }
+  }
+
+  void _videoPlayerListener() {
+    if (!mounted) return;
+    final bool currentPlaying = _controller.isPlaying;
+    if (_wasPlayingLast != currentPlaying) {
+      final bool wasPlaying = _wasPlayingLast ?? false;
+      _wasPlayingLast = currentPlaying;
+      if (currentPlaying && !wasPlaying) {
+        _onResumeVideo();
+      } else if (!currentPlaying && wasPlaying) {
+        _onPauseVideo();
+      }
+    }
+  }
+
+  void _onPauseVideo() {
+    if (_quizGapTimer != null && _quizGapTimer!.isActive && _quizGapStartedAt != null) {
+      final elapsed = DateTime.now().difference(_quizGapStartedAt!);
+      _quizGapRemaining = _quizGapRemaining! - elapsed;
+      if (_quizGapRemaining! < Duration.zero) {
+        _quizGapRemaining = Duration.zero;
+      }
+      _quizGapTimer!.cancel();
+      _quizGapStartedAt = null;
+      print("DEBUG: Paused quiz gap timer. Remaining: ${_quizGapRemaining!.inSeconds} seconds");
+    }
+  }
+
+  void _onResumeVideo() {
+    if (_quizGapRemaining != null && _quizGapRemaining! > Duration.zero && _quizGapStartedAt == null) {
+      print("DEBUG: Resuming quiz gap timer with ${_quizGapRemaining!.inSeconds} seconds remaining");
+      _startQuizGapTimer(_quizGapRemaining!);
+    }
+  }
 
   @override
   void initState() {
@@ -151,6 +219,7 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
 
     getInitalValue();
     initializeVideo();
+    _controller.addListener(_videoPlayerListener);
     if (widget.playType == 1) {
       getSeekPosition();
     }
@@ -226,6 +295,7 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
             movieId: widget.getMainMovieID,
             attemptId: _quizResponse?.attemptId ?? "",
             token: _token,
+            controller: _controller,
             durationSeconds: 20, // Hardecoded 10 sec question popup time
             onComplete: () {
               setState(() {
@@ -243,27 +313,7 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
                   int gapSeconds = nextQuestion.popupTime - previousQuestion.popupTime;
 
                   int nextDelaySeconds = _useStaticQuizTimeForTesting ? 10 : (gapSeconds > 0 ? gapSeconds : 0);
-                  print("DEBUG: Starting $nextDelaySeconds seconds gap timer for next question (Index: $_currentQuizIndex)");
-                  _quizGapTimer?.cancel();
-                  _quizGapTimer = Timer(Duration(seconds: nextDelaySeconds), () {
-                    print("DEBUG: Quiz Gap Timer Fired!");
-                    if (mounted && _quizEnabled) {
-                      setState(() {
-                        print("DEBUG: Activating Next Question!");
-                        _isQuizActive = true;
-                        try {
-                          _controller.pause();
-                          if (_controller.isFullScreen) {
-                            _controller.closeFullScreen();
-                          }
-                        } catch (e) {
-                          print("DEBUG: Error pausing video for quiz: $e");
-                        }
-                      });
-                    } else {
-                      print("DEBUG: Quiz Timer Fired but aborted: mounted=$mounted, quizEnabled=$_quizEnabled");
-                    }
-                  });
+                  _startQuizGapTimer(Duration(seconds: nextDelaySeconds));
                 } else {
                   print("DEBUG: Quiz sequence finished");
                   getQuizResult(userID, widget.getMainMovieID, _quizResponse?.attemptId ?? "");
@@ -277,6 +327,7 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
 
   @override
   void dispose() {
+    _controller.removeListener(_videoPlayerListener);
     _timer?.cancel();
     _quizGapTimer?.cancel();
     super.dispose();
@@ -423,23 +474,7 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
                       }
                     } catch (e) {}
                   } else {
-                    _quizGapTimer?.cancel();
-                    _quizGapTimer = Timer(Duration(seconds: startDelaySeconds), () {
-                      if (mounted && _quizEnabled) {
-                        setState(() {
-                          print("DEBUG: 1st Question Timer Fired!");
-                          _isQuizActive = true;
-                          try {
-                            _controller.pause();
-                            if (_controller.isFullScreen) {
-                              _controller.closeFullScreen();
-                            }
-                          } catch (e) {
-                            print("DEBUG: Error pausing: $e");
-                          }
-                        });
-                      }
-                    });
+                    _startQuizGapTimer(Duration(seconds: startDelaySeconds));
                   }
                 }
               });

@@ -4,6 +4,7 @@ import 'package:bestcaststudios/app_config/appconfig.dart';
 import 'package:bestcaststudios/common_files/api_services.dart';
 import 'package:bestcaststudios/streamingpalyer/models/quiz_data.dart';
 import 'package:flutter/material.dart';
+import '../video_player_source/video_viewer.dart';
 
 class QuizOverlay extends StatefulWidget {
   final QuizQuestion question;
@@ -15,19 +16,34 @@ class QuizOverlay extends StatefulWidget {
   final String movieId;
   final String attemptId;
   final String token;
+  final VideoViewerController controller;
 
-  const QuizOverlay({super.key, required this.question, required this.questionIndex, required this.totalQuestions, required this.onComplete, required this.userId, required this.movieId, required this.attemptId, required this.token, this.durationSeconds = 20});
+  const QuizOverlay({
+    super.key,
+    required this.question,
+    required this.questionIndex,
+    required this.totalQuestions,
+    required this.onComplete,
+    required this.userId,
+    required this.movieId,
+    required this.attemptId,
+    required this.token,
+    required this.controller,
+    this.durationSeconds = 20,
+  });
 
   @override
   State<QuizOverlay> createState() => _QuizOverlayState();
 }
 
-class _QuizOverlayState extends State<QuizOverlay> {
+class _QuizOverlayState extends State<QuizOverlay> with WidgetsBindingObserver {
   late int _timeLeft;
   Timer? _timer;
   bool _isSubmitting = false;
   int? _selectedOptionIndex;
   final List<String> optionPrefixes = ["A", "B", "C", "D"];
+  bool _isPaused = false;
+  bool _lastIsPlaying = false;
 
   int get _elapsedSeconds => widget.durationSeconds - _timeLeft;
   bool get _shouldShowOptions => _elapsedSeconds >= 5 || widget.durationSeconds < 5;
@@ -35,13 +51,41 @@ class _QuizOverlayState extends State<QuizOverlay> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    widget.controller.addListener(_onVideoControllerChanged);
+    _timeLeft = widget.durationSeconds;
     _startTimer();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    widget.controller.removeListener(_onVideoControllerChanged);
     _timer?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      setState(() {
+        _isPaused = true;
+      });
+    } else if (state == AppLifecycleState.resumed) {
+      setState(() {
+        _isPaused = false;
+      });
+    }
+  }
+
+  void _onVideoControllerChanged() {
+    final isPlaying = widget.controller.isPlaying;
+    if (_lastIsPlaying != isPlaying) {
+      setState(() {
+        _lastIsPlaying = isPlaying;
+        _isPaused = !isPlaying;
+      });
+    }
   }
 
   void _startTimer() {
@@ -49,6 +93,7 @@ class _QuizOverlayState extends State<QuizOverlay> {
     _timer?.cancel();
 
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_isPaused) return;
       if (_timeLeft > 0) {
         setState(() {
           _timeLeft--;
