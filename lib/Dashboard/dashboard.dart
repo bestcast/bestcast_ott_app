@@ -19,6 +19,7 @@ import 'package:bestcaststudios/common_files/movie_categories_card_wishlist.dart
 import 'package:bestcaststudios/common_files/round_border_background.dart';
 import 'package:bestcaststudios/common_files/submit_transparent_button.dart';
 import 'package:bestcaststudios/streamingpalyer/video_player.dart';
+import 'package:bestcaststudios/streamingpalyer/models/subtitle_models.dart';
 import '../app_config/app_preferences.dart';
 import '../app_config/app_utils.dart';
 import '../app_config/appconfig.dart';
@@ -899,6 +900,12 @@ class _DashboardState extends State<Dashboard> {
             _mainMovieCategory = resultTagText;
           });
 
+          List<SubTitleModel>? subtitleList;
+          if (data["movies"]["subtitle"] != null && data["movies"]["subtitle"] is List) {
+            subtitleList = List<SubTitleModel>.from(data["movies"]["subtitle"]
+                .map((x) => SubTitleModel.fromJson(x)));
+          }
+
           movieData = MovieData(
               id: id.toString(),
               urlkey: urlkey.toString(),
@@ -922,7 +929,8 @@ class _DashboardState extends State<Dashboard> {
               trailer480P: trailer480p.toString(),
               videoUrl: videoUrl.toString(),
               moviesource: moviesource.toString(),
-              subtitleStatus: subtitleStatus.toString());
+              subtitleStatus: subtitleStatus.toString(),
+              subtitle: subtitleList);
 
           getBlockMoviesLits(_token, profileID, categoryID, _page);
         } catch (e) {

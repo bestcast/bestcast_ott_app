@@ -17,6 +17,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../common_files/background_loading_widget.dart';
 import '../streamingpalyer/video_player_source/video_viewer.dart';
 import '../streamingpalyer/models/quiz_data.dart';
+import 'models/subtitle_models.dart';
 import '../app_config/app_preferences.dart';
 import '../app_config/appconfig.dart';
 import '../common_files/api_services.dart';
@@ -90,7 +91,16 @@ const BorderRadius kAllBorderRadius = BorderRadius.all(Radius.circular(kPadding)
 
 // ignore: must_be_immutable
 class MovieVideoViewer extends StatefulWidget {
-  MovieVideoViewer({super.key, required this.movieTitle, required this.thumbnail, required this.getMainMovieUrl, required this.getMainMovieID, required this.getWatchTime, required this.playType});
+  MovieVideoViewer({
+    super.key,
+    required this.movieTitle,
+    required this.thumbnail,
+    required this.getMainMovieUrl,
+    required this.getMainMovieID,
+    required this.getWatchTime,
+    required this.playType,
+    this.subtitles,
+  });
 
   String getMainMovieUrl = "";
   String movieTitle = "";
@@ -98,6 +108,7 @@ class MovieVideoViewer extends StatefulWidget {
   String getMainMovieID = "";
   String getWatchTime = "";
   int playType = 1;
+  List<SubTitleModel>? subtitles;
 
   @override
   _MovieVideoViewerState createState() => _MovieVideoViewerState();
@@ -259,6 +270,18 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
       isFavorite: true,
     );
 
+    Map<String, VideoViewerSubtitle> subtitleMap = {};
+    if (widget.subtitles != null) {
+      for (var sub in widget.subtitles!) {
+        if (sub.label != null && sub.url != null && sub.active == "1") {
+          subtitleMap[sub.label!] = VideoViewerSubtitle.network(
+            sub.url!,
+            type: SubtitleType.webvtt,
+          );
+        }
+      }
+    }
+
     return VideoViewerOrientation(
       controller: _controller,
       child: Stack(children: [
@@ -273,6 +296,7 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
                           // ignore: deprecated_member_use
                           ? VideoPlayerController.network(widget.getMainMovieUrl)
                           : VideoPlayerController.file(_videoFile),
+                      subtitle: subtitleMap.isNotEmpty ? subtitleMap : null,
                     ),
                   },
                   style: CustomVideoViewerStyle(movie: movie, context: context),

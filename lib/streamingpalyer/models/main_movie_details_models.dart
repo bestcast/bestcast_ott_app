@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'subtitle_models.dart';
 
 MainVideoDetailsModel mainVideoDetailsModelFromJson(String str) =>
     MainVideoDetailsModel.fromJson(json.decode(str));
@@ -47,6 +48,7 @@ class MovieData {
   String videoUrl;
   String moviesource;
   String subtitleStatus;
+  List<SubTitleModel>? subtitle;
 
   MovieData({
     required this.id,
@@ -72,6 +74,7 @@ class MovieData {
     required this.videoUrl,
     required this.moviesource,
     required this.subtitleStatus,
+    this.subtitle,
   });
 
   factory MovieData.fromJson(Map<String, dynamic> json) => MovieData(
@@ -98,6 +101,10 @@ class MovieData {
         videoUrl: json["video_url"],
         moviesource: json["moviesource"],
         subtitleStatus: json["subtitle_status"],
+        subtitle: json["subtitle"] != null && json["subtitle"] is List
+            ? List<SubTitleModel>.from(
+                json["subtitle"].map((x) => SubTitleModel.fromJson(x)))
+            : null,
       );
 
   Map<String, dynamic> toJson() => {
@@ -124,5 +131,8 @@ class MovieData {
         "video_url": videoUrl,
         "moviesource": moviesource,
         "subtitle_status": subtitleStatus,
+        "subtitle": subtitle != null
+            ? List<dynamic>.from(subtitle!.map((x) => x.toJson()))
+            : null,
       };
 }

@@ -476,6 +476,7 @@ class _VideoAppState extends State<VideoApp> {
                                                         playType: 1,
                                                         movieTitle: movieData!.title,
                                                         thumbnail: movieData!.thumbnail,
+                                                        subtitles: movieData!.subtitle,
                                                       ))).then((value) {
                                             setState(() {
                                               getUserWatchingMoviesDetails(_token, profileID, widget.getMovieID);
@@ -495,6 +496,7 @@ class _VideoAppState extends State<VideoApp> {
                                                       playType: 1,
                                                       movieTitle: movieData!.title,
                                                       thumbnail: movieData!.thumbnail,
+                                                      subtitles: movieData!.subtitle,
                                                     ))).then((value) {
                                           setState(() {
                                             getUserWatchingMoviesDetails(_token, profileID, widget.getMovieID);
@@ -529,6 +531,7 @@ class _VideoAppState extends State<VideoApp> {
                                                       playType: 1,
                                                       movieTitle: movieData!.title,
                                                       thumbnail: movieData!.thumbnail,
+                                                      subtitles: movieData!.subtitle,
                                                     ))).then((value) {
                                           setState(() {
                                             getUserWatchingMoviesDetails(_token, profileID, widget.getMovieID);
@@ -548,6 +551,7 @@ class _VideoAppState extends State<VideoApp> {
                                             playType: 1,
                                             movieTitle: movieData!.title,
                                             thumbnail: movieData!.thumbnail,
+                                            subtitles: movieData!.subtitle,
                                           ),
                                         ),
                                       ).then((value) {
@@ -969,6 +973,12 @@ class _VideoAppState extends State<VideoApp> {
           print("MainMoiveDetails:$title");
           print("moviesource:$moviesource");
 
+          List<SubTitleModel>? subtitleList;
+          if (data["subtitle"] != null && data["subtitle"] is List) {
+            subtitleList = List<SubTitleModel>.from(
+                data["subtitle"].map((x) => SubTitleModel.fromJson(x)));
+          }
+
           movieData = MovieData(
               id: id.toString(),
               urlkey: urlkey.toString(),
@@ -992,7 +1002,8 @@ class _VideoAppState extends State<VideoApp> {
               trailer480P: trailer480p.toString(),
               videoUrl: videoUrl.toString(),
               moviesource: moviesource.toString(),
-              subtitleStatus: subtitleStatus.toString());
+              subtitleStatus: subtitleStatus.toString(),
+              subtitle: subtitleList);
 
           var jsonValues = Usermovies.fromJson(data['usermovies']);
 
