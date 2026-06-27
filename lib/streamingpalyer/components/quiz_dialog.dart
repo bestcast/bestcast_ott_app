@@ -263,7 +263,7 @@ class _QuizOverlayState extends State<QuizOverlay> with WidgetsBindingObserver {
                   ),
                   child: SingleChildScrollView(
                     child: Text(
-                      widget.question.question,
+                      "Q${widget.questionIndex + 1}. ${widget.question.question}",
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: Colors.amberAccent,

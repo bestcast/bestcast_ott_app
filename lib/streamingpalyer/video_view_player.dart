@@ -106,6 +106,7 @@ class MovieVideoViewer extends StatefulWidget {
 class _MovieVideoViewerState extends State<MovieVideoViewer> {
   final VideoViewerController _controller = VideoViewerController();
   Timer? _timer;
+  Timer? _seekTimer;
   String _token = "";
 
   String profileName = "";
@@ -226,14 +227,16 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
 
     if (widget.getWatchTime != "" && widget.getWatchTime != "0") {
       isSeekDuration = true;
-      Timer(Duration(seconds: 3), () {
-        setState(() {
-          isSeekDuration = false;
-        });
-        int seconds = int.parse(widget.getWatchTime);
-        _controller.seekTo(Duration(seconds: seconds));
-        _controller.play();
-        print("Watch_Time:${widget.getWatchTime}");
+      _seekTimer = Timer(Duration(seconds: 3), () {
+        if (mounted) {
+          setState(() {
+            isSeekDuration = false;
+          });
+          int seconds = int.parse(widget.getWatchTime);
+          _controller.seekTo(Duration(seconds: seconds));
+          _controller.play();
+          print("Watch_Time:${widget.getWatchTime}");
+        }
       });
     }
   }
@@ -330,6 +333,7 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
     _controller.removeListener(_videoPlayerListener);
     _timer?.cancel();
     _quizGapTimer?.cancel();
+    _seekTimer?.cancel();
     super.dispose();
     ScreenProtector.preventScreenshotOff();
     SystemChrome.setPreferredOrientations([
@@ -479,6 +483,7 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
                 }
               });
 
+              _seekTimer?.cancel();
               bool shouldPlay = true;
               if (accepted && _quizResponse != null && _quizResponse!.questions.isNotEmpty) {
                 int initialDelay = _useStaticQuizTimeForTesting ? 10 : _quizResponse!.questions[0].popupTime;
@@ -488,9 +493,11 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
               }
               try {
                 if (shouldPlay) {
+                  _controller.seekTo(Duration.zero);
                   _controller.play();
                 } else {
                   // Ensure paused if immediate
+                  _controller.seekTo(Duration.zero);
                   _controller.pause();
                 }
               } catch (e) {
@@ -501,6 +508,13 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
                 _quizEnabled = false;
                 _controller.enableSkip = true;
               });
+              if (_seekTimer != null && _seekTimer!.isActive) {
+                _seekTimer!.cancel();
+                if (widget.getWatchTime != "" && widget.getWatchTime != "0") {
+                  int seconds = int.parse(widget.getWatchTime);
+                  _controller.seekTo(Duration(seconds: seconds));
+                }
+              }
               try {
                 _controller.play();
               } catch (e) {
