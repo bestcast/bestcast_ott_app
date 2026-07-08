@@ -9,11 +9,11 @@ class QuizRewardClaim extends StatefulWidget {
   final VoidCallback onSuccess;
 
   const QuizRewardClaim({
-    Key? key,
+    super.key,
     required this.userID,
     required this.token,
     required this.onSuccess,
-  }) : super(key: key);
+  });
 
   @override
   State<QuizRewardClaim> createState() => _QuizRewardClaimState();

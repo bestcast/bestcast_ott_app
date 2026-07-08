@@ -54,7 +54,7 @@ class VideoCoreActiveSubtitleText extends StatelessWidget {
             style: responsiveTextStyle,
             textAlign: style.textAlign,
           ),
-        ),  
+        ),
       ),
     );
   }

@@ -1,5 +1,6 @@
 class AppConfig {
-  static const String BaseUrl = "http://game.bestcast.co";
+  static const String BaseUrl = "https://bestcast.co";
+  // static const String BaseUrl = "http://game.bestcast.co";
 
   static const String encryptionKey = '5A4B3C2D1E0DSS';
 

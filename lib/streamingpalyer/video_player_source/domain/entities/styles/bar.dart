@@ -66,12 +66,11 @@ class BarStyle {
     Color? color,
     Color? background,
     Color? identifier,
-    double identifierWidth = 2.0,
+    this.identifierWidth = 2.0,
     BorderRadius? borderRadius,
   })  : identifier = identifier ?? Colors.red,
         color = color ?? Colors.white,
         secondBackground = Colors.transparent,
         background = background ?? Colors.white.withOpacity(0.2),
-        borderRadius = borderRadius ?? EdgeRadius.all(5.0),
-        identifierWidth = identifierWidth;
+        borderRadius = borderRadius ?? EdgeRadius.all(5.0);
 }
