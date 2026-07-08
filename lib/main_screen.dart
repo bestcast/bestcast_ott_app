@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:app_links/app_links.dart';
 import 'package:back_button_interceptor/back_button_interceptor.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,6 +13,7 @@ import 'package:bestcaststudios/Dashboard/dashboard.dart';
 import 'package:bestcaststudios/notification_activity/notification_screen.dart';
 import 'package:bestcaststudios/profile_screen/profile_mainpage.dart';
 import 'package:bestcaststudios/search_activity/search_screen.dart';
+import 'package:bestcaststudios/plan_details/plan_details.dart';
 import 'app_config/app_preferences.dart';
 import 'app_config/appconfig.dart';
 import 'authendication/login_page.dart';
@@ -30,6 +33,9 @@ class _MainScreenState extends State<MainScreen> {
 
   bool loggedStatus = false;
   bool isLoading = false;
+
+  late AppLinks _appLinks;
+  StreamSubscription<Uri>? _linkSubscription;
 
   // Define your pages/screens here
   final List<Widget> _pages = [
@@ -53,12 +59,54 @@ class _MainScreenState extends State<MainScreen> {
     //   DeviceOrientation.portraitDown,
 
     getInitalValue();
+    _initDeepLinks();
   }
 
   @override
   void dispose() {
+    _linkSubscription?.cancel();
     BackButtonInterceptor.remove(myInterceptor);
     super.dispose();
+  }
+
+  void _initDeepLinks() async {
+    _appLinks = AppLinks();
+
+    _linkSubscription = _appLinks.uriLinkStream.listen((uri) {
+      _handleDeepLink(uri);
+    }, onError: (err) {
+      print('Deep Link Error: $err');
+    });
+
+    try {
+      final initialUri = await _appLinks.getInitialLink();
+      if (initialUri != null) {
+        Future.delayed(const Duration(milliseconds: 500), () {
+          _handleDeepLink(initialUri);
+        });
+      }
+    } catch (e) {
+      print('Failed to get initial link: $e');
+    }
+  }
+
+  void _handleDeepLink(Uri uri) async {
+    print('Handling deep link: $uri');
+    if (uri.path == '/pricing') {
+      final ref = uri.queryParameters['ref'];
+      if (ref != null && ref.isNotEmpty) {
+        final pref = await SharedPreferences.getInstance();
+        await pref.setString(AppPreferences.refferer, ref);
+      }
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PlanDetailsPage(refCode: ref),
+          ),
+        );
+      }
+    }
   }
 
   bool myInterceptor(bool stopDefaultButtonEvent, RouteInfo info) {

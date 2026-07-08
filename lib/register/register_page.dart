@@ -5,7 +5,9 @@ import 'package:flutter/services.dart';
 
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:loader_overlay/loader_overlay.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../app_config/app_preferences.dart';
 import '../app_config/app_utils.dart';
 import '../app_config/appconfig.dart';
 import '../authendication/login_page.dart';
@@ -224,10 +226,13 @@ class _RegisterPageState extends State<RegisterPage> {
     final otpMessageType = _getOtpType(character);
     countryCode = (countryCode.isEmpty || otpMessageType == "sms") ? "+91" : countryCode;
 
+    final pref = await SharedPreferences.getInstance();
+    final referrerCode = pref.getString(AppPreferences.refferer) ?? '';
+
     final postValues = {
       "phone": mobileNumber,
       "name": userName,
-      "refferer": '',
+      "refferer": referrerCode,
       "device": "mobile",
       "otp_message_type": otpMessageType,
       "country_code": countryCode,

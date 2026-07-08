@@ -13,6 +13,7 @@ import 'package:bestcaststudios/plan_details/subscription_list_model.dart';
 import '../app_config/app_preferences.dart';
 import '../app_config/app_utils.dart';
 import '../app_config/appconfig.dart';
+import '../authendication/login_page.dart';
 import '../common_files/api_services.dart';
 import '../common_files/app_default_colors.dart';
 import '../common_files/common_widgets.dart';
@@ -20,14 +21,14 @@ import '../common_files/loading_widget.dart';
 import '../main_screen.dart';
 
 class PlanDetailsPage extends StatefulWidget {
-  const PlanDetailsPage({super.key});
+  final String? refCode;
+  const PlanDetailsPage({super.key, this.refCode});
 
   @override
   State<PlanDetailsPage> createState() => _PlanDetailsPageState();
 }
 
 class _PlanDetailsPageState extends State<PlanDetailsPage> {
-
   final AppUtils appUtils = AppUtils();
   bool isLoading = false;
   List<SubscriptionListModel> subscriptionListModel = [];
@@ -43,10 +44,7 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
         appBar: AppBar(
           title: const Text(
             "Pricing plan",
-            style: TextStyle(
-                color: Colors.white,
-                fontSize: 25.0,
-                fontWeight: FontWeight.w700),
+            style: TextStyle(color: Colors.white, fontSize: 25.0, fontWeight: FontWeight.w700),
           ),
           backgroundColor: AppDefaultColors.appColor,
           leading: const BackButton(color: Colors.white),
@@ -61,8 +59,7 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
                     itemBuilder: (BuildContext context, int index) {
                       return GestureDetector(
                         onTap: () {},
-                        child:
-                            getPlanDetailsWidget(subscriptionListModel[index]),
+                        child: getPlanDetailsWidget(subscriptionListModel[index]),
                       );
                     }),
               )
@@ -94,10 +91,7 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
                       child: Text(
                         subscriptionListModel.title.toString(),
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                            fontSize: 30,
-                            color: AppDefaultColors.black,
-                            fontWeight: FontWeight.w700),
+                        style: TextStyle(fontSize: 30, color: AppDefaultColors.black, fontWeight: FontWeight.w700),
                       ),
                     ),
                   ),
@@ -106,22 +100,15 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
                     padding: const EdgeInsets.only(top: 30.0, right: 5.0),
                     child: Center(
                       child: Text(
-                        "₹" +
-                            subscriptionListModel.price.toString() +
-                            '/' +
-                            subscriptionListModel.duration_text.toString(),
+                        "₹" + subscriptionListModel.price.toString() + '/' + subscriptionListModel.duration_text.toString(),
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                            fontSize: 30,
-                            color: AppDefaultColors.thikRed,
-                            fontWeight: FontWeight.w700),
+                        style: TextStyle(fontSize: 30, color: AppDefaultColors.thikRed, fontWeight: FontWeight.w700),
                       ),
                     ),
                   ),
                   Container(
                     alignment: Alignment.center,
-                    padding: const EdgeInsets.only(
-                        top: 10.0, right: 5.0, left: 30.0),
+                    padding: const EdgeInsets.only(top: 10.0, right: 5.0, left: 30.0),
                     child: Center(
                       child: Text(
                         // "- Video Quality : Best\n" +
@@ -129,8 +116,7 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
                         //     "- Supported devices : Tv, Computer, Mobile and tablet\n" +
                         //     "- Devices to watch limit : 1\n" +
                         //     "- Ads free movies and shows\n",
-                        _parseHtmlString(
-                            subscriptionListModel.content.toString()),
+                        _parseHtmlString(subscriptionListModel.content.toString()),
                         textAlign: TextAlign.left,
                         style: TextStyle(
                           fontSize: 17,
@@ -140,8 +126,7 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
                     ),
                   ),
                   Container(
-                    margin: EdgeInsets.only(
-                        top: 20, left: 10, right: 10, bottom: 30),
+                    margin: EdgeInsets.only(top: 20, left: 10, right: 10, bottom: 30),
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         fixedSize: Size.fromHeight(50),
@@ -152,20 +137,15 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
                         ),
                       ),
                       onPressed: () {
-                        var subscriptionAmount =
-                            "${subscriptionListModel.price}00";
-                        var description =
-                            subscriptionListModel.title.toString();
+                        var subscriptionAmount = "${subscriptionListModel.price}00";
+                        var description = subscriptionListModel.title.toString();
                         var planID = subscriptionListModel.id.toString();
 
-                        CreateSubscription(_token, planID, subscriptionAmount,
-                            description, _phone);
+                        CreateSubscription(_token, planID, subscriptionAmount, description, _phone);
                       },
                       child: Text(
                         'Buy Plan',
-                        style: TextStyle(
-                            color: AppDefaultColors.textLightGray,
-                            fontSize: 15),
+                        style: TextStyle(color: AppDefaultColors.textLightGray, fontSize: 15),
                       ),
                     ),
                   ),
@@ -191,6 +171,18 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
 
   Future<void> getInitalValue() async {
     final pref = await SharedPreferences.getInstance();
+    final isLoggedIn = pref.getBool(AppPreferences.loggedStatus) ?? false;
+
+    if (!isLoggedIn) {
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+        );
+      }
+      return;
+    }
+
     setState(() {
       _phone = pref.getString(AppPreferences.phone) ?? '';
       _token = pref.getString(AppPreferences.token) ?? '';
@@ -200,13 +192,11 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
       print("_token: $_token");
       getPlanDetails(_token);
     } else {
-      CommonWidget().showSnackBar(
-          context, ContentType.warning, "Check your internet connection.", "");
+      CommonWidget().showSnackBar(context, ContentType.warning, "Check your internet connection.", "");
     }
   }
 
-  void payRazor(
-      String amount, String description, String mobilenumber, orderId) {
+  void payRazor(String amount, String description, String mobilenumber, orderId) {
     print("_gateWayKey:$_gateWayKey");
     print("logo_gateWay:$_logo");
 
@@ -250,12 +240,10 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
     * 3. Signature
     * */
 
-    updatetransaction(_token, response.orderId.toString(),
-        response.paymentId.toString(), response.signature.toString());
+    updatetransaction(_token, response.orderId.toString(), response.paymentId.toString(), response.signature.toString());
   }
 
-  void handleExternalWalletSelected(ExternalWalletResponse response) {
-  }
+  void handleExternalWalletSelected(ExternalWalletResponse response) {}
 
   void showAlertDialog(BuildContext context, String title, String message) {
     // set up the AlertDialog
@@ -276,9 +264,7 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
     setState(() {
       isLoading = true;
     });
-    ApiServices()
-        .getRequestData(AppConfig.paymentgatewayinfo, token)
-        .then((response) async {
+    ApiServices().getRequestData(AppConfig.paymentgatewayinfo, token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("paymentgatewayinfo_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -314,15 +300,11 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
     });
   }
 
-  void CreateSubscription(String token, String planID,
-      String subscriptionAmount, String description, String phone) async {
+  void CreateSubscription(String token, String planID, String subscriptionAmount, String description, String phone) async {
     setState(() {
       isLoading = true;
     });
-    ApiServices()
-        .postRequestTokenWithoutBody(
-            AppConfig.createsubscription + planID, token)
-        .then((response) async {
+    ApiServices().postRequestTokenWithoutBody(AppConfig.createsubscription + planID, token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("createSubscription_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -350,8 +332,7 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
       } else {
         print("createSubscriptionError: $response");
         isLoading = false;
-        CommonWidget().showSnackBar(
-            context, ContentType.failure, "Error", response.toString());
+        CommonWidget().showSnackBar(context, ContentType.failure, "Error", response.toString());
       }
 
       setState(() {
@@ -364,9 +345,7 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
     isLoading = true;
     context.loaderOverlay.show();
     subscriptionListModel.clear();
-    ApiServices()
-        .getRequestData(AppConfig.subscriptionlist, token)
-        .then((response) async {
+    ApiServices().getRequestData(AppConfig.subscriptionlist, token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("Subscription_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -409,8 +388,7 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
       } else {
         print("Error: $response");
         context.loaderOverlay.hide();
-        CommonWidget().showSnackBar(
-            context, ContentType.failure, "Error", response.toString());
+        CommonWidget().showSnackBar(context, ContentType.failure, "Error", response.toString());
       }
       setState(() {
         isLoading = false;
@@ -423,26 +401,18 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
     context.loaderOverlay.hide();
   }
 
-  void updatetransaction(
-      String token, String orderId, String paymentId, String signature) async {
+  void updatetransaction(String token, String orderId, String paymentId, String signature) async {
     setState(() {
       isLoading = true;
     });
     context.loaderOverlay.show();
-    final postValues = {
-      'razorpay_order_id': orderId,
-      'razorpay_payment_id': paymentId,
-      'razorpay_signature': signature
-    };
+    final postValues = {'razorpay_order_id': orderId, 'razorpay_payment_id': paymentId, 'razorpay_signature': signature};
 
-    ApiServices()
-        .postRequestToken(AppConfig.updatetransaction, postValues, token)
-        .then((response) async {
+    ApiServices().postRequestToken(AppConfig.updatetransaction, postValues, token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("setuserprofile_Response: $jsonsDataString");
       if (response.statusCode == 200 || response.statusCode == 201) {
         try {
-
           appUtils.showToast("Payment Successful");
 
           //
@@ -461,8 +431,7 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
           context.loaderOverlay.hide();
         });
         print("TransactionError: $response");
-        CommonWidget().showSnackBar(
-            context, ContentType.failure, "Error", response.toString());
+        CommonWidget().showSnackBar(context, ContentType.failure, "Error", response.toString());
       }
       setState(() {
         isLoading = false;
@@ -482,21 +451,17 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
     });
     final postValues = {'oid': orderId};
 
-    ApiServices()
-        .postRequestToken(AppConfig.verifypaymentstatus, postValues, token)
-        .then((response) async {
+    ApiServices().postRequestToken(AppConfig.verifypaymentstatus, postValues, token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("verifypaymentstatus_Response: $jsonsDataString");
       if (response.statusCode == 200 || response.statusCode == 201) {
         try {
-
           appUtils.showToast("Payment Successful");
 
           final pref = await SharedPreferences.getInstance();
           await pref.setString(AppPreferences.plan_status, "1");
 
-          Navigator.pushReplacement(
-              context, MaterialPageRoute(builder: (context) => MainScreen()));
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => MainScreen()));
 
           context.loaderOverlay.hide();
         } catch (e) {
@@ -507,8 +472,7 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
           context.loaderOverlay.hide();
         });
         print("TransactionError: $response");
-        CommonWidget().showSnackBar(
-            context, ContentType.failure, "Error", response.toString());
+        CommonWidget().showSnackBar(context, ContentType.failure, "Error", response.toString());
       }
       setState(() {
         isLoading = false;

@@ -105,6 +105,7 @@ dependencies:
   intl: any
   path: any
   page_transition: any
+  app_links: ^7.2.0
 flutter_launcher_icons:
   android: true
   ios: true
