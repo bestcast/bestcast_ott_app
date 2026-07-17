@@ -17,6 +17,7 @@ import 'package:bestcaststudios/common_files/movie_top_card_background.dart';
 import 'package:bestcaststudios/download_files/dowloadmoviefiles.dart';
 import 'package:bestcaststudios/register/who_watching_page.dart';
 import 'package:bestcaststudios/webview_pages/bestcast_webviewpages.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../Dashboard/Models/Movie.dart';
 
 import '../app_config/app_preferences.dart';
@@ -96,10 +97,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
         appBar: AppBar(
           title: const Text(
             "My Profile",
-            style: TextStyle(
-                color: Colors.white,
-                fontSize: 25.0,
-                fontWeight: FontWeight.w700),
+            style: TextStyle(color: Colors.white, fontSize: 25.0, fontWeight: FontWeight.w700),
           ),
           backgroundColor: AppDefaultColors.appColor,
           actions: <Widget>[
@@ -141,8 +139,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
             ? LoaderOverlay(
                 child: SingleChildScrollView(
                   child: Container(
-                    margin: EdgeInsets.only(
-                        top: 10, left: 10, right: 10, bottom: 20),
+                    margin: EdgeInsets.only(top: 10, left: 10, right: 10, bottom: 20),
                     child: Column(
                       children: [
                         SizedBox(
@@ -163,9 +160,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                             fit: BoxFit.fitWidth,
                             child: Padding(
                               padding: const EdgeInsets.all(8.0),
-                              child: Text(profileName,
-                                  style: TextStyle(
-                                      color: Colors.white, fontSize: 17)),
+                              child: Text(profileName, style: TextStyle(color: Colors.white, fontSize: 17)),
                             ),
                           ),
                         ),
@@ -174,11 +169,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                           visible: true,
                           child: GestureDetector(
                             onTap: () {
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) =>
-                                          DownloadMovieFiles()));
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => DownloadMovieFiles()));
                             },
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -204,21 +195,16 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                                 ),
                                 Expanded(
                                   child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 5.0, horizontal: 10),
+                                    padding: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 10),
                                     child: Text(
                                       "Downloads",
-                                      style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 18.0,
-                                          fontWeight: FontWeight.bold),
+                                      style: const TextStyle(color: Colors.white, fontSize: 18.0, fontWeight: FontWeight.bold),
                                     ),
                                   ),
                                 ),
                                 IconButton(
                                   padding: EdgeInsets.zero,
-                                  icon: Icon(Icons.arrow_forward_ios_sharp,
-                                      size: 30, color: AppDefaultColors.white),
+                                  icon: Icon(Icons.arrow_forward_ios_sharp, size: 30, color: AppDefaultColors.white),
                                   onPressed: () {},
                                 ),
                               ],
@@ -230,14 +216,10 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                         Align(
                           alignment: Alignment.topLeft,
                           child: Padding(
-                            padding: const EdgeInsets.only(
-                                top: 15.0, bottom: 2.0, left: 8.0, right: 8.0),
+                            padding: const EdgeInsets.only(top: 15.0, bottom: 2.0, left: 8.0, right: 8.0),
                             child: Text(
                               "My Lists",
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 17.0,
-                                  fontWeight: FontWeight.w700),
+                              style: const TextStyle(color: Colors.white, fontSize: 17.0, fontWeight: FontWeight.w700),
                             ),
                           ),
                         ),
@@ -257,14 +239,10 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                                           context,
                                           MaterialPageRoute(
                                               builder: (context) => VideoApp(
-                                                    getMovieID:
-                                                        moviesMyListModel[index]
-                                                            .id
-                                                            .toString(),
+                                                    getMovieID: moviesMyListModel[index].id.toString(),
                                                   )));
                                     },
-                                    child: getMovieMyListWidget(
-                                        moviesMyListModel[index]),
+                                    child: getMovieMyListWidget(moviesMyListModel[index]),
                                   );
                                 }),
                           ),
@@ -274,14 +252,10 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                         Align(
                           alignment: Alignment.topLeft,
                           child: Padding(
-                            padding: const EdgeInsets.only(
-                                top: 15.0, bottom: 5.0, left: 8.0, right: 8.0),
+                            padding: const EdgeInsets.only(top: 15.0, bottom: 5.0, left: 8.0, right: 8.0),
                             child: Text(
                               "Continue Watching",
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 17.0,
-                                  fontWeight: FontWeight.w700),
+                              style: const TextStyle(color: Colors.white, fontSize: 17.0, fontWeight: FontWeight.w700),
                             ),
                           ),
                         ),
@@ -301,15 +275,10 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                                           context,
                                           MaterialPageRoute(
                                               builder: (context) => VideoApp(
-                                                    getMovieID:
-                                                        moviesWatchingModel[
-                                                                index]
-                                                            .id
-                                                            .toString(),
+                                                    getMovieID: moviesWatchingModel[index].id.toString(),
                                                   )));
                                     },
-                                    child: getMovieContinueWatchingWidget(
-                                        moviesWatchingModel[index]),
+                                    child: getMovieContinueWatchingWidget(moviesWatchingModel[index]),
                                   );
                                 }),
                           ),
@@ -319,14 +288,10 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                         Align(
                           alignment: Alignment.topLeft,
                           child: Padding(
-                            padding: const EdgeInsets.only(
-                                top: 15.0, bottom: 5.0, left: 8.0, right: 8.0),
+                            padding: const EdgeInsets.only(top: 15.0, bottom: 5.0, left: 8.0, right: 8.0),
                             child: Text(
                               "Recently Watched",
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 17.0,
-                                  fontWeight: FontWeight.w700),
+                              style: const TextStyle(color: Colors.white, fontSize: 17.0, fontWeight: FontWeight.w700),
                             ),
                           ),
                         ),
@@ -346,15 +311,10 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                                           context,
                                           MaterialPageRoute(
                                               builder: (context) => VideoApp(
-                                                    getMovieID:
-                                                        moviesRecentlyModel[
-                                                                index]
-                                                            .id
-                                                            .toString(),
+                                                    getMovieID: moviesRecentlyModel[index].id.toString(),
                                                   )));
                                     },
-                                    child: getMovieWishListCategoryWidget(
-                                        moviesRecentlyModel[index]),
+                                    child: getMovieWishListCategoryWidget(moviesRecentlyModel[index]),
                                   );
                                 }),
                           ),
@@ -372,8 +332,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
   Future<void> viewDownloadMovies() async {
     var status = await Permission.storage.request();
     if (status.isGranted) {
-      Navigator.push(context,
-          MaterialPageRoute(builder: (context) => DownloadMovieFiles()));
+      Navigator.push(context, MaterialPageRoute(builder: (context) => DownloadMovieFiles()));
     } else if (status.isPermanentlyDenied) {
       openAppSettings();
     } else {
@@ -422,13 +381,11 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                   height: 170,
                   width: 130,
                   child: FadeInImage(
-                    placeholder:
-                        AssetImage("images/default_portrate_small.jpg"),
+                    placeholder: AssetImage("images/default_portrate_small.jpg"),
                     image: NetworkImage(moviesModel.portraitsmall.toString()),
                     imageErrorBuilder: (context, error, stackTrace) {
                       // Return the error image widget
-                      return Image.asset('images/default_portrate_small.jpg',
-                          width: 130, fit: BoxFit.cover);
+                      return Image.asset('images/default_portrate_small.jpg', width: 130, fit: BoxFit.cover);
                     },
                     width: double.infinity,
                     height: double.infinity,
@@ -448,10 +405,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
   }
 
   Widget getMovieContinueWatchingWidget(Movies moviesModel) {
-    print(
-        "CHeckWatchedPercent${moviesModel.usermovies!.watchedPercent}" == "null"
-            ? "0"
-            : moviesModel.usermovies!.watchedPercent.toString());
+    print("CHeckWatchedPercent${moviesModel.usermovies!.watchedPercent}" == "null" ? "0" : moviesModel.usermovies!.watchedPercent.toString());
     return SizedBox(
       height: 210,
       width: 140,
@@ -468,22 +422,16 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                       height: 150,
                       width: 140,
                       child: FadeInImage(
-                        placeholder:
-                            AssetImage("images/default_portrate_small.jpg"),
-                        image:
-                            NetworkImage(moviesModel.portraitsmall.toString()),
+                        placeholder: AssetImage("images/default_portrate_small.jpg"),
+                        image: NetworkImage(moviesModel.portraitsmall.toString()),
                         imageErrorBuilder: (context, error, stackTrace) {
                           // Return the error image widget
-                          return Image.asset(
-                              'images/default_portrate_small.jpg',
-                              width: 140,
-                              fit: BoxFit.cover);
+                          return Image.asset('images/default_portrate_small.jpg', width: 140, fit: BoxFit.cover);
                         },
                         width: double.infinity,
                         height: double.infinity,
                         fit: BoxFit.cover,
-                      )
-                      ),
+                      )),
                 ),
               ),
               Container(
@@ -502,8 +450,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                         border: Border.all(width: 2, color: Colors.white)),
                     child: IconButton(
                       padding: EdgeInsets.zero,
-                      icon: Icon(Icons.play_arrow,
-                          size: 30, color: AppDefaultColors.white),
+                      icon: Icon(Icons.play_arrow, size: 30, color: AppDefaultColors.white),
                       onPressed: () {},
                     ),
                   ),
@@ -517,8 +464,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
             child: Padding(
               padding: const EdgeInsets.only(left: 0, right: 0),
               child: LinearProgressIndicator(
-                value:
-                    double.parse("0.${moviesModel.usermovies!.watchedPercent}"),
+                value: double.parse("0.${moviesModel.usermovies!.watchedPercent}"),
                 // value: 0.5,
                 color: AppDefaultColors.thikRed,
                 backgroundColor: AppDefaultColors.textLightGray,
@@ -583,14 +529,11 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                           height: 170,
                           width: 230,
                           child: FadeInImage(
-                            placeholder:
-                                AssetImage("images/default_portrate_small.jpg"),
-                            image:
-                                NetworkImage(moviesModel.thumbnail.toString()),
+                            placeholder: AssetImage("images/default_portrate_small.jpg"),
+                            image: NetworkImage(moviesModel.thumbnail.toString()),
                             imageErrorBuilder: (context, error, stackTrace) {
                               // Return the error image widget
-                              return Image.asset(
-                                  'images/default_portrate_small.jpg');
+                              return Image.asset('images/default_portrate_small.jpg');
                             },
                             width: double.infinity,
                             height: double.infinity,
@@ -609,15 +552,11 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                         height: 170,
                         width: 130,
                         child: FadeInImage(
-                          placeholder:
-                              AssetImage("images/default_portrate_small.jpg"),
+                          placeholder: AssetImage("images/default_portrate_small.jpg"),
                           image: NetworkImage(moviesModel.thumbnail.toString()),
                           imageErrorBuilder: (context, error, stackTrace) {
                             // Return the error image widget
-                            return Image.asset(
-                                'images/default_portrate_small.jpg',
-                                width: 130,
-                                fit: BoxFit.cover);
+                            return Image.asset('images/default_portrate_small.jpg', width: 130, fit: BoxFit.cover);
                           },
                           width: double.infinity,
                           height: double.infinity,
@@ -638,11 +577,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                   child: Padding(
                     padding: const EdgeInsets.only(left: 4.1),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(0),
-                          topRight: Radius.circular(0),
-                          bottomLeft: Radius.circular(5),
-                          bottomRight: Radius.circular(5)),
+                      borderRadius: BorderRadius.only(topLeft: Radius.circular(0), topRight: Radius.circular(0), bottomLeft: Radius.circular(5), bottomRight: Radius.circular(5)),
                       child: LinearProgressIndicator(
                         value: double.parse("40"),
                         color: AppDefaultColors.thikRed,
@@ -662,15 +597,11 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                         width: 45,
                         height: 45,
                         alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                            color: Colors.transparent,
-                            borderRadius: BorderRadius.circular(50.0),
-                            border: Border.all(color: Colors.white)),
+                        decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(50.0), border: Border.all(color: Colors.white)),
                         child: Positioned.fill(
                           child: IconButton(
                             padding: EdgeInsets.zero,
-                            icon: Icon(Icons.play_arrow,
-                                size: 30, color: AppDefaultColors.white),
+                            icon: Icon(Icons.play_arrow, size: 30, color: AppDefaultColors.white),
                             onPressed: () {},
                           ),
                         ),
@@ -706,8 +637,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                         image: NetworkImage(moviesModel.thumbnail.toString()),
                         imageErrorBuilder: (context, error, stackTrace) {
                           // Return the error image widget
-                          return Image.asset('images/default_landscape.jpg',
-                              height: 130, fit: BoxFit.cover);
+                          return Image.asset('images/default_landscape.jpg', height: 130, fit: BoxFit.cover);
                         },
                         width: double.infinity,
                         height: double.infinity,
@@ -733,10 +663,8 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                         height: 100,
                         child: GestureDetector(
                             onTap: () {
-                              final encodedTitle = Uri.encodeComponent(
-                                  moviesModel.title.toString());
-                              Share.share(
-                                  'Watch ${moviesModel.title} on Bestcast OTT, \n\nCheck it out here: ${AppConfig.BaseUrl}/search?search=$encodedTitle');
+                              final encodedTitle = Uri.encodeComponent(moviesModel.title.toString());
+                              Share.share('Watch ${moviesModel.title} on Bestcast OTT, \n\nCheck it out here: ${AppConfig.BaseUrl}/search?search=$encodedTitle');
                             },
                             child: Icon(Icons.share, color: Colors.white)),
                       ),
@@ -746,8 +674,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                             onTap: () {
                               getMovieDetailsBottomWidget(moviesModel, 2);
                             },
-                            child: Icon(Icons.more_vert_sharp,
-                                color: Colors.white)),
+                            child: Icon(Icons.more_vert_sharp, color: Colors.white)),
                       ),
                     ],
                   ),
@@ -760,17 +687,13 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
               color: AppDefaultColors.darkGray,
               width: 232,
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 5.0, horizontal: 11),
+                padding: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 11),
                 child: Center(
                   child: Text(
                     moviesModel.title.toString(),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 17.0,
-                        fontWeight: FontWeight.normal),
+                    style: const TextStyle(color: Colors.white, fontSize: 17.0, fontWeight: FontWeight.normal),
                   ),
                 ),
               ),
@@ -779,6 +702,17 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _openBMPWebsite() async {
+    final Uri url = Uri.parse('https://bmp.bestcast.co/');
+
+    if (!await launchUrl(
+      url,
+      mode: LaunchMode.externalApplication,
+    )) {
+      throw Exception('Could not launch $url');
+    }
   }
 
   void getBottomWidget() {
@@ -797,8 +731,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
           duration: Duration(milliseconds: 500), // Set the animation duration
           opacity: 1.0, // Set the initial opacity to 0 for fade-out effect
           onEnd: () {
-            Navigator.pop(
-                context); // Close the bottom sheet after the animation completes
+            Navigator.pop(context); // Close the bottom sheet after the animation completes
           },
 
           child: SingleChildScrollView(
@@ -817,10 +750,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                             padding: const EdgeInsets.all(8.0),
                             child: Text(
                               "Profile",
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 20.0,
-                                  fontWeight: FontWeight.w500),
+                              style: const TextStyle(color: Colors.white, fontSize: 20.0, fontWeight: FontWeight.w500),
                             ),
                           ),
                         ),
@@ -839,6 +769,42 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                         ),
                       ],
                     ),
+                    // BMP Patner Start --------------------------------------------------
+                    Visibility(
+                      visible: loggedStatus,
+                      child: InkWell(
+                        onTap: _openBMPWebsite,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.handshake,
+                                color: AppDefaultColors.white,
+                                size: 25,
+                              ),
+                              const SizedBox(width: 12),
+                              const Expanded(
+                                child: Text(
+                                  "BMP Refferal",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                              const Icon(
+                                Icons.arrow_forward_ios_sharp,
+                                size: 18,
+                                color: AppDefaultColors.white,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // BMP Patner End --------------------------------------------------
                     Visibility(
                       visible: loggedStatus ? true : false,
                       child: GestureDetector(
@@ -864,21 +830,16 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                             ),
                             Expanded(
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 5.0, horizontal: 10),
+                                padding: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 10),
                                 child: Text(
                                   "Manage Profile",
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 17.0,
-                                      fontWeight: FontWeight.w500),
+                                  style: const TextStyle(color: Colors.white, fontSize: 17.0, fontWeight: FontWeight.w500),
                                 ),
                               ),
                             ),
                             IconButton(
                               padding: EdgeInsets.zero,
-                              icon: Icon(Icons.arrow_forward_ios_sharp,
-                                  size: 20, color: AppDefaultColors.white),
+                              icon: Icon(Icons.arrow_forward_ios_sharp, size: 20, color: AppDefaultColors.white),
                               onPressed: () {},
                             ),
                           ],
@@ -887,10 +848,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                     ),
                     GestureDetector(
                       onTap: () {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => AppSettingsPage()));
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => AppSettingsPage()));
                       },
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.start,
@@ -906,21 +864,16 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                           ),
                           Expanded(
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 5.0, horizontal: 10),
+                              padding: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 10),
                               child: Text(
                                 "App Settings",
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 17.0,
-                                    fontWeight: FontWeight.bold),
+                                style: const TextStyle(color: Colors.white, fontSize: 17.0, fontWeight: FontWeight.bold),
                               ),
                             ),
                           ),
                           IconButton(
                             padding: EdgeInsets.zero,
-                            icon: Icon(Icons.arrow_forward_ios_sharp,
-                                size: 20, color: AppDefaultColors.white),
+                            icon: Icon(Icons.arrow_forward_ios_sharp, size: 20, color: AppDefaultColors.white),
                             onPressed: () {},
                           ),
                         ],
@@ -930,11 +883,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                       visible: loggedStatus ? true : false,
                       child: GestureDetector(
                         onTap: () {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) =>
-                                      BestcastWebView(url: "account")));
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => BestcastWebView(url: "account")));
                         },
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -950,21 +899,16 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                             ),
                             Expanded(
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 5.0, horizontal: 10),
+                                padding: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 10),
                                 child: Text(
                                   "Account",
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 17.0,
-                                      fontWeight: FontWeight.bold),
+                                  style: const TextStyle(color: Colors.white, fontSize: 17.0, fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ),
                             IconButton(
                               padding: EdgeInsets.zero,
-                              icon: Icon(Icons.arrow_forward_ios_sharp,
-                                  size: 20, color: AppDefaultColors.white),
+                              icon: Icon(Icons.arrow_forward_ios_sharp, size: 20, color: AppDefaultColors.white),
                               onPressed: () {},
                             ),
                           ],
@@ -973,11 +917,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                     ),
                     GestureDetector(
                       onTap: () {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) =>
-                                    BestcastWebView(url: "help")));
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => BestcastWebView(url: "help")));
                       },
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.start,
@@ -993,21 +933,16 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                           ),
                           Expanded(
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 5.0, horizontal: 10),
+                              padding: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 10),
                               child: Text(
                                 "Help",
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 17.0,
-                                    fontWeight: FontWeight.bold),
+                                style: const TextStyle(color: Colors.white, fontSize: 17.0, fontWeight: FontWeight.bold),
                               ),
                             ),
                           ),
                           IconButton(
                             padding: EdgeInsets.zero,
-                            icon: Icon(Icons.arrow_forward_ios_sharp,
-                                size: 20, color: AppDefaultColors.white),
+                            icon: Icon(Icons.arrow_forward_ios_sharp, size: 20, color: AppDefaultColors.white),
                             onPressed: () {},
                           ),
                         ],
@@ -1038,21 +973,16 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                             ),
                             Expanded(
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 5.0, horizontal: 10),
+                                padding: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 10),
                                 child: Text(
                                   "Sign Out",
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 17.0,
-                                      fontWeight: FontWeight.bold),
+                                  style: const TextStyle(color: Colors.white, fontSize: 17.0, fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ),
                             IconButton(
                               padding: EdgeInsets.zero,
-                              icon: Icon(Icons.arrow_forward_ios_sharp,
-                                  size: 20, color: AppDefaultColors.white),
+                              icon: Icon(Icons.arrow_forward_ios_sharp, size: 20, color: AppDefaultColors.white),
                               onPressed: () {},
                             ),
                           ],
@@ -1060,14 +990,10 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 5.0, horizontal: 10),
+                      padding: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 10),
                       child: Text(
                         "Version: $version build $buildNumber",
-                        style: const TextStyle(
-                            color: AppDefaultColors.textLightGray,
-                            fontSize: 10.0,
-                            fontWeight: FontWeight.bold),
+                        style: const TextStyle(color: AppDefaultColors.textLightGray, fontSize: 10.0, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ],
@@ -1096,8 +1022,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
           duration: Duration(milliseconds: 500), // Set the animation duration
           opacity: 1.0, // Set the initial opacity to 0 for fade-out effect
           onEnd: () {
-            Navigator.pop(
-                context); // Close the bottom sheet after the animation completes
+            Navigator.pop(context); // Close the bottom sheet after the animation completes
           },
 
           child: SingleChildScrollView(
@@ -1116,10 +1041,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                             padding: const EdgeInsets.all(8.0),
                             child: Text(
                               moviesModel.title.toString(),
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 20.0,
-                                  fontWeight: FontWeight.w500),
+                              style: const TextStyle(color: Colors.white, fontSize: 20.0, fontWeight: FontWeight.w500),
                             ),
                           ),
                         ),
@@ -1161,12 +1083,10 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                           ),
                           Expanded(
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 5.0, horizontal: 10),
+                              padding: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 10),
                               child: Text(
                                 "Details and More",
-                                style: const TextStyle(
-                                    color: Colors.white, fontSize: 17.0),
+                                style: const TextStyle(color: Colors.white, fontSize: 17.0),
                               ),
                             ),
                           ),
@@ -1175,10 +1095,8 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                     ),
                     GestureDetector(
                       onTap: () {
-                        final encodedTitle =
-                            Uri.encodeComponent(moviesModel.title.toString());
-                        Share.share(
-                            'Watch ${moviesModel.title} on Bestcast OTT, \n\nCheck it out here: ${AppConfig.BaseUrl}/search?search=$encodedTitle');
+                        final encodedTitle = Uri.encodeComponent(moviesModel.title.toString());
+                        Share.share('Watch ${moviesModel.title} on Bestcast OTT, \n\nCheck it out here: ${AppConfig.BaseUrl}/search?search=$encodedTitle');
                       },
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.start,
@@ -1194,12 +1112,10 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                           ),
                           Expanded(
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 5.0, horizontal: 10),
+                              padding: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 10),
                               child: Text(
                                 "Share",
-                                style: const TextStyle(
-                                    color: Colors.white, fontSize: 17.0),
+                                style: const TextStyle(color: Colors.white, fontSize: 17.0),
                               ),
                             ),
                           ),
@@ -1221,8 +1137,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                           };
                         }
 
-                        setUserMovies(_token, profileID,
-                            moviesModel.id.toString(), postValues, type);
+                        setUserMovies(_token, profileID, moviesModel.id.toString(), postValues, type);
                       },
                       child: Padding(
                         padding: const EdgeInsets.only(top: 10.0, bottom: 10.0),
@@ -1240,12 +1155,10 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                             ),
                             Expanded(
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 5.0, horizontal: 10),
+                                padding: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 10),
                                 child: Text(
                                   "Remove from row",
-                                  style: const TextStyle(
-                                      color: Colors.white, fontSize: 17.0),
+                                  style: const TextStyle(color: Colors.white, fontSize: 17.0),
                                 ),
                               ),
                             ),
@@ -1266,28 +1179,22 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
   Widget showSignOutAlertDialog() {
     return AlertDialog(
       backgroundColor: AppDefaultColors.darkGray,
-      title: const Text('Sign Out',
-          style: TextStyle(color: Colors.white, fontSize: 17)),
-      content: Text(
-          "Singing out of the this app means you'll also sign out of all other Bestcast apps on this device.",
-          style: TextStyle(color: Colors.white, fontSize: 15)),
+      title: const Text('Sign Out', style: TextStyle(color: Colors.white, fontSize: 17)),
+      content: Text("Singing out of the this app means you'll also sign out of all other Bestcast apps on this device.", style: TextStyle(color: Colors.white, fontSize: 15)),
       actions: <Widget>[
         TextButton(
-          child: const Text('Cancel',
-              style: TextStyle(color: Colors.white, fontSize: 15)),
+          child: const Text('Cancel', style: TextStyle(color: Colors.white, fontSize: 15)),
           onPressed: () => Navigator.pop(context),
         ),
         TextButton(
-          child: const Text('Sign Out',
-              style: TextStyle(color: Colors.white, fontSize: 15)),
+          child: const Text('Sign Out', style: TextStyle(color: Colors.white, fontSize: 15)),
           onPressed: () async {
             Navigator.pop(context);
             if (await CommonWidget().isInternetConnectivity()) {
               Fluttertoast.showToast(msg: "Loading...");
               getLogout(_token);
             } else {
-              CommonWidget().showSnackBar(context, ContentType.warning,
-                  "Check your internet connection.", "");
+              CommonWidget().showSnackBar(context, ContentType.warning, "Check your internet connection.", "");
             }
           },
         ),
@@ -1301,9 +1208,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
       isLoading = true;
     });
     final postValues = {'qrcode': qrcode};
-    ApiServices()
-        .postRequestToken(AppConfig.setqrcode, postValues, token)
-        .then((response) async {
+    ApiServices().postRequestToken(AppConfig.setqrcode, postValues, token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("setqrcode_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -1324,8 +1229,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
           context.loaderOverlay.hide();
         });
         print("setQrCodeError: $response");
-        CommonWidget().showSnackBar(
-            context, ContentType.failure, "Error", response.toString());
+        CommonWidget().showSnackBar(context, ContentType.failure, "Error", response.toString());
       }
     });
     setState(() {
@@ -1334,14 +1238,10 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
     });
   }
 
-  void getUserMoviesLitMyList(
-      String token, String profileId, String searchType) async {
+  void getUserMoviesLitMyList(String token, String profileId, String searchType) async {
     isLoading = true;
     moviesMyListModel.clear();
-    ApiServices()
-        .getRequestData(
-            "${AppConfig.usermovieslist}$profileId&mylist=$searchType", token)
-        .then((response) async {
+    ApiServices().getRequestData("${AppConfig.usermovieslist}$profileId&mylist=$searchType", token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("Movie_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -1366,18 +1266,14 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                 watchTime: movieData["usermovies"]["watchTime"].toString(),
                 watching: movieData["usermovies"]["watching"].toString(),
                 watched: movieData["usermovies"]["watched"].toString(),
-                watchedPercent:
-                    movieData["usermovies"]["watchedPercent"].toString(),
+                watchedPercent: movieData["usermovies"]["watchedPercent"].toString(),
                 viewed: movieData["usermovies"]["viewed"].toString(),
               );
             }
 
-            String thumbnailUrl =
-                "${AppConfig.BaseUrl}/${movieData["thumbnail"]}";
-            String portraitsmallUrl =
-                "${AppConfig.BaseUrl}/${movieData["portraitsmall"]}";
-            String portraitUrl =
-                "${AppConfig.BaseUrl}/${movieData["portrait"]}";
+            String thumbnailUrl = "${AppConfig.BaseUrl}/${movieData["thumbnail"]}";
+            String portraitsmallUrl = "${AppConfig.BaseUrl}/${movieData["portraitsmall"]}";
+            String portraitUrl = "${AppConfig.BaseUrl}/${movieData["portrait"]}";
 
             print("moviesMyListModel $thumbnailUrl");
             moviesMyListModel.add(Movies(
@@ -1425,14 +1321,10 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
     });
   }
 
-  void getUserMoviesLitWatching(
-      String token, String profileId, String searchType) async {
+  void getUserMoviesLitWatching(String token, String profileId, String searchType) async {
     isLoading = true;
     moviesWatchingModel.clear();
-    ApiServices()
-        .getRequestData(
-            "${AppConfig.usermovieslist}$profileId&watching=$searchType", token)
-        .then((response) async {
+    ApiServices().getRequestData("${AppConfig.usermovieslist}$profileId&watching=$searchType", token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("MovieWatching_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -1458,12 +1350,10 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                 watchTime: movieData["usermovies"]["watch_time"].toString(),
                 watching: movieData["usermovies"]["watching"].toString(),
                 watched: movieData["usermovies"]["watched"].toString(),
-                watchedPercent:
-                    movieData["usermovies"]["watched_percent"].toString(),
+                watchedPercent: movieData["usermovies"]["watched_percent"].toString(),
                 viewed: movieData["usermovies"]["viewed"].toString(),
               );
-              print(
-                  "usermoviesValues: ${movieData["usermovies"]["watched_percent"]}");
+              print("usermoviesValues: ${movieData["usermovies"]["watched_percent"]}");
               print("Userwatch_time: ${movieData["usermovies"]["watch_time"]}");
             } else {
               usermovies = Usermovies(
@@ -1479,12 +1369,9 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
               );
             }
 
-            String thumbnailUrl =
-                "${AppConfig.BaseUrl}/${movieData["thumbnail"]}";
-            String portraitsmallUrl =
-                "${AppConfig.BaseUrl}/${movieData["portraitsmall"]}";
-            String portraitUrl =
-                "${AppConfig.BaseUrl}/${movieData["portrait"]}";
+            String thumbnailUrl = "${AppConfig.BaseUrl}/${movieData["thumbnail"]}";
+            String portraitsmallUrl = "${AppConfig.BaseUrl}/${movieData["portraitsmall"]}";
+            String portraitUrl = "${AppConfig.BaseUrl}/${movieData["portrait"]}";
 
             print("moviesWatchingModel$thumbnailUrl");
             moviesWatchingModel.add(Movies(
@@ -1528,14 +1415,10 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
     });
   }
 
-  void getUserMoviesLitRWatched(
-      String token, String profileId, String searchType) async {
+  void getUserMoviesLitRWatched(String token, String profileId, String searchType) async {
     isLoading = true;
     moviesRecentlyModel.clear();
-    ApiServices()
-        .getRequestData(
-            "${AppConfig.usermovieslist}$profileId&watched=$searchType", token)
-        .then((response) async {
+    ApiServices().getRequestData("${AppConfig.usermovieslist}$profileId&watched=$searchType", token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("MovieWatched_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -1560,18 +1443,14 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                 watchTime: movieData["usermovies"]["watchTime"].toString(),
                 watching: movieData["usermovies"]["watching"].toString(),
                 watched: movieData["usermovies"]["watched"].toString(),
-                watchedPercent:
-                    movieData["usermovies"]["watchedPercent"].toString(),
+                watchedPercent: movieData["usermovies"]["watchedPercent"].toString(),
                 viewed: movieData["usermovies"]["viewed"].toString(),
               );
             }
 
-            String thumbnailUrl =
-                "${AppConfig.BaseUrl}/${movieData["thumbnail"]}";
-            String portraitsmallUrl =
-                "${AppConfig.BaseUrl}/${movieData["portraitsmall"]}";
-            String portraitUrl =
-                "${AppConfig.BaseUrl}/${movieData["portrait"]}";
+            String thumbnailUrl = "${AppConfig.BaseUrl}/${movieData["thumbnail"]}";
+            String portraitsmallUrl = "${AppConfig.BaseUrl}/${movieData["portraitsmall"]}";
+            String portraitUrl = "${AppConfig.BaseUrl}/${movieData["portrait"]}";
 
             print("moviesRecentlyModel$thumbnailUrl");
 
@@ -1618,15 +1497,9 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
     });
   }
 
-  void setUserMovies(String token, String profileID, String movieID,
-      Map<String, int> postValues, int type) async {
+  void setUserMovies(String token, String profileID, String movieID, Map<String, int> postValues, int type) async {
     appUtils.showLoaderDialog(context);
-    ApiServices()
-        .postRequestToken(
-            "${AppConfig.setUserMovie}$movieID?profile_id=$profileID",
-            postValues,
-            token)
-        .then((response) async {
+    ApiServices().postRequestToken("${AppConfig.setUserMovie}$movieID?profile_id=$profileID", postValues, token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("setuserMovie_type: $type");
       print("setuserMovie_Response: $jsonsDataString");
@@ -1654,9 +1527,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
     setState(() {
       isLoading = true;
     });
-    ApiServices()
-        .postRequestTokenWithoutBody(AppConfig.tokenexist, token)
-        .then((response) async {
+    ApiServices().postRequestTokenWithoutBody(AppConfig.tokenexist, token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("getTokenExist_Response: $jsonsDataString");
       print("getTokenExist_Token: $token");
@@ -1679,8 +1550,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
             ).then((result) {
               // Check if the result is not null
               if (result != null) {
-                Navigator.pushReplacement(context,
-                    MaterialPageRoute(builder: (context) => MainScreen()));
+                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => MainScreen()));
               }
             });
           }
@@ -1699,9 +1569,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
   void getLogout(String token) async {
     appUtils.showLoaderDialog(context);
 
-    ApiServices()
-        .postRequestTokenWithoutBody(AppConfig.logoutUrl, token)
-        .then((response) async {
+    ApiServices().postRequestTokenWithoutBody(AppConfig.logoutUrl, token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("logout_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -1729,8 +1597,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
           appUtils.hideLoaderDialog(context);
         });
         print("logoutError: $response");
-        CommonWidget().showSnackBar(
-            context, ContentType.failure, "Error", response.toString());
+        CommonWidget().showSnackBar(context, ContentType.failure, "Error", response.toString());
       }
     });
     appUtils.hideLoaderDialog(context);
@@ -1738,8 +1605,6 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
 
   void printWrapped(String text) {
     final pattern = RegExp('.{1,800}'); // 800 is the size of each chunk
-    pattern
-        .allMatches("LongWatchingPrint: $text")
-        .forEach((match) => print(match.group(0)));
+    pattern.allMatches("LongWatchingPrint: $text").forEach((match) => print(match.group(0)));
   }
 }

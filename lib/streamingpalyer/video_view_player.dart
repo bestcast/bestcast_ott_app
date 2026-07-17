@@ -24,7 +24,6 @@ import '../common_files/api_services.dart';
 import '../common_files/app_default_colors.dart';
 import 'components/quiz_dialog.dart';
 import 'components/quiz_start_dialog.dart';
-import 'package:flutter/foundation.dart';
 
 enum MovieStyle { card, page }
 
