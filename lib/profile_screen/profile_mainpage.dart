@@ -705,7 +705,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
   }
 
   Future<void> _openBMPWebsite() async {
-    final Uri url = Uri.parse('https://bmp.bestcast.co/');
+    final Uri url = Uri.parse('https://partners.bestcast.co/');
 
     if (!await launchUrl(
       url,
