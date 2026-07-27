@@ -304,7 +304,13 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
     setState(() {
       isLoading = true;
     });
-    ApiServices().postRequestTokenWithoutBody(AppConfig.createsubscription + planID, token).then((response) async {
+
+    final pref = await SharedPreferences.getInstance();
+    final refCode = (widget.refCode != null && widget.refCode!.isNotEmpty) ? widget.refCode : (pref.getString(AppPreferences.bmpReferralCode) ?? pref.getString(AppPreferences.refferer));
+
+    final apiFuture = (refCode != null && refCode.isNotEmpty) ? ApiServices().postRequestToken(AppConfig.createsubscription + planID, {'ref': refCode, 'bmp_referral_code': refCode}, token) : ApiServices().postRequestTokenWithoutBody(AppConfig.createsubscription + planID, token);
+
+    apiFuture.then((response) async {
       String jsonsDataString = response.body.toString();
       print("createSubscription_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -406,17 +412,25 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
       isLoading = true;
     });
     context.loaderOverlay.show();
-    final postValues = {'razorpay_order_id': orderId, 'razorpay_payment_id': paymentId, 'razorpay_signature': signature};
+    final pref = await SharedPreferences.getInstance();
+    final refCode = (widget.refCode != null && widget.refCode!.isNotEmpty) ? widget.refCode : (pref.getString(AppPreferences.bmpReferralCode) ?? pref.getString(AppPreferences.refferer));
+
+    final Map<String, dynamic> postValues = {
+      'razorpay_order_id': orderId,
+      'razorpay_payment_id': paymentId,
+      'razorpay_signature': signature,
+    };
+    if (refCode != null && refCode.isNotEmpty) {
+      postValues['ref'] = refCode;
+      postValues['bmp_referral_code'] = refCode;
+    }
 
     ApiServices().postRequestToken(AppConfig.updatetransaction, postValues, token).then((response) async {
       String jsonsDataString = response.body.toString();
-      print("setuserprofile_Response: $jsonsDataString");
+      print("updatetransaction_Response: $jsonsDataString");
       if (response.statusCode == 200 || response.statusCode == 201) {
         try {
           appUtils.showToast("Payment Successful");
-
-          //
-
           verifypaymentstatus(token, orderId);
         } catch (e) {
           setState(() {
@@ -433,14 +447,6 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
         print("TransactionError: $response");
         CommonWidget().showSnackBar(context, ContentType.failure, "Error", response.toString());
       }
-      setState(() {
-        isLoading = false;
-        context.loaderOverlay.hide();
-      });
-    });
-    setState(() {
-      context.loaderOverlay.hide();
-      isLoading = false;
     });
   }
 
@@ -449,7 +455,18 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
       isLoading = true;
       context.loaderOverlay.show();
     });
-    final postValues = {'oid': orderId};
+    final pref = await SharedPreferences.getInstance();
+    final refCode = (widget.refCode != null && widget.refCode!.isNotEmpty) ? widget.refCode : (pref.getString(AppPreferences.bmpReferralCode) ?? pref.getString(AppPreferences.refferer));
+
+    final Map<String, dynamic> postValues = {
+      'oid': orderId,
+      'razorpay_order_id': orderId,
+      'order_id': orderId,
+    };
+    if (refCode != null && refCode.isNotEmpty) {
+      postValues['ref'] = refCode;
+      postValues['bmp_referral_code'] = refCode;
+    }
 
     ApiServices().postRequestToken(AppConfig.verifypaymentstatus, postValues, token).then((response) async {
       String jsonsDataString = response.body.toString();
@@ -458,14 +475,15 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
         try {
           appUtils.showToast("Payment Successful");
 
-          final pref = await SharedPreferences.getInstance();
           await pref.setString(AppPreferences.plan_status, "1");
 
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => MainScreen()));
+          if (mounted) {
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => MainScreen()));
+          }
 
           context.loaderOverlay.hide();
         } catch (e) {
-          print('updatetransactionException:$e');
+          print('verifypaymentstatusException:$e');
         }
       } else {
         setState(() {
@@ -478,10 +496,6 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
         isLoading = false;
         context.loaderOverlay.hide();
       });
-    });
-    setState(() {
-      isLoading = false;
-      context.loaderOverlay.hide();
     });
   }
 

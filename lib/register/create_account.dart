@@ -370,6 +370,8 @@ class _CreateAccountState extends State<CreateAccount> {
                 jsonReponse['results']['user']['credits_used'].toString();
             String? refferer =
                 jsonReponse['results']['user']['refferer'].toString();
+            String? bmpReferralCode =
+                jsonReponse['results']['user']['bmp_referral_code']?.toString();
             String? token = jsonReponse['results']['token'].toString();
 
             final pref = await SharedPreferences.getInstance();
@@ -389,6 +391,10 @@ class _CreateAccountState extends State<CreateAccount> {
             await pref.setString(AppPreferences.referal_code, referalCode);
             await pref.setString(AppPreferences.credits_used, creditsUsed);
             await pref.setString(AppPreferences.refferer, refferer);
+            if (bmpReferralCode != null && bmpReferralCode.isNotEmpty && bmpReferralCode != "null") {
+              await pref.setString(AppPreferences.bmpReferralCode, bmpReferralCode);
+              await pref.setString(AppPreferences.refferer, bmpReferralCode);
+            }
             await pref.setString(AppPreferences.token, token);
 
             context.loaderOverlay.hide();

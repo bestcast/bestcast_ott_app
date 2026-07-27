@@ -92,12 +92,13 @@ class _MainScreenState extends State<MainScreen> {
 
   void _handleDeepLink(Uri uri) async {
     print('Handling deep link: $uri');
+    final ref = uri.queryParameters['ref'];
+    if (ref != null && ref.isNotEmpty) {
+      final pref = await SharedPreferences.getInstance();
+      await pref.setString(AppPreferences.bmpReferralCode, ref);
+      await pref.setString(AppPreferences.refferer, ref);
+    }
     if (uri.path == '/pricing') {
-      final ref = uri.queryParameters['ref'];
-      if (ref != null && ref.isNotEmpty) {
-        final pref = await SharedPreferences.getInstance();
-        await pref.setString(AppPreferences.refferer, ref);
-      }
       if (mounted) {
         Navigator.push(
           context,

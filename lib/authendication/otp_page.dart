@@ -205,7 +205,18 @@ class _OTPactivityState extends State<OTPactivity> {
   void verifyOTP(String email, String otp) async {
     context.loaderOverlay.show();
 
-    final postValues = {'email': email, 'otp': otp, 'device': "mobile"};
+    final pref = await SharedPreferences.getInstance();
+    final refCode = pref.getString(AppPreferences.bmpReferralCode) ?? pref.getString(AppPreferences.refferer);
+
+    final Map<String, dynamic> postValues = {
+      'email': email,
+      'otp': otp,
+      'device': "mobile",
+    };
+    if (refCode != null && refCode.isNotEmpty) {
+      postValues['ref'] = refCode;
+    }
+
     ApiServices()
         .postRequest(AppConfig.verifyOtp, postValues)
         .then((response) async {
@@ -241,9 +252,10 @@ class _OTPactivityState extends State<OTPactivity> {
                 jsonReponse['results']['user']['credits_used'].toString();
             String? refferer =
                 jsonReponse['results']['user']['refferer'].toString();
+            String? bmpReferralCode =
+                jsonReponse['results']['user']['bmp_referral_code']?.toString();
             String? token = jsonReponse['results']['token'].toString();
 
-            final pref = await SharedPreferences.getInstance();
             await pref.setString(AppPreferences.id, id);
             await pref.setString(AppPreferences.email, email);
             await pref.setString(AppPreferences.phone, phone);
@@ -260,6 +272,10 @@ class _OTPactivityState extends State<OTPactivity> {
             await pref.setString(AppPreferences.referal_code, referalCode);
             await pref.setString(AppPreferences.credits_used, creditsUsed);
             await pref.setString(AppPreferences.refferer, refferer);
+            if (bmpReferralCode != null && bmpReferralCode.isNotEmpty && bmpReferralCode != "null") {
+              await pref.setString(AppPreferences.bmpReferralCode, bmpReferralCode);
+              await pref.setString(AppPreferences.refferer, bmpReferralCode);
+            }
             await pref.setString(AppPreferences.token, token);
             await pref.setBool(AppPreferences.loggedStatus, true);
 

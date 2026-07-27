@@ -27,6 +27,7 @@ class AppPreferences {
   static const String referal_code = "referal_code";
   static const String credits_used = "credits_used";
   static const String refferer = "refferer";
+  static const String bmpReferralCode = "bmp_referral_code";
   static const String token = "token";
   static const String accountCreatedStatus = "accountCreatedStatus";
   static const String profileID = "profileID";
