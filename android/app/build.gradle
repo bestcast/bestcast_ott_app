@@ -35,8 +35,8 @@ android {
         multiDexEnabled true
         minSdkVersion flutter.minSdkVersion
         targetSdk 36
-        versionCode 20 //change in every build
-        versionName "1.0.0" //change in every build
+        versionCode 21 //change in every build
+        versionName "1.0.21" //change in every build
     }
 
     compileOptions {

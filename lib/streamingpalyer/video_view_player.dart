@@ -130,7 +130,7 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
   late File _videoFile;
 
   // Quiz State
-  final bool _useStaticQuizTimeForTesting = true; // Toggle to true to force exactly 10 seconds between popups
+  final bool _useStaticQuizTimeForTesting = false; // Toggle to true to force exactly 10 seconds between popups
   bool _hasAskedQuiz = false;
   bool _quizEnabled = false;
   bool _isQuizActive = false;
