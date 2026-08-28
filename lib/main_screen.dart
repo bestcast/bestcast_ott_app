@@ -14,6 +14,7 @@ import 'package:bestcaststudios/notification_activity/notification_screen.dart';
 import 'package:bestcaststudios/profile_screen/profile_mainpage.dart';
 import 'package:bestcaststudios/search_activity/search_screen.dart';
 import 'package:bestcaststudios/plan_details/plan_details.dart';
+import 'package:bestcaststudios/Webseries/webseries_detail_screen.dart';
 import 'app_config/app_preferences.dart';
 import 'app_config/appconfig.dart';
 import 'authendication/login_page.dart';
@@ -104,6 +105,16 @@ class _MainScreenState extends State<MainScreen> {
           context,
           MaterialPageRoute(
             builder: (context) => PlanDetailsPage(refCode: ref),
+          ),
+        );
+      }
+    } else if (uri.path.startsWith('/webseries/')) {
+      final webseriesId = uri.pathSegments.last;
+      if (webseriesId.isNotEmpty && mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => WebseriesDetailScreen(webseriesId: webseriesId),
           ),
         );
       }

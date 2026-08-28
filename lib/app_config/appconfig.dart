@@ -1,6 +1,6 @@
 class AppConfig {
-  static const String BaseUrl = "https://bestcast.co";
-  // static const String BaseUrl = "http://staging.bestcast.co";
+  // static const String BaseUrl = "https://bestcast.co";
+  static const String BaseUrl = "http://staging.bestcast.co";
 
   static const String encryptionKey = '5A4B3C2D1E0DSS';
 
@@ -23,7 +23,6 @@ class AppConfig {
   static const String tokenexist = "${rootUrl}tokenexist";
 
   static const String bannerlist = "${rootUrl}guest/bannerlist?page_id=";
-  static const String bannerlist1 = "${rootUrl}guest/bannerlist?page_id=";
   static const String searchMovieslist = "${rootUrl}guest/movieslist?search=";
   static const String genrelist = "${rootUrl}guest/genrelist";
   static const String usermovieslist = "${rootUrl}usermovieslist?profile_id=";
@@ -32,6 +31,11 @@ class AppConfig {
   static const String userMovieDetails = "${rootUrl}guest/getusermovie/";
   static const String userMainMovieDetails = "${rootUrl}getusermovie/";
   static const String setUserMovie = "${rootUrl}setusermovie/";
+  static const String webseriesblockslist = "${rootUrl}webseriesblockslist?page_id=";
+  static const String seasonepisodebannerlist = "${rootUrl}seasonepisodebannerlist/";
+  static const String webserieswatchdetail = "${rootUrl}webserieswatchdetail/";
+  static const String getwebseriesdetail = "${rootUrl}getwebseriesdetail/";
+  static const String setuserepisode = "${rootUrl}setuserepisode/";
   static const String appnotifylist = "${rootUrl}guest/appnotifylist";
   static const String appnotifylistuser = "${rootUrl}appnotifylist";
 

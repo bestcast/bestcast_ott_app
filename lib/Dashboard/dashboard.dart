@@ -21,6 +21,9 @@ import 'package:bestcaststudios/common_files/submit_transparent_button.dart';
 import 'package:bestcaststudios/streamingpalyer/video_player.dart';
 import 'package:bestcaststudios/streamingpalyer/models/subtitle_models.dart';
 import '../app_config/app_preferences.dart';
+import '../Webseries/Models/webseries_models.dart';
+import '../Webseries/webseries_api_service.dart';
+import '../Webseries/webseries_detail_screen.dart';
 import '../app_config/app_utils.dart';
 import '../app_config/appconfig.dart';
 import '../authendication/login_page.dart';
@@ -64,6 +67,7 @@ class _DashboardState extends State<Dashboard> {
 
   List<MoviesCategoryModel> moviesCategoryModel = [];
   List<MoviesMainCategoryModel> moviesMainCategoryModelList = [];
+  List<WebseriesBlockModel> webseriesBlockModelList = [];
 
   List<dynamic> moviesMainCategoryModel1List = [];
 
@@ -156,6 +160,19 @@ class _DashboardState extends State<Dashboard> {
 
     getBannerMoviesDetails(_token, profileID, "", "1");
     getUserDetails(_token);
+    getWebseriesBlocks();
+  }
+
+  void getWebseriesBlocks() async {
+    final blocks = await WebseriesApiService().getWebseriesBlocksList(
+      token: _token,
+      profileId: profileID,
+    );
+    if (mounted) {
+      setState(() {
+        webseriesBlockModelList = blocks;
+      });
+    }
   }
 
   @override
@@ -326,6 +343,9 @@ class _DashboardState extends State<Dashboard> {
                               itemCount: moviesMainCategoryModelList.length + 1,
                               itemBuilder: (BuildContext context, int index) {
                                 if (index < moviesMainCategoryModelList.length) {
+                                  if (moviesMainCategoryModelList[index].movies == null || moviesMainCategoryModelList[index].movies!.isEmpty) {
+                                    return const SizedBox.shrink();
+                                  }
                                   return Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
@@ -372,6 +392,43 @@ class _DashboardState extends State<Dashboard> {
                                       : Text("");
                                 }
                               }),
+                          if (webseriesBlockModelList.isNotEmpty)
+                            ListView.builder(
+                              physics: const NeverScrollableScrollPhysics(),
+                              shrinkWrap: true,
+                              itemCount: webseriesBlockModelList.length,
+                              itemBuilder: (context, index) {
+                                var block = webseriesBlockModelList[index];
+                                if (block.webseriesList.isEmpty) {
+                                  return const SizedBox.shrink();
+                                }
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: 8.0, top: 8.0, bottom: 4.0),
+                                      child: Text(
+                                        block.title,
+                                        style: const TextStyle(
+                                            color: Colors.white, fontSize: 15.0, fontWeight: FontWeight.w600),
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      height: 190,
+                                      child: ListView.builder(
+                                        physics: const ClampingScrollPhysics(),
+                                        scrollDirection: Axis.horizontal,
+                                        shrinkWrap: true,
+                                        itemCount: block.webseriesList.length,
+                                        itemBuilder: (context, index2) {
+                                          return getWebseriesCategoryWidget(block.webseriesList[index2]);
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
                         ],
                       ),
                     ),
@@ -477,6 +534,58 @@ class _DashboardState extends State<Dashboard> {
                   : null,
             ),
           ]),
+        ),
+      ),
+    );
+  }
+
+  Widget getWebseriesCategoryWidget(WebseriesItemModel item) {
+    String thumb = item.thumbnail.isNotEmpty ? item.thumbnail : item.image;
+    if (thumb.isNotEmpty && !thumb.startsWith('http://') && !thumb.startsWith('https://')) {
+      thumb = '${AppConfig.BaseUrl}/$thumb';
+    }
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => WebseriesDetailScreen(
+              webseriesId: item.id,
+              initialItem: item,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        width: 120,
+        padding: const EdgeInsets.symmetric(horizontal: 1.0, vertical: 1.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: SizedBox(
+                height: 160,
+                width: 120,
+                child: thumb.isNotEmpty
+                    ? Image.network(
+                        thumb,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            Image.asset('images/default_portrate_large.jpg', fit: BoxFit.cover),
+                      )
+                    : Image.asset('images/default_portrate_large.jpg', fit: BoxFit.cover),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              item.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Colors.white, fontSize: 12),
+            ),
+          ],
         ),
       ),
     );
@@ -902,8 +1011,7 @@ class _DashboardState extends State<Dashboard> {
 
           List<SubTitleModel>? subtitleList;
           if (data["movies"]["subtitle"] != null && data["movies"]["subtitle"] is List) {
-            subtitleList = List<SubTitleModel>.from(data["movies"]["subtitle"]
-                .map((x) => SubTitleModel.fromJson(x)));
+            subtitleList = List<SubTitleModel>.from(data["movies"]["subtitle"].map((x) => SubTitleModel.fromJson(x)));
           }
 
           movieData = MovieData(
