@@ -23,11 +23,16 @@ class AppConfig {
   static const String tokenexist = "${rootUrl}tokenexist";
 
   static const String bannerlist = "${rootUrl}guest/bannerlist?page_id=";
+  static const String bannerlistUser = "${rootUrl}bannerlist?page_id=";
   static const String searchMovieslist = "${rootUrl}guest/movieslist?search=";
+  static const String searchMovieslistUser = "${rootUrl}movieslist?search=";
   static const String genrelist = "${rootUrl}guest/genrelist";
+  static const String genrelistUser = "${rootUrl}genrelist";
   static const String usermovieslist = "${rootUrl}usermovieslist?profile_id=";
   static const String movieblockslist = "${rootUrl}guest/blockslist?page_id=";
+  static const String movieblockslistUser = "${rootUrl}blockslist?page_id=";
   static const String popularMovieblockslist = "${rootUrl}guest/blockslist?page_id=4";
+  static const String popularMovieblockslistUser = "${rootUrl}blockslist?page_id=4";
   static const String userMovieDetails = "${rootUrl}guest/getusermovie/";
   static const String userMainMovieDetails = "${rootUrl}getusermovie/";
   static const String setUserMovie = "${rootUrl}setusermovie/";

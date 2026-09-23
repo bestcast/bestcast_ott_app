@@ -396,7 +396,10 @@ class _SearchScreenState extends State<SearchScreen> {
     setState(() {
       isLoading = true;
     });
-    ApiServices().getRequestData("${AppConfig.movieblockslist}4&page=1", token).then((response) async {
+    String blocksApi = token.isNotEmpty
+        ? AppConfig.movieblockslistUser
+        : AppConfig.movieblockslist;
+    ApiServices().getRequestData("${blocksApi}4&page=1", token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("Popular_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -471,7 +474,10 @@ class _SearchScreenState extends State<SearchScreen> {
   void getUserMoviesList(String token, String profileId, String searchType) async {
     isLoading = true;
     moviesListModel.clear();
-    ApiServices().getRequestData(AppConfig.popularMovieblockslist, token).then((response) async {
+    String popularApi = token.isNotEmpty
+        ? AppConfig.popularMovieblockslistUser
+        : AppConfig.popularMovieblockslist;
+    ApiServices().getRequestData(popularApi, token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("Movie_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -488,17 +494,20 @@ class _SearchScreenState extends State<SearchScreen> {
 
             Usermovies? usermovies;
 
-            if (movieData['usermovies'] != "") {
+            if (movieData['usermovies'] != null &&
+                movieData['usermovies'] is Map &&
+                (movieData['usermovies'] as Map).isNotEmpty) {
+              var um = movieData['usermovies'];
               usermovies = Usermovies(
-                id: movieData["usermovies"]["id"].toString(),
-                movieId: movieData["usermovies"]["movie_id"].toString(),
-                mylist: movieData["usermovies"]["mylist"].toString(),
-                likes: movieData["usermovies"]["likes"].toString(),
-                watchTime: movieData["usermovies"]["watchTime"].toString(),
-                watching: movieData["usermovies"]["watching"].toString(),
-                watched: movieData["usermovies"]["watched"].toString(),
-                watchedPercent: movieData["usermovies"]["watched_percent"].toString(),
-                viewed: movieData["usermovies"]["viewed"].toString(),
+                id: um["id"]?.toString() ?? "",
+                movieId: (um["movie_id"] ?? um["movieId"])?.toString() ?? "",
+                mylist: um["mylist"]?.toString() ?? "",
+                likes: um["likes"]?.toString() ?? "",
+                watchTime: (um["watch_time"] ?? um["watchTime"])?.toString() ?? "",
+                watching: um["watching"]?.toString() ?? "",
+                watched: um["watched"]?.toString() ?? "",
+                watchedPercent: (um["watched_percent"] ?? um["watchedPercent"])?.toString() ?? "",
+                viewed: um["viewed"]?.toString() ?? "",
               );
             }
 
@@ -603,7 +612,10 @@ class _SearchScreenState extends State<SearchScreen> {
   void getUserSearchMoviesList(String token, String profileId, String searchText) async {
     isSearchLoading = true;
     moviesListModel.clear();
-    ApiServices().getRequestData("${AppConfig.searchMovieslist}$searchText&profile_id=$profileId", token).then((response) async {
+    String searchApi = token.isNotEmpty
+        ? AppConfig.searchMovieslistUser
+        : AppConfig.searchMovieslist;
+    ApiServices().getRequestData("$searchApi$searchText&profile_id=$profileId", token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("SearchMovie_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -619,17 +631,20 @@ class _SearchScreenState extends State<SearchScreen> {
             print("MovieTitle${movieData['title']}");
 
             Usermovies? usermovies;
-            if (movieData['usermovies'] != "") {
+            if (movieData['usermovies'] != null &&
+                movieData['usermovies'] is Map &&
+                (movieData['usermovies'] as Map).isNotEmpty) {
+              var um = movieData['usermovies'];
               usermovies = Usermovies(
-                id: movieData["usermovies"]["id"].toString(),
-                movieId: movieData["usermovies"]["movieId"].toString(),
-                mylist: movieData["usermovies"]["mylist"].toString(),
-                likes: movieData["usermovies"]["likes"].toString(),
-                watchTime: movieData["usermovies"]["watchTime"].toString(),
-                watching: movieData["usermovies"]["watching"].toString(),
-                watched: movieData["usermovies"]["watched"].toString(),
-                watchedPercent: movieData["usermovies"]["watchedPercent"].toString(),
-                viewed: movieData["usermovies"]["viewed"].toString(),
+                id: um["id"]?.toString() ?? "",
+                movieId: (um["movieId"] ?? um["movie_id"])?.toString() ?? "",
+                mylist: um["mylist"]?.toString() ?? "",
+                likes: um["likes"]?.toString() ?? "",
+                watchTime: (um["watchTime"] ?? um["watch_time"])?.toString() ?? "",
+                watching: um["watching"]?.toString() ?? "",
+                watched: um["watched"]?.toString() ?? "",
+                watchedPercent: (um["watchedPercent"] ?? um["watched_percent"])?.toString() ?? "",
+                viewed: um["viewed"]?.toString() ?? "",
               );
             }
 

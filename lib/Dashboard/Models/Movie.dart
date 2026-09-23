@@ -55,9 +55,11 @@ class Movies {
         thumbnail: json['thumbnail'].toString(),
         portraitsmall: json['portraitsmall'].toString(),
         portrait: json['portrait'].toString(),
-        usermovies: (json['usermovies'] != ""
+        usermovies: (json['usermovies'] != null &&
+                json['usermovies'] is Map &&
+                (json['usermovies'] as Map).isNotEmpty)
             ? Usermovies.fromJson(json['usermovies'])
-            : null)!,
+            : null,
       );
 
   Map<String, dynamic> toJson() => {

@@ -1257,17 +1257,20 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
             print("MovieTitle${movieData['title']}");
 
             Usermovies? usermovies;
-            if (movieData['usermovies'] != "") {
+            if (movieData['usermovies'] != null &&
+                movieData['usermovies'] is Map &&
+                (movieData['usermovies'] as Map).isNotEmpty) {
+              var um = movieData['usermovies'];
               usermovies = Usermovies(
-                id: movieData["usermovies"]["id"].toString(),
-                movieId: movieData["usermovies"]["movieId"].toString(),
-                mylist: movieData["usermovies"]["mylist"].toString(),
-                likes: movieData["usermovies"]["likes"].toString(),
-                watchTime: movieData["usermovies"]["watchTime"].toString(),
-                watching: movieData["usermovies"]["watching"].toString(),
-                watched: movieData["usermovies"]["watched"].toString(),
-                watchedPercent: movieData["usermovies"]["watchedPercent"].toString(),
-                viewed: movieData["usermovies"]["viewed"].toString(),
+                id: um["id"]?.toString() ?? "",
+                movieId: (um["movieId"] ?? um["movie_id"])?.toString() ?? "",
+                mylist: um["mylist"]?.toString() ?? "",
+                likes: um["likes"]?.toString() ?? "",
+                watchTime: (um["watchTime"] ?? um["watch_time"])?.toString() ?? "",
+                watching: um["watching"]?.toString() ?? "",
+                watched: um["watched"]?.toString() ?? "",
+                watchedPercent: (um["watchedPercent"] ?? um["watched_percent"])?.toString() ?? "",
+                viewed: um["viewed"]?.toString() ?? "",
               );
             }
 
@@ -1341,20 +1344,23 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
             print("MovieTitle${movieData['title']}");
 
             Usermovies? usermovies;
-            if (movieData['usermovies'] != "") {
+            if (movieData['usermovies'] != null &&
+                movieData['usermovies'] is Map &&
+                (movieData['usermovies'] as Map).isNotEmpty) {
+              var um = movieData['usermovies'];
               usermovies = Usermovies(
-                id: movieData["usermovies"]["id"].toString(),
-                movieId: movieData["usermovies"]["movie_id"].toString(),
-                mylist: movieData["usermovies"]["mylist"].toString(),
-                likes: movieData["usermovies"]["likes"].toString(),
-                watchTime: movieData["usermovies"]["watch_time"].toString(),
-                watching: movieData["usermovies"]["watching"].toString(),
-                watched: movieData["usermovies"]["watched"].toString(),
-                watchedPercent: movieData["usermovies"]["watched_percent"].toString(),
-                viewed: movieData["usermovies"]["viewed"].toString(),
+                id: um["id"]?.toString() ?? "",
+                movieId: (um["movie_id"] ?? um["movieId"])?.toString() ?? "",
+                mylist: um["mylist"]?.toString() ?? "",
+                likes: um["likes"]?.toString() ?? "",
+                watchTime: (um["watch_time"] ?? um["watchTime"])?.toString() ?? "",
+                watching: um["watching"]?.toString() ?? "",
+                watched: um["watched"]?.toString() ?? "",
+                watchedPercent: (um["watched_percent"] ?? um["watchedPercent"])?.toString() ?? "",
+                viewed: um["viewed"]?.toString() ?? "",
               );
-              print("usermoviesValues: ${movieData["usermovies"]["watched_percent"]}");
-              print("Userwatch_time: ${movieData["usermovies"]["watch_time"]}");
+              print("usermoviesValues: ${um["watched_percent"]}");
+              print("Userwatch_time: ${um["watch_time"]}");
             } else {
               usermovies = Usermovies(
                 id: "0",
@@ -1434,17 +1440,20 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
             print("MovieTitle${movieData['title']}");
 
             Usermovies? usermovies;
-            if (movieData['usermovies'] != "") {
+            if (movieData['usermovies'] != null &&
+                movieData['usermovies'] is Map &&
+                (movieData['usermovies'] as Map).isNotEmpty) {
+              var um = movieData['usermovies'];
               usermovies = Usermovies(
-                id: movieData["usermovies"]["id"].toString(),
-                movieId: movieData["usermovies"]["movieId"].toString(),
-                mylist: movieData["usermovies"]["mylist"].toString(),
-                likes: movieData["usermovies"]["likes"].toString(),
-                watchTime: movieData["usermovies"]["watchTime"].toString(),
-                watching: movieData["usermovies"]["watching"].toString(),
-                watched: movieData["usermovies"]["watched"].toString(),
-                watchedPercent: movieData["usermovies"]["watchedPercent"].toString(),
-                viewed: movieData["usermovies"]["viewed"].toString(),
+                id: um["id"]?.toString() ?? "",
+                movieId: (um["movieId"] ?? um["movie_id"])?.toString() ?? "",
+                mylist: um["mylist"]?.toString() ?? "",
+                likes: um["likes"]?.toString() ?? "",
+                watchTime: (um["watchTime"] ?? um["watch_time"])?.toString() ?? "",
+                watching: um["watching"]?.toString() ?? "",
+                watched: um["watched"]?.toString() ?? "",
+                watchedPercent: (um["watchedPercent"] ?? um["watched_percent"])?.toString() ?? "",
+                viewed: um["viewed"]?.toString() ?? "",
               );
             }
 

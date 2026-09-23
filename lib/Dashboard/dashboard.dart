@@ -346,6 +346,7 @@ class _DashboardState extends State<Dashboard> {
                                   if (moviesMainCategoryModelList[index].movies == null || moviesMainCategoryModelList[index].movies!.isEmpty) {
                                     return const SizedBox.shrink();
                                   }
+                                  final bool isWebseries = moviesMainCategoryModelList[index].title.toString().toLowerCase().contains("webseries");
                                   return Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
@@ -375,7 +376,10 @@ class _DashboardState extends State<Dashboard> {
                                                   // Navigator.push(context,
                                                 },
                                                 // child: moviesCategoryModel[index].catogoryID == "1"
-                                                child: getMovieCategoryWidget(moviesMainCategoryModelList[index].movies![index2]),
+                                                child: getMovieCategoryWidget(
+                                                  moviesMainCategoryModelList[index].movies![index2],
+                                                  isWebseries: isWebseries,
+                                                ),
                                               );
                                             }),
                                       ),
@@ -389,46 +393,9 @@ class _DashboardState extends State<Dashboard> {
                                             child: CircularProgressIndicator(strokeWidth: 5, color: Colors.red),
                                           ),
                                         )
-                                      : Text("");
+                                      : const SizedBox.shrink();
                                 }
                               }),
-                          if (webseriesBlockModelList.isNotEmpty)
-                            ListView.builder(
-                              physics: const NeverScrollableScrollPhysics(),
-                              shrinkWrap: true,
-                              itemCount: webseriesBlockModelList.length,
-                              itemBuilder: (context, index) {
-                                var block = webseriesBlockModelList[index];
-                                if (block.webseriesList.isEmpty) {
-                                  return const SizedBox.shrink();
-                                }
-                                return Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.only(left: 8.0, top: 8.0, bottom: 4.0),
-                                      child: Text(
-                                        block.title,
-                                        style: const TextStyle(
-                                            color: Colors.white, fontSize: 15.0, fontWeight: FontWeight.w600),
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      height: 190,
-                                      child: ListView.builder(
-                                        physics: const ClampingScrollPhysics(),
-                                        scrollDirection: Axis.horizontal,
-                                        shrinkWrap: true,
-                                        itemCount: block.webseriesList.length,
-                                        itemBuilder: (context, index2) {
-                                          return getWebseriesCategoryWidget(block.webseriesList[index2]);
-                                        },
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
                         ],
                       ),
                     ),
@@ -591,7 +558,7 @@ class _DashboardState extends State<Dashboard> {
     );
   }
 
-  Widget getMovieCategoryWidget(Movies moviesModel) {
+  Widget getMovieCategoryWidget(Movies moviesModel, {bool isWebseries = false}) {
     print("checkTitle: ${moviesModel.title}");
     print("checkImage: ${moviesModel.portrait}");
     return Container(
@@ -622,7 +589,18 @@ class _DashboardState extends State<Dashboard> {
                 child: Stack(children: <Widget>[
                   GestureDetector(
                     onTap: () {
-                      Navigator.push(context, CupertinoPageRoute(builder: (context) => VideoApp(getMovieID: moviesModel.id.toString())));
+                      if (isWebseries) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => WebseriesDetailScreen(
+                              webseriesId: moviesModel.id.toString(),
+                            ),
+                          ),
+                        );
+                      } else {
+                        Navigator.push(context, CupertinoPageRoute(builder: (context) => VideoApp(getMovieID: moviesModel.id.toString())));
+                      }
                     },
                     child: FadeInImage(
                       placeholder: AssetImage("images/default_portrate_small.jpg"),
@@ -818,7 +796,6 @@ class _DashboardState extends State<Dashboard> {
 
   void getBlockMoviesLits(String token, String profileId, String categoryId, int pageId) async {
     isLoading = true;
-    var limit = 0;
     if (scrolleEnabled == false) {
       moviesMainCategoryModelList.clear();
     }
@@ -826,7 +803,11 @@ class _DashboardState extends State<Dashboard> {
     print("PageCount: $_page");
     print("PageCategoryIdCount: $categoryId");
 
-    ApiServices().getRequestData("${AppConfig.movieblockslist}1&page=$pageId&profile_id=$profileId&genre_id=$categoryId", token).then((response) async {
+    String blocksApi = (loggedStatus && token.isNotEmpty)
+        ? AppConfig.movieblockslistUser
+        : AppConfig.movieblockslist;
+
+    ApiServices().getRequestData("${blocksApi}1&page=$pageId&profile_id=$profileId&genre_id=$categoryId", token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("Movie_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -839,82 +820,101 @@ class _DashboardState extends State<Dashboard> {
           var responseData = json.decode(response.body);
 
           for (var mainData in responseData["data"]) {
-            limit++;
-
             print("movieID:${mainData["id"]}");
             print("MovieTitle${mainData['title']}");
 
             List<Movies> userMainCategoryModelList = [];
-            for (var movieData in mainData["movies"]) {
-              Usermovies? usermovies;
+            if (mainData["movies"] != null && mainData["movies"] is List) {
+              for (var movieData in mainData["movies"]) {
+                Usermovies? usermovies;
 
-              if (movieData['usermovies'] != "") {
-                usermovies = Usermovies(
-                  id: movieData["usermovies"]["id"].toString(),
-                  movieId: movieData["usermovies"]["movie_id"].toString(),
-                  mylist: movieData["usermovies"]["mylist"].toString(),
-                  likes: movieData["usermovies"]["likes"].toString(),
-                  watchTime: movieData["usermovies"]["watch_time"].toString(),
-                  watching: movieData["usermovies"]["watching"].toString(),
-                  watched: movieData["usermovies"]["watched"].toString(),
-                  watchedPercent: movieData["usermovies"]["watched_percent"].toString(),
-                  viewed: movieData["usermovies"]["viewed"].toString(),
-                );
+                if (movieData['usermovies'] != null &&
+                    movieData['usermovies'] is Map &&
+                    (movieData['usermovies'] as Map).isNotEmpty) {
+                  var um = movieData['usermovies'];
+                  usermovies = Usermovies(
+                    id: um["id"]?.toString() ?? "",
+                    movieId: (um["movie_id"] ?? um["movieId"])?.toString() ?? "",
+                    mylist: um["mylist"]?.toString() ?? "",
+                    likes: um["likes"]?.toString() ?? "",
+                    watchTime: (um["watch_time"] ?? um["watchTime"])?.toString() ?? "",
+                    watching: um["watching"]?.toString() ?? "",
+                    watched: um["watched"]?.toString() ?? "",
+                    watchedPercent: (um["watched_percent"] ?? um["watchedPercent"])?.toString() ?? "",
+                    viewed: um["viewed"]?.toString() ?? "",
+                  );
+                }
+
+                String movieAccess = movieData["movie_access"]?.toString() ?? "";
+                print("_movie_access$movieAccess");
+
+                String thumbnail = movieData["thumbnail"]?.toString() ?? "";
+                String portraitsmall = movieData["portraitsmall"]?.toString() ?? "";
+                String portrait = movieData["portrait"]?.toString() ?? "";
+
+                String imgFallback = portraitsmall.isNotEmpty
+                    ? portraitsmall
+                    : (portrait.isNotEmpty ? portrait : thumbnail);
+                String imgFallbackUrl = imgFallback.isNotEmpty
+                    ? (imgFallback.startsWith("http") ? imgFallback : "${AppConfig.BaseUrl}/$imgFallback")
+                    : "";
+
+                String thumbnailUrl = thumbnail.isNotEmpty
+                    ? (thumbnail.startsWith("http") ? thumbnail : "${AppConfig.BaseUrl}/$thumbnail")
+                    : imgFallbackUrl;
+                String portraitsmallUrl = portraitsmall.isNotEmpty
+                    ? (portraitsmall.startsWith("http") ? portraitsmall : "${AppConfig.BaseUrl}/$portraitsmall")
+                    : imgFallbackUrl;
+                String portraitUrl = portrait.isNotEmpty
+                    ? (portrait.startsWith("http") ? portrait : "${AppConfig.BaseUrl}/$portrait")
+                    : imgFallbackUrl;
+
+                userMainCategoryModelList.add(Movies(
+                  id: movieData["id"]?.toString() ?? "",
+                  title: movieData["title"]?.toString() ?? "",
+                  movie_access: movieAccess,
+                  topten: movieData["topten"]?.toString() ?? "",
+                  trailer: movieData["trailer"]?.toString() ?? "",
+                  certificate: movieData["certificate"]?.toString() ?? "",
+                  duration: movieData["duration"]?.toString() ?? "",
+                  tagText: movieData["tag_text"]?.toString() ?? "",
+                  publishedDate: movieData["published_date"]?.toString() ?? "",
+                  userlist: movieData["userlist"]?.toString() ?? "",
+                  userlike: movieData["userlike"]?.toString() ?? "",
+                  thumbnail: thumbnailUrl,
+                  portraitsmall: portraitsmallUrl,
+                  portrait: portraitUrl,
+                  usermovies: usermovies,
+                ));
               }
-
-              String movieAccess = movieData["movie_access"].toString();
-              print("_movie_access$movieAccess");
-
-              String thumbnailUrl = "${AppConfig.BaseUrl}/${movieData["thumbnail"]}";
-              String portraitsmallUrl = "${AppConfig.BaseUrl}/${movieData["portraitsmall"]}";
-              String portraitUrl = "${AppConfig.BaseUrl}/${movieData["portrait"]}";
-
-              print("usermoviesStatus${movieData["usermovies"]}");
-              print("portraitImageUrl: {$portraitUrl}}");
-
-              //
-
-              userMainCategoryModelList.add(Movies(
-                id: movieData["id"].toString(),
-                title: movieData["title"].toString(),
-                movie_access: movieData["movie_access"].toString(),
-                topten: movieData["topten"].toString(),
-                trailer: movieData["trailer"].toString(),
-                certificate: movieData["certificate"].toString(),
-                duration: movieData["duration"].toString(),
-                tagText: movieData["tag_text"].toString(),
-                publishedDate: movieData["published_date"].toString(),
-                userlist: movieData["userlist"].toString(),
-                userlike: movieData["userlike"].toString(),
-                thumbnail: thumbnailUrl,
-                portraitsmall: portraitsmallUrl,
-                portrait: portraitUrl,
-                usermovies: usermovies,
-              ));
             }
 
-            print("checkStatus: catogeryMovie");
             moviesMainCategoryModelList.add(MoviesMainCategoryModel(
-              id: mainData["id"].toString(),
-              title: mainData["title"].toString(),
+              id: mainData["id"]?.toString() ?? "",
+              title: mainData["title"]?.toString() ?? "",
               movies: userMainCategoryModelList,
             ));
-
-            print("checkStatus: mainMovie");
           }
 
-          if (limit < 5) {
-            setState(() {
-              hasMoreScroll = false;
-              scrolleEnabled = false;
-            });
+          bool hasNextPage = false;
+          if (responseData["links"] != null && responseData["links"]["next"] != null) {
+            hasNextPage = true;
+          } else if (responseData["meta"] != null) {
+            int currentPage = int.tryParse(responseData["meta"]["current_page"]?.toString() ?? "") ?? 1;
+            int lastPage = int.tryParse(responseData["meta"]["last_page"]?.toString() ?? "") ?? 1;
+            hasNextPage = currentPage < lastPage;
           }
+
+          setState(() {
+            hasMoreScroll = hasNextPage;
+            scrolleEnabled = false;
+          });
 
           if (_page == 1) {
             getCastegoryDetails(token);
           }
 
-          if (hasMoreScroll) {
+          if (hasNextPage) {
             setState(() {
               _page++;
             });
@@ -922,19 +922,23 @@ class _DashboardState extends State<Dashboard> {
         } catch (e) {
           setState(() {
             isLoading = false;
+            hasMoreScroll = false;
+            scrolleEnabled = false;
           });
           print('DashboardMovieListException:$e');
         }
       } else {
         print("Error: $response");
         isLoading = false;
+        setState(() {
+          hasMoreScroll = false;
+          scrolleEnabled = false;
+        });
         CommonWidget().showSnackBar(context, ContentType.failure, "Error", response.toString());
       }
 
       setState(() {
-        if (_page != 1) {
-          isLoading = false;
-        }
+        isLoading = false;
       });
     });
   }
@@ -945,7 +949,15 @@ class _DashboardState extends State<Dashboard> {
     });
 
     print("categoryID: $categoryID");
-    ApiServices().getRequestWithoutToken("${AppConfig.bannerlist}$pageId&genre_id=$categoryID").then((response) async {
+    final String bannerApi = (loggedStatus && token.isNotEmpty)
+        ? AppConfig.bannerlistUser
+        : AppConfig.bannerlist;
+
+    final bannerRequest = (loggedStatus && token.isNotEmpty)
+        ? ApiServices().getRequestData("$bannerApi$pageId&genre_id=$categoryID", token)
+        : ApiServices().getRequestWithoutToken("$bannerApi$pageId&genre_id=$categoryID");
+
+    bannerRequest.then((response) async {
       String jsonsDataString = response.body.toString();
       print("Banner_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -1069,7 +1081,10 @@ class _DashboardState extends State<Dashboard> {
     setState(() {
       isLoading = true;
     });
-    ApiServices().getRequestData(AppConfig.genrelist, token).then((response) async {
+    final String genresApi = (loggedStatus && token.isNotEmpty)
+        ? AppConfig.genrelistUser
+        : AppConfig.genrelist;
+    ApiServices().getRequestData(genresApi, token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("gener_Response: $jsonsDataString");
       if (response.statusCode == 200) {
