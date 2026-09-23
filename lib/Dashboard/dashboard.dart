@@ -539,8 +539,7 @@ class _DashboardState extends State<Dashboard> {
                     ? Image.network(
                         thumb,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            Image.asset('images/default_portrate_large.jpg', fit: BoxFit.cover),
+                        errorBuilder: (context, error, stackTrace) => Image.asset('images/default_portrate_large.jpg', fit: BoxFit.cover),
                       )
                     : Image.asset('images/default_portrate_large.jpg', fit: BoxFit.cover),
               ),
@@ -595,6 +594,15 @@ class _DashboardState extends State<Dashboard> {
                           MaterialPageRoute(
                             builder: (context) => WebseriesDetailScreen(
                               webseriesId: moviesModel.id.toString(),
+                              initialItem: WebseriesItemModel(
+                                id: moviesModel.id.toString(),
+                                title: moviesModel.title ?? '',
+                                thumbnail: moviesModel.thumbnail ?? '',
+                                image: (moviesModel.thumbnail != null && moviesModel.thumbnail!.isNotEmpty) ? moviesModel.thumbnail! : (moviesModel.portrait ?? ''),
+                                portrait: moviesModel.portrait ?? '',
+                                portraitsmall: moviesModel.portraitsmall ?? '',
+                                seasons: [],
+                              ),
                             ),
                           ),
                         );
@@ -803,9 +811,7 @@ class _DashboardState extends State<Dashboard> {
     print("PageCount: $_page");
     print("PageCategoryIdCount: $categoryId");
 
-    String blocksApi = (loggedStatus && token.isNotEmpty)
-        ? AppConfig.movieblockslistUser
-        : AppConfig.movieblockslist;
+    String blocksApi = (loggedStatus && token.isNotEmpty) ? AppConfig.movieblockslistUser : AppConfig.movieblockslist;
 
     ApiServices().getRequestData("${blocksApi}1&page=$pageId&profile_id=$profileId&genre_id=$categoryId", token).then((response) async {
       String jsonsDataString = response.body.toString();
@@ -828,9 +834,7 @@ class _DashboardState extends State<Dashboard> {
               for (var movieData in mainData["movies"]) {
                 Usermovies? usermovies;
 
-                if (movieData['usermovies'] != null &&
-                    movieData['usermovies'] is Map &&
-                    (movieData['usermovies'] as Map).isNotEmpty) {
+                if (movieData['usermovies'] != null && movieData['usermovies'] is Map && (movieData['usermovies'] as Map).isNotEmpty) {
                   var um = movieData['usermovies'];
                   usermovies = Usermovies(
                     id: um["id"]?.toString() ?? "",
@@ -852,22 +856,12 @@ class _DashboardState extends State<Dashboard> {
                 String portraitsmall = movieData["portraitsmall"]?.toString() ?? "";
                 String portrait = movieData["portrait"]?.toString() ?? "";
 
-                String imgFallback = portraitsmall.isNotEmpty
-                    ? portraitsmall
-                    : (portrait.isNotEmpty ? portrait : thumbnail);
-                String imgFallbackUrl = imgFallback.isNotEmpty
-                    ? (imgFallback.startsWith("http") ? imgFallback : "${AppConfig.BaseUrl}/$imgFallback")
-                    : "";
+                String imgFallback = portraitsmall.isNotEmpty ? portraitsmall : (portrait.isNotEmpty ? portrait : thumbnail);
+                String imgFallbackUrl = imgFallback.isNotEmpty ? (imgFallback.startsWith("http") ? imgFallback : "${AppConfig.BaseUrl}/$imgFallback") : "";
 
-                String thumbnailUrl = thumbnail.isNotEmpty
-                    ? (thumbnail.startsWith("http") ? thumbnail : "${AppConfig.BaseUrl}/$thumbnail")
-                    : imgFallbackUrl;
-                String portraitsmallUrl = portraitsmall.isNotEmpty
-                    ? (portraitsmall.startsWith("http") ? portraitsmall : "${AppConfig.BaseUrl}/$portraitsmall")
-                    : imgFallbackUrl;
-                String portraitUrl = portrait.isNotEmpty
-                    ? (portrait.startsWith("http") ? portrait : "${AppConfig.BaseUrl}/$portrait")
-                    : imgFallbackUrl;
+                String thumbnailUrl = thumbnail.isNotEmpty ? (thumbnail.startsWith("http") ? thumbnail : "${AppConfig.BaseUrl}/$thumbnail") : imgFallbackUrl;
+                String portraitsmallUrl = portraitsmall.isNotEmpty ? (portraitsmall.startsWith("http") ? portraitsmall : "${AppConfig.BaseUrl}/$portraitsmall") : imgFallbackUrl;
+                String portraitUrl = portrait.isNotEmpty ? (portrait.startsWith("http") ? portrait : "${AppConfig.BaseUrl}/$portrait") : imgFallbackUrl;
 
                 userMainCategoryModelList.add(Movies(
                   id: movieData["id"]?.toString() ?? "",
@@ -949,13 +943,9 @@ class _DashboardState extends State<Dashboard> {
     });
 
     print("categoryID: $categoryID");
-    final String bannerApi = (loggedStatus && token.isNotEmpty)
-        ? AppConfig.bannerlistUser
-        : AppConfig.bannerlist;
+    final String bannerApi = (loggedStatus && token.isNotEmpty) ? AppConfig.bannerlistUser : AppConfig.bannerlist;
 
-    final bannerRequest = (loggedStatus && token.isNotEmpty)
-        ? ApiServices().getRequestData("$bannerApi$pageId&genre_id=$categoryID", token)
-        : ApiServices().getRequestWithoutToken("$bannerApi$pageId&genre_id=$categoryID");
+    final bannerRequest = (loggedStatus && token.isNotEmpty) ? ApiServices().getRequestData("$bannerApi$pageId&genre_id=$categoryID", token) : ApiServices().getRequestWithoutToken("$bannerApi$pageId&genre_id=$categoryID");
 
     bannerRequest.then((response) async {
       String jsonsDataString = response.body.toString();
@@ -1081,9 +1071,7 @@ class _DashboardState extends State<Dashboard> {
     setState(() {
       isLoading = true;
     });
-    final String genresApi = (loggedStatus && token.isNotEmpty)
-        ? AppConfig.genrelistUser
-        : AppConfig.genrelist;
+    final String genresApi = (loggedStatus && token.isNotEmpty) ? AppConfig.genrelistUser : AppConfig.genrelist;
     ApiServices().getRequestData(genresApi, token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("gener_Response: $jsonsDataString");

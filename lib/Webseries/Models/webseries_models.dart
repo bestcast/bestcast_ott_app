@@ -67,38 +67,68 @@ class WebseriesItemModel {
   });
 
   factory WebseriesItemModel.fromJson(Map<String, dynamic> json) {
+    Map<String, dynamic> movieData = {};
+    if (json['movies'] != null && json['movies'] is Map<String, dynamic>) {
+      movieData = json['movies'];
+    } else if (json['webseries'] != null && json['webseries'] is Map<String, dynamic>) {
+      movieData = json['webseries'];
+    }
+
+    String getString(String key, [String fallbackKey = '']) {
+      var val = json[key] ?? movieData[key];
+      if ((val == null || val.toString() == 'null' || val.toString().trim().isEmpty) && fallbackKey.isNotEmpty) {
+        val = json[fallbackKey] ?? movieData[fallbackKey];
+      }
+      if (val == null || val.toString() == 'null') return '';
+      return val.toString().trim();
+    }
+
     List<WebseriesSeasonModel> seasonsList = [];
-    if (json['seasons'] != null && json['seasons'] is List) {
-      seasonsList = (json['seasons'] as List)
+    var rawSeasons = json['seasons'] ?? movieData['seasons'];
+    if (rawSeasons != null && rawSeasons is List) {
+      seasonsList = rawSeasons
           .map((x) => WebseriesSeasonModel.fromJson(x))
           .toList();
     }
 
     List<WebseriesCastModel> castList = [];
-    if (json['casts'] != null && json['casts'] is List) {
-      castList = (json['casts'] as List)
+    var rawCasts = json['casts'] ?? movieData['casts'];
+    if (rawCasts != null && rawCasts is List) {
+      castList = rawCasts
           .map((x) => WebseriesCastModel.fromJson(x))
+          .where((c) => c.name.isNotEmpty)
           .toList();
     }
 
+    String image = getString('image', 'banner');
+    if (image.isEmpty) image = getString('banner_image', 'poster');
+    if (image.isEmpty) image = getString('medium', 'thumbnail');
+
+    String thumbnail = getString('thumbnail', 'image');
+    if (thumbnail.isEmpty) thumbnail = getString('medium', 'portraitsmall');
+
+    String medium = getString('medium', 'image');
+    String portrait = getString('portrait', 'portraitsmall');
+    String portraitsmall = getString('portraitsmall', 'portrait');
+
     return WebseriesItemModel(
-      id: json['id']?.toString() ?? '',
-      title: json['title']?.toString() ?? '',
-      content: json['content']?.toString() ?? '',
-      publishedDate: json['published_date']?.toString() ?? '',
-      certificate: json['certificate']?.toString() ?? '',
-      tagText: json['tag_text']?.toString() ?? '',
-      thumbnail: json['thumbnail']?.toString() ?? '',
-      image: json['image']?.toString() ?? '',
-      medium: json['medium']?.toString() ?? '',
-      portrait: json['portrait']?.toString() ?? '',
-      portraitsmall: json['portraitsmall']?.toString() ?? '',
-      movieAccess: int.tryParse(json['movie_access']?.toString() ?? '0') ?? 0,
-      trailer: json['trailer']?.toString() ?? '',
-      topten: int.tryParse(json['topten']?.toString() ?? '0') ?? 0,
-      resumeEpisodeId: json['resume_episode_id']?.toString(),
-      resumeDate: json['resume_date']?.toString(),
-      firstEpisodeId: json['first_episode_id']?.toString(),
+      id: getString('id'),
+      title: getString('title'),
+      content: getString('content', 'content_plain'),
+      publishedDate: getString('published_date'),
+      certificate: getString('certificate'),
+      tagText: getString('tag_text'),
+      thumbnail: thumbnail,
+      image: image,
+      medium: medium,
+      portrait: portrait,
+      portraitsmall: portraitsmall,
+      movieAccess: int.tryParse(getString('movie_access')) ?? 0,
+      trailer: getString('trailer'),
+      topten: int.tryParse(getString('topten')) ?? 0,
+      resumeEpisodeId: getString('resume_episode_id').isNotEmpty ? getString('resume_episode_id') : null,
+      resumeDate: getString('resume_date').isNotEmpty ? getString('resume_date') : null,
+      firstEpisodeId: getString('first_episode_id').isNotEmpty ? getString('first_episode_id') : null,
       seasons: seasonsList,
       casts: castList,
     );
@@ -259,10 +289,21 @@ class WebseriesCastModel {
   });
 
   factory WebseriesCastModel.fromJson(Map<String, dynamic> json) {
+    String name = json['name']?.toString() ?? '';
+    if ((name.isEmpty || name == 'null') && json['cast'] != null && json['cast'] is Map) {
+      name = json['cast']['name']?.toString() ??
+          "${json['cast']['firstname'] ?? ''} ${json['cast']['lastname'] ?? ''}".trim();
+    }
+    String groupName = json['group_name']?.toString() ??
+        json['group_label']?.toString() ??
+        '';
+    if (name == 'null') name = '';
+    if (groupName == 'null') groupName = '';
+
     return WebseriesCastModel(
-      name: json['name']?.toString() ?? '',
+      name: name.trim(),
       group: int.tryParse(json['group']?.toString() ?? '0') ?? 0,
-      groupName: json['group_name']?.toString() ?? '',
+      groupName: groupName.trim(),
     );
   }
 }
@@ -288,12 +329,27 @@ class WebseriesBannerModel {
     WebseriesItemModel? series;
     if (json['movies'] != null && json['movies'] is Map) {
       series = WebseriesItemModel.fromJson(json['movies']);
+    } else if (json['webseries'] != null && json['webseries'] is Map) {
+      series = WebseriesItemModel.fromJson(json['webseries']);
     }
+
+    String img = json['image']?.toString() ??
+        json['banner']?.toString() ??
+        json['banner_image']?.toString() ??
+        series?.image ??
+        '';
+    if (img == 'null') img = '';
+
+    String thumb = json['thumbnail']?.toString() ??
+        series?.thumbnail ??
+        '';
+    if (thumb == 'null') thumb = '';
+
     return WebseriesBannerModel(
-      id: json['id']?.toString() ?? '',
-      title: json['title']?.toString() ?? '',
-      image: json['image']?.toString() ?? '',
-      thumbnail: json['thumbnail']?.toString() ?? '',
+      id: json['id']?.toString() ?? series?.id ?? '',
+      title: json['title']?.toString() ?? series?.title ?? '',
+      image: img,
+      thumbnail: thumb,
       logo: json['logo']?.toString() ?? '',
       webseries: series,
     );

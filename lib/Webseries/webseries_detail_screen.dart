@@ -31,10 +31,13 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
 
   WebseriesItemModel? _webseriesDetail;
   int _selectedSeasonIndex = 0;
+  bool _isCastExpanded = false;
 
   @override
   void initState() {
     super.initState();
+    _webseriesDetail = widget.initialItem;
+    _isLoading = _webseriesDetail == null || _webseriesDetail!.seasons.isEmpty;
     _loadInitialData();
   }
 
@@ -47,67 +50,182 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
   }
 
   Future<void> _fetchDetails() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    final watchDetail = await _apiService.getWebseriesWatchDetail(
-      token: _token,
-      webseriesId: widget.webseriesId,
-      profileId: _profileId,
-    );
-
-    WebseriesItemModel? fullDetail;
-    if (watchDetail != null) {
-      fullDetail = await _apiService.getWebseriesDetail(
-        token: _token,
-        webseriesId: widget.webseriesId,
-        profileId: _profileId,
-      );
+    if (_webseriesDetail == null || _webseriesDetail!.seasons.isEmpty) {
+      setState(() {
+        _isLoading = true;
+      });
     }
 
-    if (mounted) {
-      setState(() {
-        _webseriesDetail = watchDetail ?? widget.initialItem ?? fullDetail;
-        if (fullDetail != null && _webseriesDetail != null) {
-          // Merge casts if available
-          if (fullDetail.casts.isNotEmpty) {
+    try {
+      final results = await Future.wait([
+        _apiService.getWebseriesWatchDetail(
+          token: _token,
+          webseriesId: widget.webseriesId,
+          profileId: _profileId,
+        ),
+        _apiService.getWebseriesDetail(
+          token: _token,
+          webseriesId: widget.webseriesId,
+          profileId: _profileId,
+        ),
+        _apiService.getSeasonEpisodeBannerList(
+          token: _token,
+          webseriesId: widget.webseriesId,
+          profileId: _profileId,
+        ),
+      ]);
+
+      final watchDetail = results[0] as WebseriesItemModel?;
+      final fullDetail = results[1] as WebseriesItemModel?;
+      final bannerDetail = results[2] as WebseriesBannerModel?;
+
+      if (mounted) {
+        setState(() {
+          WebseriesItemModel? base = watchDetail ?? fullDetail ?? widget.initialItem;
+          if (base != null) {
+            String image = '';
+            if (base.image.isNotEmpty && base.image != 'null') {
+              image = base.image;
+            } else if (fullDetail?.image.isNotEmpty == true && fullDetail!.image != 'null') {
+              image = fullDetail.image;
+            } else if (bannerDetail?.image.isNotEmpty == true && bannerDetail!.image != 'null') {
+              image = bannerDetail.image;
+            } else if (bannerDetail?.webseries?.image.isNotEmpty == true && bannerDetail!.webseries!.image != 'null') {
+              image = bannerDetail.webseries!.image;
+            } else if (widget.initialItem?.image.isNotEmpty == true && widget.initialItem!.image != 'null') {
+              image = widget.initialItem!.image;
+            }
+
+            String thumbnail = '';
+            if (base.thumbnail.isNotEmpty && base.thumbnail != 'null') {
+              thumbnail = base.thumbnail;
+            } else if (fullDetail?.thumbnail.isNotEmpty == true && fullDetail!.thumbnail != 'null') {
+              thumbnail = fullDetail.thumbnail;
+            } else if (bannerDetail?.thumbnail.isNotEmpty == true && bannerDetail!.thumbnail != 'null') {
+              thumbnail = bannerDetail.thumbnail;
+            } else if (bannerDetail?.webseries?.thumbnail.isNotEmpty == true && bannerDetail!.webseries!.thumbnail != 'null') {
+              thumbnail = bannerDetail.webseries!.thumbnail;
+            } else if (widget.initialItem?.thumbnail.isNotEmpty == true && widget.initialItem!.thumbnail != 'null') {
+              thumbnail = widget.initialItem!.thumbnail;
+            }
+
+            String medium = base.medium.isNotEmpty && base.medium != 'null'
+                ? base.medium
+                : (fullDetail?.medium ?? widget.initialItem?.medium ?? '');
+            String portrait = base.portrait.isNotEmpty && base.portrait != 'null'
+                ? base.portrait
+                : (fullDetail?.portrait ?? widget.initialItem?.portrait ?? '');
+            String portraitsmall = base.portraitsmall.isNotEmpty && base.portraitsmall != 'null'
+                ? base.portraitsmall
+                : (fullDetail?.portraitsmall ?? widget.initialItem?.portraitsmall ?? '');
+            String content = base.content.isNotEmpty
+                ? base.content
+                : (fullDetail?.content ?? widget.initialItem?.content ?? '');
+
+            List<WebseriesCastModel> casts = fullDetail != null && fullDetail.casts.isNotEmpty
+                ? fullDetail.casts
+                : base.casts;
+
+            List<WebseriesSeasonModel> seasons = base.seasons.isNotEmpty
+                ? base.seasons
+                : (fullDetail?.seasons ?? widget.initialItem?.seasons ?? []);
+
             _webseriesDetail = WebseriesItemModel(
-              id: _webseriesDetail!.id,
-              title: _webseriesDetail!.title,
-              content: _webseriesDetail!.content.isNotEmpty
-                  ? _webseriesDetail!.content
-                  : fullDetail.content,
-              publishedDate: _webseriesDetail!.publishedDate,
-              certificate: _webseriesDetail!.certificate,
-              tagText: _webseriesDetail!.tagText,
-              thumbnail: _webseriesDetail!.thumbnail,
-              image: _webseriesDetail!.image,
-              medium: _webseriesDetail!.medium,
-              portrait: _webseriesDetail!.portrait,
-              portraitsmall: _webseriesDetail!.portraitsmall,
-              movieAccess: _webseriesDetail!.movieAccess,
-              trailer: _webseriesDetail!.trailer,
-              topten: _webseriesDetail!.topten,
-              resumeEpisodeId: _webseriesDetail!.resumeEpisodeId,
-              resumeDate: _webseriesDetail!.resumeDate,
-              firstEpisodeId: _webseriesDetail!.firstEpisodeId,
-              seasons: _webseriesDetail!.seasons,
-              casts: fullDetail.casts,
+              id: base.id,
+              title: base.title.isNotEmpty ? base.title : (fullDetail?.title ?? widget.initialItem?.title ?? ''),
+              content: content,
+              publishedDate: base.publishedDate.isNotEmpty ? base.publishedDate : (fullDetail?.publishedDate ?? ''),
+              certificate: base.certificate.isNotEmpty ? base.certificate : (fullDetail?.certificate ?? ''),
+              tagText: base.tagText.isNotEmpty ? base.tagText : (fullDetail?.tagText ?? ''),
+              thumbnail: thumbnail,
+              image: image,
+              medium: medium,
+              portrait: portrait,
+              portraitsmall: portraitsmall,
+              movieAccess: base.movieAccess,
+              trailer: base.trailer.isNotEmpty ? base.trailer : (fullDetail?.trailer ?? ''),
+              topten: base.topten,
+              resumeEpisodeId: base.resumeEpisodeId,
+              resumeDate: base.resumeDate,
+              firstEpisodeId: base.firstEpisodeId,
+              seasons: seasons,
+              casts: casts,
             );
           }
-        }
-        _isLoading = false;
-      });
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print("Error fetching webseries details: $e");
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
   String _buildImageUrl(String path) {
-    if (path.isEmpty) return '';
+    if (path.isEmpty || path == 'null') return '';
+    path = path.trim();
     if (path.startsWith('http://') || path.startsWith('https://')) {
       return path;
     }
+    if (path.startsWith('/')) {
+      return '${AppConfig.BaseUrl}$path';
+    }
     return '${AppConfig.BaseUrl}/$path';
+  }
+
+  String _getHeaderBannerUrl() {
+    if (_webseriesDetail != null) {
+      if (_webseriesDetail!.image.isNotEmpty && _webseriesDetail!.image != 'null') {
+        return _buildImageUrl(_webseriesDetail!.image);
+      }
+      if (_webseriesDetail!.medium.isNotEmpty && _webseriesDetail!.medium != 'null') {
+        return _buildImageUrl(_webseriesDetail!.medium);
+      }
+      if (_webseriesDetail!.thumbnail.isNotEmpty && _webseriesDetail!.thumbnail != 'null') {
+        return _buildImageUrl(_webseriesDetail!.thumbnail);
+      }
+      if (_webseriesDetail!.portrait.isNotEmpty && _webseriesDetail!.portrait != 'null') {
+        return _buildImageUrl(_webseriesDetail!.portrait);
+      }
+      if (_webseriesDetail!.portraitsmall.isNotEmpty && _webseriesDetail!.portraitsmall != 'null') {
+        return _buildImageUrl(_webseriesDetail!.portraitsmall);
+      }
+    }
+
+    if (widget.initialItem != null) {
+      if (widget.initialItem!.image.isNotEmpty && widget.initialItem!.image != 'null') {
+        return _buildImageUrl(widget.initialItem!.image);
+      }
+      if (widget.initialItem!.thumbnail.isNotEmpty && widget.initialItem!.thumbnail != 'null') {
+        return _buildImageUrl(widget.initialItem!.thumbnail);
+      }
+      if (widget.initialItem!.medium.isNotEmpty && widget.initialItem!.medium != 'null') {
+        return _buildImageUrl(widget.initialItem!.medium);
+      }
+      if (widget.initialItem!.portrait.isNotEmpty && widget.initialItem!.portrait != 'null') {
+        return _buildImageUrl(widget.initialItem!.portrait);
+      }
+    }
+
+    // Fallback: check episodes for an image/thumbnail
+    if (_webseriesDetail != null && _webseriesDetail!.seasons.isNotEmpty) {
+      for (var season in _webseriesDetail!.seasons) {
+        for (var ep in season.episodes) {
+          if (ep.image.isNotEmpty && ep.image != 'null') {
+            return _buildImageUrl(ep.image);
+          }
+          if (ep.thumbnail.isNotEmpty && ep.thumbnail != 'null') {
+            return _buildImageUrl(ep.thumbnail);
+          }
+        }
+      }
+    }
+
+    return '';
   }
 
   String _stripHtml(String htmlString) {
@@ -188,7 +306,6 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
                       _buildInfoSection(),
                       _buildSeasonTabs(),
                       _buildEpisodeList(),
-                      if (_webseriesDetail!.casts.isNotEmpty) _buildCastSection(),
                       const SizedBox(height: 30),
                     ],
                   ),
@@ -197,8 +314,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
   }
 
   Widget _buildHeaderBanner() {
-    String bgUrl = _buildImageUrl(
-        _webseriesDetail!.image.isNotEmpty ? _webseriesDetail!.image : _webseriesDetail!.thumbnail);
+    String bgUrl = _getHeaderBannerUrl();
 
     WebseriesEpisodeModel? targetEp = _findResumeOrFirstEpisode();
 
@@ -329,6 +445,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
               overflow: TextOverflow.ellipsis,
             ),
           ],
+          _buildCastInlineSection(),
         ],
       ),
     );
@@ -503,31 +620,174 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
     );
   }
 
-  Widget _buildCastSection() {
+  Widget _buildCastInlineSection() {
+    final validCasts = _webseriesDetail?.casts
+            .where((cast) => cast.name.trim().isNotEmpty)
+            .toList() ??
+        [];
+
+    if (validCasts.isEmpty) return const SizedBox.shrink();
+
+    // Group casts by role/groupName
+    final Map<String, List<String>> grouped = {};
+    for (var cast in validCasts) {
+      String group = cast.groupName.trim();
+      if (group.isEmpty) {
+        group = 'Cast';
+      }
+      grouped.putIfAbsent(group, () => []).add(cast.name.trim());
+    }
+
+    final previewList = validCasts.take(3).map((c) => c.name).toList();
+    final previewText = previewList.join(', ');
+    final bool hasMore = validCasts.length > 3 || grouped.length > 1;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Cast & Crew",
-            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _webseriesDetail!.casts.map((cast) {
-              return Chip(
-                backgroundColor: Colors.white10,
-                label: Text(
-                  "${cast.name}${cast.groupName.isNotEmpty ? ' (${cast.groupName})' : ''}",
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+      padding: const EdgeInsets.only(top: 12.0),
+      child: AnimatedCrossFade(
+        duration: const Duration(milliseconds: 250),
+        crossFadeState: _isCastExpanded
+            ? CrossFadeState.showSecond
+            : CrossFadeState.showFirst,
+        firstChild: GestureDetector(
+          onTap: () {
+            setState(() {
+              _isCastExpanded = true;
+            });
+          },
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: RichText(
+                  text: TextSpan(
+                    children: [
+                      const TextSpan(
+                        text: "Cast: ",
+                        style: TextStyle(
+                          color: Colors.white60,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      TextSpan(
+                        text: previewText,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                        ),
+                      ),
+                      if (hasMore)
+                        const TextSpan(
+                          text: " ...more",
+                          style: TextStyle(
+                            color: Colors.redAccent,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              );
-            }).toList(),
+              ),
+            ],
           ),
-        ],
+        ),
+        secondChild: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12.0),
+          decoration: BoxDecoration(
+            color: const Color.fromRGBO(255, 255, 255, 0.05),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.white12),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Cast & Crew",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _isCastExpanded = false;
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      child: const Row(
+                        children: [
+                          Text(
+                            "less",
+                            style: TextStyle(
+                              color: Colors.redAccent,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Icon(Icons.keyboard_arrow_up, color: Colors.redAccent, size: 16),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              ...grouped.entries.map((entry) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        entry.key.toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.6,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: entry.value.map((name) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black45,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.white24),
+                            ),
+                            child: Text(
+                              name,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
       ),
     );
   }

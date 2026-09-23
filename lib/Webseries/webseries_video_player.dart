@@ -80,7 +80,9 @@ class _WebseriesVideoPlayerState extends State<WebseriesVideoPlayer> {
     }
 
     if (!videoUrl.startsWith('http://') && !videoUrl.startsWith('https://')) {
-      videoUrl = '${AppConfig.BaseUrl}/$videoUrl';
+      videoUrl = videoUrl.startsWith('/')
+          ? '${AppConfig.BaseUrl}$videoUrl'
+          : '${AppConfig.BaseUrl}/$videoUrl';
     }
 
     print("Initializing Webseries Player with URL: $videoUrl");
