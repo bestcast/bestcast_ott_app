@@ -868,14 +868,127 @@ class _VideoAppState extends State<VideoApp> {
       backgroundColor: Colors.transparent,
       enableDrag: true,
       builder: (BuildContext sheetContext) {
+        Widget buildMonogram(String name) {
+          String initials = "•";
+          final trimmed = name.trim();
+          if (trimmed.isNotEmpty) {
+            final parts = trimmed.split(RegExp(r'\s+'));
+            if (parts.length == 1) {
+              initials = parts[0].substring(0, parts[0].length >= 2 ? 2 : 1).toUpperCase();
+            } else if (parts.length >= 2) {
+              initials = "${parts[0][0]}${parts[1][0]}".toUpperCase();
+            }
+          }
+          return Container(
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF2C2C3A),
+                  Color(0xFF1C1C26),
+                ],
+              ),
+            ),
+            child: Text(
+              initials,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
+            ),
+          );
+        }
+
+        Widget buildCastAvatar(String name, String photoUrl) {
+          final hasPhoto = photoUrl.isNotEmpty && photoUrl != "null" && photoUrl != "false";
+          return Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF22222E),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.08),
+                width: 1,
+              ),
+            ),
+            child: ClipOval(
+              child: hasPhoto
+                  ? Image.network(
+                      photoUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => buildMonogram(name),
+                    )
+                  : buildMonogram(name),
+            ),
+          );
+        }
+
+        Widget buildMemberTile(String personName, String role, String photoUrl) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFF171720),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.04),
+              ),
+            ),
+            child: Row(
+              children: [
+                buildCastAvatar(personName, photoUrl),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        personName.isNotEmpty ? personName : "Unknown",
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          height: 1.15,
+                        ),
+                      ),
+                      if (role.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          role,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.45),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w400,
+                            height: 1.15,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
         return Container(
           decoration: const BoxDecoration(
-            color: Color(0xFF181818),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            color: Color(0xFF121217),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black54,
-                blurRadius: 15,
+                color: Colors.black87,
+                blurRadius: 20,
                 spreadRadius: 2,
               ),
             ],
@@ -888,11 +1001,11 @@ class _VideoAppState extends State<VideoApp> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Drag handle pill
+                // Minimal drag handle
                 Center(
                   child: Container(
-                    margin: const EdgeInsets.only(top: 12, bottom: 8),
-                    width: 40,
+                    margin: const EdgeInsets.only(top: 10, bottom: 6),
+                    width: 36,
                     height: 4,
                     decoration: BoxDecoration(
                       color: Colors.white24,
@@ -900,38 +1013,39 @@ class _VideoAppState extends State<VideoApp> {
                     ),
                   ),
                 ),
-                // Header with title and close button
+                // Header with title, counter pill, and close icon
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 16, 12),
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
                   child: Row(
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              "Starring & Crew",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.3,
-                              ),
-                            ),
-                            if (uniqueList.isNotEmpty)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 2),
-                                child: Text(
-                                  "${uniqueList.length} members",
-                                  style: const TextStyle(
-                                    color: Colors.white54,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                          ],
+                      const Text(
+                        "Starring & Crew",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.2,
                         ),
                       ),
+                      if (uniqueList.isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            "${uniqueList.length} members",
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.6),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                      const Spacer(),
                       IconButton(
                         visualDensity: VisualDensity.compact,
                         style: IconButton.styleFrom(
@@ -939,16 +1053,16 @@ class _VideoAppState extends State<VideoApp> {
                           shape: const CircleBorder(),
                         ),
                         icon: const Icon(
-                          Icons.close,
-                          color: Colors.white,
-                          size: 20,
+                          Icons.close_rounded,
+                          color: Colors.white70,
+                          size: 18,
                         ),
                         onPressed: () => Navigator.pop(sheetContext),
                       ),
                     ],
                   ),
                 ),
-                const Divider(color: Colors.white12, height: 1, thickness: 1),
+                Divider(color: Colors.white.withValues(alpha: 0.06), height: 1, thickness: 1),
                 // Categorized list
                 Flexible(
                   child: uniqueList.isEmpty
@@ -962,7 +1076,8 @@ class _VideoAppState extends State<VideoApp> {
                         )
                       : ListView.builder(
                           shrinkWrap: true,
-                          padding: const EdgeInsets.only(bottom: 20),
+                          padding: const EdgeInsets.only(bottom: 24, top: 4),
+                          physics: const BouncingScrollPhysics(),
                           itemCount: activeSections.length,
                           itemBuilder: (context, sectionIndex) {
                             final section = activeSections[sectionIndex];
@@ -972,19 +1087,16 @@ class _VideoAppState extends State<VideoApp> {
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Section Header Banner
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                                  margin: EdgeInsets.only(top: sectionIndex > 0 ? 12 : 6, bottom: 4),
-                                  color: const Color(0xFF141414),
+                                // Subtle Minimalist Section Header
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
                                   child: Row(
                                     children: [
                                       Container(
-                                        width: 3,
-                                        height: 14,
+                                        width: 3.5,
+                                        height: 12,
                                         decoration: BoxDecoration(
-                                          color: AppDefaultColors.appRed,
+                                          color: AppDefaultColors.primaryRed,
                                           borderRadius: BorderRadius.circular(2),
                                         ),
                                       ),
@@ -993,95 +1105,57 @@ class _VideoAppState extends State<VideoApp> {
                                         sectionTitle.toUpperCase(),
                                         style: const TextStyle(
                                           color: Colors.white70,
-                                          fontSize: 12,
+                                          fontSize: 11.5,
                                           fontWeight: FontWeight.bold,
-                                          letterSpacing: 1.0,
+                                          letterSpacing: 0.8,
                                         ),
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
                                         "(${members.length})",
-                                        style: const TextStyle(
-                                          color: Colors.white38,
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(alpha: 0.35),
                                           fontSize: 11,
+                                          fontWeight: FontWeight.w600,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                                // Member tiles
-                                ...members.map((castItem) {
-                                  final personName = castItem.cast?.name?.toString().trim() ?? "";
-                                  final role = castItem.groupLabel?.toString().trim() ?? "";
-                                  final rawPhoto = castItem.cast?.photo?.toString().trim() ?? "";
-
-                                  String photoUrl = "";
-                                  if (rawPhoto.isNotEmpty &&
-                                      rawPhoto != "null" &&
-                                      rawPhoto != "false") {
-                                    if (rawPhoto.startsWith("http")) {
-                                      photoUrl = rawPhoto;
-                                    } else {
-                                      photoUrl = "${AppConfig.BaseUrl}/$rawPhoto";
-                                    }
-                                  }
-
-                                  return Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6.0),
-                                    child: Row(
-                                      children: [
-                                        CircleAvatar(
-                                          radius: 22,
-                                          backgroundColor: Colors.white12,
-                                          backgroundImage: photoUrl.isNotEmpty
-                                              ? NetworkImage(photoUrl)
-                                              : null,
-                                          child: photoUrl.isEmpty
-                                              ? const Icon(
-                                                  Icons.person,
-                                                  color: Colors.white54,
-                                                  size: 24,
-                                                )
-                                              : null,
-                                        ),
-                                        const SizedBox(width: 14),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                personName.isNotEmpty
-                                                    ? personName
-                                                    : "Unknown",
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 15,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                              if (role.isNotEmpty)
-                                                Padding(
-                                                  padding: const EdgeInsets.only(top: 2.0),
-                                                  child: Text(
-                                                    role,
-                                                    style: const TextStyle(
-                                                      color: AppDefaultColors.appRed,
-                                                      fontSize: 12,
-                                                      fontWeight: FontWeight.w500,
-                                                    ),
-                                                    maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis,
-                                                  ),
-                                                ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
+                                // Responsive 2-column or 1-column grid
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  child: GridView.builder(
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    itemCount: members.length,
+                                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: members.length == 1 ? 1 : 2,
+                                      crossAxisSpacing: 8,
+                                      mainAxisSpacing: 8,
+                                      mainAxisExtent: 60,
                                     ),
-                                  );
-                                }),
+                                    itemBuilder: (context, idx) {
+                                      final castItem = members[idx];
+                                      final personName = castItem.cast?.name?.toString().trim() ?? "";
+                                      final role = castItem.groupLabel?.toString().trim() ?? "";
+                                      final rawPhoto = castItem.cast?.photo?.toString().trim() ?? "";
+
+                                      String photoUrl = "";
+                                      if (rawPhoto.isNotEmpty &&
+                                          rawPhoto != "null" &&
+                                          rawPhoto != "false") {
+                                        if (rawPhoto.startsWith("http")) {
+                                          photoUrl = rawPhoto;
+                                        } else {
+                                          photoUrl = "${AppConfig.BaseUrl}/$rawPhoto";
+                                        }
+                                      }
+
+                                      return buildMemberTile(personName, role, photoUrl);
+                                    },
+                                  ),
+                                ),
                               ],
                             );
                           },

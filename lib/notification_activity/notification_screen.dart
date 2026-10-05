@@ -1,17 +1,17 @@
 import 'dart:convert';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:bestcaststudios/common_files/loading_widget.dart';
-import 'package:bestcaststudios/notification_activity/notificaiton_main_model.dart';
 import '../app_config/app_preferences.dart';
 import '../app_config/appconfig.dart';
 import '../common_files/api_services.dart';
 import '../common_files/app_default_colors.dart';
-import '../common_files/movie_categories_card_wishlist.dart';
 import '../streamingpalyer/video_player.dart';
 import 'notification_model.dart';
 
@@ -23,61 +23,259 @@ class NotificationScreen extends StatefulWidget {
 }
 
 class _NotificationScreenState extends State<NotificationScreen> {
-  List<NotificationModel> notificationModel = [];
+  final List<NotificationModel> _notifications = [];
 
-  List<NoficationMainModel> moviesMainCategoryModelList = [];
+  bool _isLoading = true;
+  bool _hasError = false;
+  String _errorMessage = "";
 
-  bool isLoading = true;
-  bool loggedStatus = false;
+  bool _loggedStatus = false;
   String _token = "";
-
-  String profileName = "";
-  String profilePicture = "";
-  String profileID = "";
-  String profilePictureID = "";
-
+  String _profileID = "";
 
   @override
   void initState() {
     super.initState();
-
-    getInitalValue();
+    _loadInitialData();
   }
 
-  Future<void> getInitalValue() async {
-    final pref = await SharedPreferences.getInstance();
-    setState(() {
+  Future<void> _loadInitialData() async {
+    try {
+      final pref = await SharedPreferences.getInstance();
       _token = pref.getString(AppPreferences.token) ?? '';
-      loggedStatus = pref.getBool(AppPreferences.loggedStatus) ?? false;
-      profileName = pref.getString(AppPreferences.profileName) ?? '';
-      profilePicture = pref.getString(AppPreferences.profilePicture) ?? '';
-      profileID = pref.getString(AppPreferences.profileID) ?? '';
-      profilePictureID = pref.getString(AppPreferences.profilePictureID) ?? '';
-    });
+      _loggedStatus = pref.getBool(AppPreferences.loggedStatus) ?? false;
+      _profileID = pref.getString(AppPreferences.profileID) ?? '';
+    } catch (_) {}
 
-    getNotificationMoviesLits(_token, profileID);
+    await _fetchNotifications();
   }
 
-  var thumnailWishPic = [
-    "images/sample_wish_list1.jpg",
-    "images/sample_wish_list2.jpg",
-    "images/sample_wish_list3.jpg",
-    "images/sample_wish_list4.jpg",
-    "images/sample_wish_list5.jpg",
-    "images/sample_wish_list6.jpg"
-  ];
+  Future<void> _fetchNotifications() async {
+    if (!mounted) return;
 
-  void getNotificationTemp() {
-    for (int i = 0; i < 6; i++) {
-      notificationModel.add(NotificationModel(
-        notificationID: i.toString(),
-        movieID: i.toString(),
-        title: "Notification Title",
-        description: "Notification Description",
-        movieName: "Movie Name",
-        thumnail: thumnailWishPic[i],
-        notificationDate: "2024-01-01",
-      ));
+    if (_notifications.isEmpty) {
+      setState(() {
+        _isLoading = true;
+        _hasError = false;
+        _errorMessage = "";
+      });
+    }
+
+    final String url = _loggedStatus && _profileID.isNotEmpty
+        ? "${AppConfig.appnotifylistuser}/$_profileID"
+        : "${AppConfig.appnotifylist}/0";
+
+    try {
+      final response = await ApiServices().getRequestData(url, _token);
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        final dynamic rawList = responseData["data"];
+
+        final List<NotificationModel> fetched = [];
+
+        if (rawList is List) {
+          for (final dynamic item in rawList) {
+            if (item is! Map) continue;
+
+            final movieData = item["movie"];
+            String movieID = "";
+            String movieTitle = "";
+            String thumbUrl = "";
+
+            if (movieData != null && movieData is Map) {
+              movieID = (movieData["id"] ?? "").toString();
+              movieTitle = (movieData["title"] ?? "").toString();
+              final rawMovieThumb = movieData["thumbnail"]?.toString() ?? "";
+              if (rawMovieThumb.isNotEmpty) {
+                thumbUrl = rawMovieThumb.startsWith('http')
+                    ? rawMovieThumb
+                    : "${AppConfig.BaseUrl}/$rawMovieThumb";
+              }
+            }
+
+            if (thumbUrl.isEmpty) {
+              final rawThumb = item["thumbnail"]?.toString() ?? "";
+              if (rawThumb.isNotEmpty) {
+                thumbUrl = rawThumb.startsWith('http')
+                    ? rawThumb
+                    : "${AppConfig.BaseUrl}/$rawThumb";
+              }
+            }
+
+            final dynamic rawDesc = item["description"] ?? item["message"];
+            final String desc = (rawDesc != null &&
+                    rawDesc.toString().trim().isNotEmpty &&
+                    rawDesc.toString().trim() != "Notification Description")
+                ? rawDesc.toString().trim()
+                : "";
+
+            fetched.add(
+              NotificationModel(
+                notificationID: (item["id"] ?? "").toString(),
+                movieID: movieID,
+                title: (item["title"] ?? "Notification").toString(),
+                description: desc,
+                movieName: movieTitle,
+                thumnail: thumbUrl,
+                notificationDate: (item["created_at"] ?? "").toString(),
+                isRead: item["is_read"] == 1 ||
+                    item["is_read"] == "1" ||
+                    item["is_read"] == true,
+              ),
+            );
+          }
+        }
+
+        setState(() {
+          _notifications.clear();
+          _notifications.addAll(fetched);
+          _isLoading = false;
+          _hasError = false;
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+          _hasError = _notifications.isEmpty;
+          _errorMessage = "Unable to load notifications";
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _hasError = _notifications.isEmpty;
+        _errorMessage = "Network error. Please try again.";
+      });
+    }
+  }
+
+  void _onNotificationTapped(NotificationModel notification) {
+    HapticFeedback.lightImpact();
+
+    final String movieID = (notification.movieID ?? "").trim();
+    if (movieID.isNotEmpty && movieID != "0" && movieID != "null") {
+      Navigator.push(
+        context,
+        CupertinoPageRoute(
+          builder: (context) => VideoApp(getMovieID: movieID),
+        ),
+      );
+    } else if (notification.description != null &&
+        notification.description!.isNotEmpty) {
+      _showNotificationDetailDialog(notification);
+    }
+  }
+
+  void _showNotificationDetailDialog(NotificationModel notification) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF16161A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                notification.title ?? "Notification",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              if (notification.movieName != null &&
+                  notification.movieName!.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  notification.movieName!,
+                  style: const TextStyle(
+                    color: AppDefaultColors.primaryRed,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
+              Text(
+                notification.description ?? "",
+                style: const TextStyle(
+                  color: AppDefaultColors.textLightGray,
+                  fontSize: 14,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _formatNotificationTime(notification.notificationDate),
+                style: const TextStyle(
+                  color: Colors.white38,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _formatNotificationTime(String? dateStr) {
+    if (dateStr == null || dateStr.trim().isEmpty) return '';
+    try {
+      final parsed = DateTime.tryParse(dateStr);
+      if (parsed == null) return dateStr;
+      final now = DateTime.now();
+      final difference = now.difference(parsed);
+
+      if (difference.inSeconds < 60) {
+        return 'Just now';
+      } else if (difference.inMinutes < 60) {
+        final mins = difference.inMinutes;
+        return '$mins ${mins == 1 ? 'min' : 'mins'} ago';
+      } else if (difference.inHours < 24) {
+        final hours = difference.inHours;
+        return '$hours ${hours == 1 ? 'hr' : 'hrs'} ago';
+      } else if (difference.inDays == 1) {
+        return 'Yesterday';
+      } else if (difference.inDays < 7) {
+        return '${difference.inDays}d ago';
+      } else {
+        const months = [
+          'Jan',
+          'Feb',
+          'Mar',
+          'Apr',
+          'May',
+          'Jun',
+          'Jul',
+          'Aug',
+          'Sep',
+          'Oct',
+          'Nov',
+          'Dec'
+        ];
+        return '${parsed.day} ${months[parsed.month - 1]} ${parsed.year}';
+      }
+    } catch (_) {
+      return dateStr;
     }
   }
 
@@ -85,188 +283,172 @@ class _NotificationScreenState extends State<NotificationScreen> {
   Widget build(BuildContext context) {
     return LoaderOverlay(
       child: Scaffold(
-          backgroundColor: AppDefaultColors.appColor,
-          appBar: AppBar(
-            title: const Text(
-              "Notification",
-              style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 25.0,
-                  fontWeight: FontWeight.w700),
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          titleSpacing: 20,
+          title: const Text(
+            "Notifications",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 22.0,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.3,
             ),
-            backgroundColor: AppDefaultColors.appColor,
-            actions: <Widget>[
-              Padding(
-                padding: const EdgeInsets.all(10.0),
-                child: GestureDetector(
-                  onTap: () {
-                  },
-                  child: Row(
-                    children: const [
-                    ],
-                  ),
-                ),
-              ),
-            ],
           ),
-          body: isLoading == false
-              ? notificationModel.isEmpty
-                  ? Container(
-                      alignment: Alignment.center,
-                      margin: EdgeInsets.only(
-                          top: 10, left: 10, right: 10, bottom: 20),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Image.asset(
-                            height: 100,
-                            width: 100,
-                            'images/notification_icon.png',
-                            fit: BoxFit.cover,
-                          ),
-                          Container(
-                            alignment: Alignment.center,
-                            padding:
-                                const EdgeInsets.only(top: 10.0, right: 5.0),
-                            child: Center(
-                              child: const Text(
-                                'Notification is empty',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  color: AppDefaultColors.textLightGray,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          ListView.builder(
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: notificationModel.length,
-                              shrinkWrap: true,
-                              itemBuilder: (BuildContext context, int index) {
-                                return GestureDetector(
-                                  onTap: () {
-                                    //     context,
-
-                                    String movieID = notificationModel[index]
-                                        .movieID
-                                        .toString();
-                                    print("NotificationMovieID$movieID");
-                                    Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (context) =>
-                                                VideoApp(getMovieID: movieID)));
-                                  },
-                                  child:
-                                      getUsersWidget(notificationModel[index]),
-                                );
-                              }),
-                        ],
-                      ),
-                    )
-              : LoadingWidget()),
+        ),
+        body: _buildBody(),
+      ),
     );
   }
 
-  Widget getUsersWidget(NotificationModel notificationModel) {
-    return Container(
-      width: MediaQuery.of(context).size.width,
-      padding: const EdgeInsets.symmetric(horizontal: 5.0, vertical: 0),
-      child: Container(
-        width: MediaQuery.of(context).size.width,
-        padding: const EdgeInsets.all(5.0),
-        child: Column(
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(child: LoadingWidget());
+    }
+
+    if (_hasError) {
+      return _buildErrorState();
+    }
+
+    if (_notifications.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    return RefreshIndicator(
+      color: AppDefaultColors.primaryRed,
+      backgroundColor: const Color(0xFF1E1E24),
+      onRefresh: _fetchNotifications,
+      child: ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        itemCount: _notifications.length,
+        separatorBuilder: (context, index) => const Divider(
+          color: Color(0xFF1C1C20),
+          height: 1,
+          thickness: 0.8,
+          indent: 16,
+          endIndent: 16,
+        ),
+        itemBuilder: (context, index) {
+          final item = _notifications[index];
+          return _buildNotificationItem(item);
+        },
+      ),
+    );
+  }
+
+  Widget _buildNotificationItem(NotificationModel item) {
+    final String timeAgo = _formatNotificationTime(item.notificationDate);
+
+    final String title = (item.title ?? "").trim();
+    final String movieName = (item.movieName ?? "").trim();
+    final String desc = (item.description ?? "").trim();
+
+    final String displayTitle = title.isNotEmpty ? title : movieName;
+
+    String? displaySubtitle;
+    if (desc.isNotEmpty &&
+        desc.toLowerCase() != title.toLowerCase() &&
+        desc.toLowerCase() != "notification description") {
+      displaySubtitle = desc;
+    } else if (movieName.isNotEmpty &&
+        movieName.toLowerCase() != title.toLowerCase() &&
+        !title.toLowerCase().contains(movieName.toLowerCase())) {
+      displaySubtitle = movieName;
+    }
+
+    return InkWell(
+      onTap: () => _onNotificationTapped(item),
+      splashColor: Colors.white.withValues(alpha: 0.05),
+      highlightColor: Colors.transparent,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                MovieCardWishListBackgroundView(
-                  Container(
-                    child: SizedBox(
-                      height: 100,
-                      width: 140,
-                      child: FadeInImage(
-                        placeholder: AssetImage("images/default_landscape.jpg"),
-                        image:
-                            NetworkImage(notificationModel.thumnail.toString()),
-                        imageErrorBuilder: (context, error, stackTrace) {
-                          // Return the error image widget
-                          return Image.asset('images/default_landscape.jpg',
-                              height: 100, fit: BoxFit.cover);
-                        },
-                        width: double.infinity,
-                        height: double.infinity,
+            // Clean 16:9 thumbnail
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: Container(
+                width: 104,
+                height: 60,
+                color: const Color(0xFF1E1E22),
+                child: item.thumnail != null && item.thumnail!.trim().isNotEmpty
+                    ? Image.network(
+                        item.thumnail!,
                         fit: BoxFit.cover,
-                      ),
-                      //   width: double.infinity,
-                      //   height: double.infinity,
-                      //   fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _buildFallbackThumbnail(),
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) return child;
+                          return Container(color: const Color(0xFF1E1E22));
+                        },
+                      )
+                    : _buildFallbackThumbnail(),
+              ),
+            ),
+
+            const SizedBox(width: 14),
+
+            // Notification text content
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    displayTitle.isNotEmpty ? displayTitle : "Notification",
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: !item.isRead ? FontWeight.w600 : FontWeight.w500,
+                      height: 1.25,
                     ),
                   ),
-                ),
-                const SizedBox(width: 5.0),
-                Expanded(
-                  child: Column(
-                    children: [
-                      SizedBox(
-                        width: MediaQuery.of(context).size.width,
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 5.0, horizontal: 10),
-                                    child: Text(
-                                      notificationModel.title.toString(),
-                                      style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 18.0,
-                                          fontWeight: FontWeight.bold),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 15.0),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 1.0, horizontal: 10),
-                                    child: Text(
-                                      notificationModel.movieName.toString(),
-                                      style: const TextStyle(
-                                          color: AppDefaultColors.textLightGray,
-                                          fontSize: 14.0),
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 1.0, horizontal: 10),
-                                    child: Text(
-                                      notificationModel.notificationDate
-                                          .toString(),
-                                      style: const TextStyle(
-                                          color: AppDefaultColors.textLightGray,
-                                          fontSize: 14.0),
-                                    ),
-                                  )
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+                  if (displaySubtitle != null) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      displaySubtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 12,
                       ),
+                    ),
+                  ],
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      if (timeAgo.isNotEmpty)
+                        Text(
+                          timeAgo,
+                          style: const TextStyle(
+                            color: Colors.white38,
+                            fontSize: 11.5,
+                          ),
+                        ),
+                      if (!item.isRead) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          width: 5,
+                          height: 5,
+                          decoration: const BoxDecoration(
+                            color: AppDefaultColors.primaryRed,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -274,66 +456,88 @@ class _NotificationScreenState extends State<NotificationScreen> {
     );
   }
 
-  void getNotificationMoviesLits(String token, String profileId) async {
-    isLoading = true;
-    var url = "";
-    if (loggedStatus) {
-      url = "${AppConfig.appnotifylistuser}/$profileId";
-    } else {
-      url = "${AppConfig.appnotifylist}/0";
-    }
+  Widget _buildFallbackThumbnail() {
+    return Container(
+      color: const Color(0xFF1E1E22),
+      child: const Center(
+        child: Icon(
+          Icons.notifications_none_rounded,
+          color: Colors.white24,
+          size: 24,
+        ),
+      ),
+    );
+  }
 
-    ApiServices().getRequestData(url, token).then((response) async {
-      String jsonsDataString = response.body.toString();
-      print("Notification_Response: $jsonsDataString");
-      if (response.statusCode == 200) {
-        try {
-          var jsonReponse = jsonDecode(jsonsDataString);
-          var data = jsonReponse['data'];
+  Widget _buildEmptyState() {
+    return RefreshIndicator(
+      color: AppDefaultColors.primaryRed,
+      backgroundColor: const Color(0xFF1E1E24),
+      onRefresh: _fetchNotifications,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.7,
+            child: const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.notifications_none_rounded,
+                    size: 44,
+                    color: Colors.white24,
+                  ),
+                  SizedBox(height: 14),
+                  Text(
+                    'No notifications',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white70,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-          print("DataObject:$data");
-
-          var responseData = json.decode(response.body);
-
-          for (var mainData in responseData["data"]) {
-            print("ProfileID:${mainData["id"]}");
-            print("MovieTitle${mainData['title']}");
-
-            String nthumbnailUrl =
-                "${AppConfig.BaseUrl}/${mainData["movie"]["thumbnail"]}";
-            print("nthumbnailUrl$nthumbnailUrl");
-
-            //   movie: movieList,
-
-            notificationModel.add(NotificationModel(
-              notificationID: mainData["id"].toString(),
-              movieID: mainData["movie"]["id"].toString(),
-              title: mainData["title"].toString(),
-              description: "Notification Description",
-              movieName: mainData["movie"]["title"].toString(),
-              thumnail: nthumbnailUrl,
-              notificationDate: mainData["created_at"].toString(),
-            ));
-
-            print("checkStatus: mainMovie${mainData["movie"]["ids"]}");
-          }
-
-          await Future.delayed(Duration(seconds: 1));
-          setState(() {
-            isLoading = false;
-          });
-        } catch (e) {
-          isLoading = false;
-          print('CreateUserProfileException:$e');
-        }
-      } else {
-        print("Error: $response");
-        isLoading = false;
-      }
-
-      setState(() {
-        isLoading = false;
-      });
-    });
+  Widget _buildErrorState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.wifi_off_rounded,
+            color: Colors.white24,
+            size: 36,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            _errorMessage.isNotEmpty ? _errorMessage : "Couldn't load notifications",
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextButton(
+            onPressed: _fetchNotifications,
+            child: const Text(
+              "Retry",
+              style: TextStyle(
+                color: AppDefaultColors.primaryRed,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

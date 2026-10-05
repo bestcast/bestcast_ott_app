@@ -479,7 +479,7 @@ class _ProfileMainPageState extends State<AddUserPage> {
       String pin) async {
     print('profileicon_id$profileID');
 
-    context.loaderOverlay.show();
+    appUtils.showLoaderDialog(context);
     final postValues = {
       'profileicon_id': profileID,
       'name': name,
@@ -490,38 +490,33 @@ class _ProfileMainPageState extends State<AddUserPage> {
       'appnotify': "1"
     };
 
-    //   'profileicon_id': 3,
-    //   'name': "Harikaran",
-    //   'language': 0,
-    //   'autoplay': 0,
-    //   'is_child': 0,
-    //   'pin': "0",
-    //   'appnotify': 1
-
     ApiServices()
         .postRequestToken(AppConfig.setUserProfile + userID, postValues, token)
         .then((response) async {
       String jsonsDataString = response.body.toString();
       print("setuserprofile_Response: $jsonsDataString");
+      if (mounted) {
+        appUtils.hideLoaderDialog(context);
+      }
       if (response.statusCode == 200 || response.statusCode == 201) {
         try {
-
-          Navigator.of(context).pop('success');
-          context.loaderOverlay.hide();
+          if (mounted) {
+            Navigator.of(context).pop('success');
+          }
         } catch (e) {
           print('CreateUserProfileException:$e');
         }
       } else {
-        setState(() {
-          context.loaderOverlay.hide();
-        });
-        print("Error: $response");
-        CommonWidget().showSnackBar(
-            context, ContentType.failure, "Error", response.toString());
+        if (mounted) {
+          CommonWidget().showSnackBar(
+              context, ContentType.failure, "Error", "Failed to save profile.");
+        }
       }
-      context.loaderOverlay.hide();
+    }).catchError((e) {
+      if (mounted) {
+        appUtils.hideLoaderDialog(context);
+      }
     });
-    context.loaderOverlay.hide();
   }
 
   void deleteUserProfile(
@@ -533,7 +528,7 @@ class _ProfileMainPageState extends State<AddUserPage> {
       String autoplay,
       String isChild,
       String pin) async {
-    context.loaderOverlay.show();
+    appUtils.showLoaderDialog(context);
     final postValues = {
       'profileicon_id': profileID,
       'name': name,
@@ -549,25 +544,45 @@ class _ProfileMainPageState extends State<AddUserPage> {
         .then((response) async {
       String jsonsDataString = response.body.toString();
       print("DeleteUserprofile_Response: $jsonsDataString");
+      if (mounted) {
+        appUtils.hideLoaderDialog(context);
+      }
       if (response.statusCode == 200) {
         try {
-          Navigator.of(context).pop('success');
-          appUtils.showToast("Profile removed successful.");
-          context.loaderOverlay.hide();
+          // If deleted profile was currently active in SharedPreferences, clear active profile
+          final pref = await SharedPreferences.getInstance();
+          String activeID = pref.getString(AppPreferences.profileID) ?? "";
+          if (activeID == userID) {
+            await pref.remove(AppPreferences.profileID);
+            await pref.remove(AppPreferences.profileName);
+            await pref.remove(AppPreferences.profilePicture);
+            await pref.remove(AppPreferences.profilePictureID);
+            await pref.remove(AppPreferences.profilePictureTitle);
+          }
+
+          appUtils.showToast("Profile removed successfully.");
+          if (mounted) {
+            Navigator.of(context).pop('success');
+          }
         } catch (e) {
           print('DeleteUserProfileException:$e');
+          if (mounted) {
+            Navigator.of(context).pop('success');
+          }
         }
       } else {
-        setState(() {
-          context.loaderOverlay.hide();
-        });
-        print("DeleteUserError: $response");
-        CommonWidget().showSnackBar(
-            context, ContentType.failure, "Error", response.toString());
+        if (mounted) {
+          CommonWidget().showSnackBar(
+              context, ContentType.failure, "Error", "Could not remove profile. Please try again.");
+        }
       }
-      context.loaderOverlay.hide();
+    }).catchError((e) {
+      if (mounted) {
+        appUtils.hideLoaderDialog(context);
+        CommonWidget().showSnackBar(
+            context, ContentType.failure, "Error", "Network error occurred.");
+      }
     });
-    context.loaderOverlay.hide();
   }
 
   void _awaitReturnPictureFromIconScreen(BuildContext context) async {
@@ -584,27 +599,40 @@ class _ProfileMainPageState extends State<AddUserPage> {
         });
       }
     });
-    //     context,
-    //
   }
 
   Widget showDeleteUserAlertDialog() {
     return AlertDialog(
-      backgroundColor: AppDefaultColors.darkGray,
-      title: const Text('Delete User',
-          style: TextStyle(color: Colors.white, fontSize: 17)),
-      content: Text("Are sure want to remove user permanently.",
-          style: TextStyle(color: Colors.white, fontSize: 15)),
+      backgroundColor: const Color(0xFF1C1C24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: const Text(
+        'Delete Profile',
+        style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+      ),
+      content: Text(
+        "Are you sure you want to permanently remove this profile?",
+        style: TextStyle(color: Colors.white.withOpacity(0.75), fontSize: 14),
+      ),
       actions: <Widget>[
         TextButton(
-          child: const Text('Cancel',
-              style: TextStyle(color: Colors.white, fontSize: 15)),
+          child: Text(
+            'Cancel',
+            style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 14),
+          ),
           onPressed: () => Navigator.pop(context),
         ),
-        TextButton(
-          child: const Text('Remove',
-              style: TextStyle(color: Colors.white, fontSize: 15)),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppDefaultColors.primaryRed,
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+          child: const Text(
+            'Delete',
+            style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+          ),
           onPressed: () async {
+            Navigator.pop(context); // Close the dialog first!
             if (await CommonWidget().isInternetConnectivity()) {
               deleteUserProfile(
                   _token,
