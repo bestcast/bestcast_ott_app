@@ -76,6 +76,7 @@ class _VideoAppState extends State<VideoApp> {
   List<CastElement> castElementList = [];
   List<RelatedMovieData> relatedMovieData = [];
   String _DirectorName = "";
+  String _directorLabel = "Director";
 
   bool isLoading = false;
 
@@ -404,42 +405,75 @@ class _VideoAppState extends State<VideoApp> {
                             style: TextStyle(color: AppDefaultColors.white),
                           ),
                         ),
-                        Padding(
-                          padding: EdgeInsets.only(top: 10, left: 10),
-                          child: Row(
-                            children: [
-                              SizedBox(
-                                width: 230,
-                                child: Text(
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                  // 'Starring: Tovino Thomas, Siddique, Vineeth Thattil David.',
-                                  'Starring: $staringNames',
-                                  style: TextStyle(color: AppDefaultColors.white),
+                        if (staringNames.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8, left: 12, right: 12),
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () {
+                                getStartingBottomWidget();
+                              },
+                              child: RichText(
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                text: TextSpan(
+                                  children: [
+                                    const TextSpan(
+                                      text: 'Starring: ',
+                                      style: TextStyle(
+                                        color: Colors.white60,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text: staringNames,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    if (castElementList.isNotEmpty || staringNames.length > 25)
+                                      const TextSpan(
+                                        text: '  more...',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                  ],
                                 ),
                               ),
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () {
-                                    getStartingBottomWidget();
-                                  },
-                                  child: Text(
-                                    maxLines: 1,
-                                    'more.',
-                                    style: TextStyle(color: AppDefaultColors.white, fontSize: 16, fontWeight: FontWeight.w500),
+                            ),
+                          ),
+                        if (_DirectorName.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4, left: 12, right: 12),
+                            child: RichText(
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              text: TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: '$_directorLabel: ',
+                                    style: const TextStyle(
+                                      color: Colors.white60,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
-                                ),
+                                  TextSpan(
+                                    text: _DirectorName,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
-                        ),
-                        Padding(
-                          padding: EdgeInsets.only(left: 10),
-                          child: Text(
-                            'Director: $_DirectorName',
-                            style: TextStyle(color: AppDefaultColors.white),
-                          ),
-                        ),
 
                         Padding(
                           padding: const EdgeInsets.only(
@@ -738,71 +772,188 @@ class _VideoAppState extends State<VideoApp> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppDefaultColors.darkGray.withOpacity(0.7),
-      transitionAnimationController: AnimationController(
-        vsync: Navigator.of(context),
-        duration: Duration(milliseconds: 700), // Set the animation duration
-      ),
+      backgroundColor: Colors.transparent,
       enableDrag: true,
-      // backgroundColor: Colors.transparent,
-      builder: (BuildContext context) {
-        return AnimatedOpacity(
-          duration: Duration(milliseconds: 500), // Set the animation duration
-          opacity: 1.0, // Set the initial opacity to 0 for fade-out effect
-          onEnd: () {
-            Navigator.pop(context); // Close the bottom sheet after the animation completes
-          },
-
-          child: SingleChildScrollView(
-            child: SizedBox(
-              // height: 500,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 50.0, bottom: 20),
-                child: Column(
-                  children: [
-                    Text(
-                      "Staring",
-                      style: const TextStyle(color: Colors.white, fontSize: 25.0, fontWeight: FontWeight.w700),
+      builder: (BuildContext sheetContext) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF181818),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black54,
+                blurRadius: 15,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.75,
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Drag handle pill
+                Center(
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 12, bottom: 8),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(2),
                     ),
-                    Container(
-                      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.8),
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        // itemCount: staringNames.length,
-                        itemCount: castElementList.length,
-                        itemBuilder: (context, index) {
-                          return ListTile(
-                            title: Align(
-                              alignment: Alignment.center,
-                              child: Text(
-                                castElementList[index].cast!.name.toString(),
-                                style: const TextStyle(color: AppDefaultColors.textLightGray, fontSize: 17.0, fontWeight: FontWeight.normal),
+                  ),
+                ),
+                // Header with title and close button
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 16, 12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Starring & Crew",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.3,
                               ),
                             ),
-                            onTap: () {
-                              // Add your onTap logic here
-                              Navigator.pop(context); // Close the bottom sheet when item is tapped
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(10.0),
-                      child: GestureDetector(
-                        onTap: () {
-                          Navigator.pop(context);
-                        },
-                        child: Icon(
-                          Icons.cancel_rounded,
-                          color: Colors.white,
-                          size: 60,
+                            if (castElementList.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Text(
+                                  "${castElementList.length} members",
+                                  style: const TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
-                    ),
-                  ],
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.white.withOpacity(0.08),
+                          shape: const CircleBorder(),
+                        ),
+                        icon: const Icon(
+                          Icons.close,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        onPressed: () => Navigator.pop(sheetContext),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+                const Divider(color: Colors.white12, height: 1, thickness: 1),
+                // Cast members list
+                Flexible(
+                  child: castElementList.isEmpty
+                      ? Padding(
+                          padding: const EdgeInsets.all(32.0),
+                          child: Text(
+                            staringNames.isNotEmpty
+                                ? staringNames
+                                : "No cast details available",
+                            style: const TextStyle(color: Colors.white70, fontSize: 14),
+                            textAlign: TextAlign.center,
+                          ),
+                        )
+                      : ListView.separated(
+                          shrinkWrap: true,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          itemCount: castElementList.length,
+                          separatorBuilder: (context, index) => const Divider(
+                            color: Colors.white10,
+                            height: 1,
+                            indent: 64,
+                          ),
+                          itemBuilder: (context, index) {
+                            final castItem = castElementList[index];
+                            final personName = castItem.cast?.name?.toString().trim() ?? "";
+                            final role = castItem.groupLabel?.toString().trim() ?? "";
+                            final rawPhoto = castItem.cast?.photo?.toString().trim() ?? "";
+
+                            String photoUrl = "";
+                            if (rawPhoto.isNotEmpty &&
+                                rawPhoto != "null" &&
+                                rawPhoto != "false") {
+                              if (rawPhoto.startsWith("http")) {
+                                photoUrl = rawPhoto;
+                              } else {
+                                photoUrl = "${AppConfig.BaseUrl}/$rawPhoto";
+                              }
+                            }
+
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 6.0),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 22,
+                                    backgroundColor: Colors.white12,
+                                    backgroundImage: photoUrl.isNotEmpty
+                                        ? NetworkImage(photoUrl)
+                                        : null,
+                                    child: photoUrl.isEmpty
+                                        ? const Icon(
+                                            Icons.person,
+                                            color: Colors.white54,
+                                            size: 24,
+                                          )
+                                        : null,
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          personName.isNotEmpty
+                                              ? personName
+                                              : "Unknown",
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        if (role.isNotEmpty)
+                                          Padding(
+                                            padding: const EdgeInsets.only(top: 2.0),
+                                            child: Text(
+                                              role,
+                                              style: TextStyle(
+                                                color: AppDefaultColors.appRed,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
             ),
           ),
         );
@@ -1032,31 +1183,50 @@ class _VideoAppState extends State<VideoApp> {
           }
 
           var staringNamesArray = [];
+          castElementList.clear();
+          _DirectorName = "";
+          _directorLabel = "Director";
+
           if (data["casts"] != null && data["casts"] is Iterable) {
             for (var castsData in data["casts"]) {
               print("castsDataCasts${castsData["cast"]}");
               CastCast? castCast;
-              if (castsData['cast'] != "") {
+              if (castsData['cast'] != null && castsData['cast'] != "") {
                 print("castsDataCastName:${castsData["cast"]["name"]}");
                 castCast = CastCast(
-                  id: castsData["cast"]["id"].toString(),
-                  name: castsData["cast"]["name"].toString(),
-                  firstname: castsData["cast"]["firstname"].toString(),
-                  lastname: castsData["cast"]["lastname"].toString(),
-                  dob: castsData["cast"]["dob"].toString(),
-                  gender: castsData["cast"]["gender"].toString(),
-                  photo: castsData["cast"]["photo"].toString(),
+                  id: castsData["cast"]["id"]?.toString() ?? "",
+                  name: castsData["cast"]["name"]?.toString() ?? "",
+                  firstname: castsData["cast"]["firstname"]?.toString() ?? "",
+                  lastname: castsData["cast"]["lastname"]?.toString() ?? "",
+                  dob: castsData["cast"]["dob"]?.toString() ?? "",
+                  gender: castsData["cast"]["gender"]?.toString() ?? "",
+                  photo: castsData["cast"]["photo"]?.toString() ?? "",
                 );
 
-                if (castsData["group_label"] == "Producer") {
-                  setState(() {
-                    _DirectorName = castsData["group_label"].toString();
-                  });
+                String groupLabel = castsData["group_label"]?.toString().trim() ?? "";
+                String castPersonName = castsData["cast"]["name"]?.toString().trim() ?? "";
+
+                if (groupLabel.toLowerCase() == "director") {
+                  _directorLabel = "Director";
+                  _DirectorName = castPersonName;
+                } else if (_DirectorName.isEmpty &&
+                    (groupLabel.toLowerCase() == "producer" ||
+                     groupLabel.toLowerCase().contains("director"))) {
+                  _directorLabel = groupLabel.isNotEmpty ? groupLabel : "Director";
+                  _DirectorName = castPersonName;
                 }
-                staringNamesArray.add(castsData["cast"]["name"].toString());
+
+                if (castPersonName.isNotEmpty) {
+                  staringNamesArray.add(castPersonName);
+                }
               }
 
-              CastElement castElement = CastElement(group: castsData["group"].toString(), groupLabel: castsData["group_label"].toString(), groupSlug: castsData["group_slug"].toString(), cast: castCast);
+              CastElement castElement = CastElement(
+                group: castsData["group"]?.toString(),
+                groupLabel: castsData["group_label"]?.toString(),
+                groupSlug: castsData["group_slug"]?.toString(),
+                cast: castCast,
+              );
 
               castElementList.add(castElement);
             }

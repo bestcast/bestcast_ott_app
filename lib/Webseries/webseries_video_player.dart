@@ -1,13 +1,63 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:helpers/helpers.dart';
+import 'package:screen_protector/screen_protector.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player/video_player.dart';
+
 import 'package:bestcaststudios/app_config/app_preferences.dart';
 import 'package:bestcaststudios/app_config/appconfig.dart';
-import 'package:bestcaststudios/common_files/loading_widget.dart';
+import 'package:bestcaststudios/common_files/app_default_colors.dart';
+import 'package:bestcaststudios/common_files/background_loading_widget.dart';
+import 'package:bestcaststudios/streamingpalyer/video_player_source/video_viewer.dart';
+import 'package:bestcaststudios/streamingpalyer/video_view_player.dart';
 import 'Models/webseries_models.dart';
 import 'webseries_api_service.dart';
+
+class CustomWebseriesViewerStyle extends VideoViewerStyle {
+  CustomWebseriesViewerStyle({
+    required String seriesTitle,
+    required String episodeTitle,
+    required BuildContext context,
+    required VoidCallback onBack,
+  }) : super(
+          textStyle: context.textTheme.titleMedium,
+          playAndPauseStyle: PlayAndPauseWidgetStyle(
+            background: context.color.primary,
+          ),
+          progressBarStyle: ProgressBarStyle(
+            bar: BarStyle.progress(color: context.color.primary),
+          ),
+          header: SafeArea(
+            bottom: false,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
+                    onPressed: onBack,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "$seriesTitle - $episodeTitle",
+                      style: const TextStyle(
+                        color: AppDefaultColors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+}
 
 class WebseriesVideoPlayer extends StatefulWidget {
   final WebseriesEpisodeModel episode;
@@ -28,15 +78,12 @@ class WebseriesVideoPlayer extends StatefulWidget {
 }
 
 class _WebseriesVideoPlayerState extends State<WebseriesVideoPlayer> {
-  late VideoPlayerController _controller;
+  VideoViewerController _controller = VideoViewerController();
   final WebseriesApiService _apiService = WebseriesApiService();
 
   late WebseriesEpisodeModel _currentEpisode;
-  bool _isInitialized = false;
-  bool _isPlaying = false;
-  bool _showControls = true;
-  Timer? _hideControlsTimer;
-  Timer? _progressSyncTimer;
+  bool enableController = false;
+  bool isSeekDuration = false;
 
   String _token = "";
   String _profileId = "";
@@ -44,8 +91,12 @@ class _WebseriesVideoPlayerState extends State<WebseriesVideoPlayer> {
   // Auto-next overlay state
   bool _showNextOverlay = false;
   bool _nextOverlayCancelled = false;
+  bool _isSwitchingEpisode = false;
   int _overlayCountdown = 10;
   Timer? _overlayTimer;
+  Timer? _playbackTimer;
+  Timer? _seekTimer;
+  int _syncTickCounter = 0;
 
   @override
   void initState() {
@@ -53,87 +104,83 @@ class _WebseriesVideoPlayerState extends State<WebseriesVideoPlayer> {
     _currentEpisode = widget.episode;
 
     SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
-      DeviceOrientation.portraitUp,
+      DeviceOrientation.landscapeLeft,
     ]);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
-    _initPlayer();
+    ScreenProtector.preventScreenshotOn();
+    _controller.addListener(_videoPlayerListener);
+
+    _loadPreferences();
+
+    int resumeSecs = _getEpisodeResumeSeconds(_currentEpisode);
+    if (resumeSecs > 0) {
+      isSeekDuration = true;
+    }
+
+    Timer(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        setState(() {
+          enableController = true;
+        });
+
+        if (resumeSecs > 0) {
+          _seekTimer = Timer(const Duration(seconds: 2), () {
+            if (mounted) {
+              setState(() {
+                isSeekDuration = false;
+              });
+              _controller.seekTo(Duration(seconds: resumeSecs));
+              _controller.play();
+            }
+          });
+        }
+
+        _startPlaybackTimer();
+      }
+    });
   }
 
-  Future<void> _initPlayer() async {
+  Future<void> _loadPreferences() async {
     final pref = await SharedPreferences.getInstance();
-    _token = pref.getString(AppPreferences.token) ?? '';
-    _profileId = pref.getString(AppPreferences.profileID) ?? '';
-
-    String videoUrl = _currentEpisode.videoUrl.isNotEmpty
-        ? _currentEpisode.videoUrl
-        : _currentEpisode.moviesource;
-
-    if (videoUrl.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Video source URL not available")),
-        );
-      }
-      return;
+    if (mounted) {
+      setState(() {
+        _token = pref.getString(AppPreferences.token) ?? '';
+        _profileId = pref.getString(AppPreferences.profileID) ?? '';
+      });
     }
+  }
+
+  int _getEpisodeResumeSeconds(WebseriesEpisodeModel ep) {
+    int resumeSecs = 0;
+    if (ep.episodeUser != null && ep.episodeUser!.watchTime.isNotEmpty) {
+      resumeSecs = int.tryParse(ep.episodeUser!.watchTime) ?? 0;
+    }
+    return resumeSecs;
+  }
+
+  String _getVideoUrl(WebseriesEpisodeModel ep) {
+    String videoUrl = ep.videoUrl.isNotEmpty ? ep.videoUrl : ep.moviesource;
+    if (videoUrl.isEmpty) return "";
 
     if (!videoUrl.startsWith('http://') && !videoUrl.startsWith('https://')) {
       videoUrl = videoUrl.startsWith('/')
           ? '${AppConfig.BaseUrl}$videoUrl'
           : '${AppConfig.BaseUrl}/$videoUrl';
     }
-
-    print("Initializing Webseries Player with URL: $videoUrl");
-
-    _controller = VideoPlayerController.networkUrl(Uri.parse(videoUrl));
-
-    try {
-      await _controller.initialize();
-      _controller.addListener(_videoPlayerListener);
-
-      // Check resume position
-      int resumeSecs = 0;
-      if (_currentEpisode.episodeUser != null &&
-          _currentEpisode.episodeUser!.watchTime.isNotEmpty) {
-        resumeSecs = int.tryParse(_currentEpisode.episodeUser!.watchTime) ?? 0;
-      }
-      if (resumeSecs > 0 && resumeSecs < _controller.value.duration.inSeconds - 5) {
-        await _controller.seekTo(Duration(seconds: resumeSecs));
-      }
-
-      await _controller.play();
-
-      if (mounted) {
-        setState(() {
-          _isInitialized = true;
-          _isPlaying = true;
-        });
-      }
-
-      _startProgressSyncTimer();
-      _startHideControlsTimer();
-    } catch (e) {
-      print("Error initializing video player: $e");
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Playback error: $e")),
-        );
-      }
-    }
+    return videoUrl;
   }
 
   void _videoPlayerListener() {
-    if (!mounted || !_isInitialized) return;
+    if (!mounted || !enableController) return;
 
-    final Duration position = _controller.value.position;
-    final Duration duration = _controller.value.duration;
+    final Duration position = _controller.position;
+    final Duration duration = _controller.duration;
 
     if (duration.inSeconds > 0) {
       int remainingSecs = duration.inSeconds - position.inSeconds;
 
-      // Show auto-next overlay in last 10 seconds if next episode exists
       WebseriesEpisodeModel? nextEp = _getNextEpisode();
       if (nextEp != null && remainingSecs <= 10 && remainingSecs > 0 && !_nextOverlayCancelled) {
         if (!_showNextOverlay) {
@@ -141,14 +188,50 @@ class _WebseriesVideoPlayerState extends State<WebseriesVideoPlayer> {
         }
       }
 
-      // Automatically play next when episode ends
-      if (position >= duration && !_controller.value.isPlaying) {
+      if (position >= duration && !_controller.isPlaying && !_isSwitchingEpisode) {
         _syncProgress(isCompleted: true);
         if (nextEp != null && !_nextOverlayCancelled) {
           _playNextEpisode(nextEp);
         }
       }
     }
+  }
+
+  void _startPlaybackTimer() {
+    _playbackTimer?.cancel();
+    _playbackTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted || !enableController) return;
+
+      if (_controller.isPlaying) {
+        final Duration position = _controller.position;
+        final Duration duration = _controller.duration;
+
+        if (duration.inSeconds > 0) {
+          int remainingSecs = duration.inSeconds - position.inSeconds;
+
+          WebseriesEpisodeModel? nextEp = _getNextEpisode();
+          if (nextEp != null && remainingSecs <= 10 && remainingSecs > 0 && !_nextOverlayCancelled) {
+            if (!_showNextOverlay) {
+              _startNextOverlayCountdown(nextEp);
+            }
+          }
+
+          if ((position >= duration || (duration.inSeconds > 5 && remainingSecs <= 1 && !_controller.isPlaying)) &&
+              !_isSwitchingEpisode) {
+            _syncProgress(isCompleted: true);
+            if (nextEp != null && !_nextOverlayCancelled) {
+              _playNextEpisode(nextEp);
+            }
+          }
+        }
+
+        _syncTickCounter++;
+        if (_syncTickCounter >= 15) {
+          _syncTickCounter = 0;
+          _syncProgress();
+        }
+      }
+    });
   }
 
   WebseriesEpisodeModel? _getNextEpisode() {
@@ -160,6 +243,9 @@ class _WebseriesVideoPlayerState extends State<WebseriesVideoPlayer> {
   }
 
   void _startNextOverlayCountdown(WebseriesEpisodeModel nextEp) {
+    if (_controller.isFullScreen) {
+      _controller.closeFullScreen();
+    }
     setState(() {
       _showNextOverlay = true;
       _overlayCountdown = 10;
@@ -191,285 +277,227 @@ class _WebseriesVideoPlayerState extends State<WebseriesVideoPlayer> {
   }
 
   void _playNextEpisode(WebseriesEpisodeModel nextEp) async {
+    if (_isSwitchingEpisode) return;
+    _isSwitchingEpisode = true;
+
     _overlayTimer?.cancel();
-    _progressSyncTimer?.cancel();
-    _hideControlsTimer?.cancel();
+    _playbackTimer?.cancel();
+    _seekTimer?.cancel();
 
-    await _syncProgress();
-    await _controller.pause();
-    _controller.removeListener(_videoPlayerListener);
-    _controller.dispose();
+    await _syncProgress(isCompleted: true);
 
-    if (mounted) {
-      setState(() {
-        _isInitialized = false;
-        _currentEpisode = nextEp;
-        _showNextOverlay = false;
-        _nextOverlayCancelled = false;
-      });
-      _initPlayer();
+    if (!mounted) return;
+
+    if (_controller.isFullScreen) {
+      _controller.closeFullScreen();
     }
-  }
 
-  void _startProgressSyncTimer() {
-    _progressSyncTimer?.cancel();
-    _progressSyncTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
-      if (_isInitialized && _controller.value.isPlaying) {
-        _syncProgress();
-      }
+    int nextResumeSecs = _getEpisodeResumeSeconds(nextEp);
+
+    setState(() {
+      enableController = false;
+      _currentEpisode = nextEp;
+      _showNextOverlay = false;
+      _nextOverlayCancelled = false;
+      _syncTickCounter = 0;
+      isSeekDuration = nextResumeSecs > 0;
     });
+
+    _controller.removeListener(_videoPlayerListener);
+
+    await Future.delayed(const Duration(milliseconds: 150));
+    if (!mounted) return;
+
+    _controller = VideoViewerController();
+    _controller.addListener(_videoPlayerListener);
+
+    setState(() {
+      enableController = true;
+    });
+
+    if (nextResumeSecs > 0) {
+      _seekTimer = Timer(const Duration(seconds: 2), () {
+        if (mounted) {
+          setState(() {
+            isSeekDuration = false;
+          });
+          _controller.seekTo(Duration(seconds: nextResumeSecs));
+          _controller.play();
+        }
+      });
+    }
+
+    _startPlaybackTimer();
+    _isSwitchingEpisode = false;
   }
 
   Future<void> _syncProgress({bool isCompleted = false}) async {
-    if (!_isInitialized) return;
-    int currentSecs = _controller.value.position.inSeconds;
-    int totalSecs = _controller.value.duration.inSeconds;
-    if (totalSecs <= 0) return;
+    if (!enableController) return;
+    try {
+      int currentSecs = _controller.position.inSeconds;
+      int totalSecs = _controller.duration.inSeconds;
+      if (totalSecs <= 0) return;
 
-    int percent = isCompleted ? 100 : ((currentSecs / totalSecs) * 100).truncate();
-    int watchedStatus = (isCompleted || percent >= 90) ? 1 : 0;
+      int percent = isCompleted ? 100 : ((currentSecs / totalSecs) * 100).truncate();
+      int watchedStatus = (isCompleted || percent >= 90) ? 1 : 0;
 
-    await _apiService.setUserEpisodeProgress(
-      token: _token,
-      profileId: _profileId,
-      episodeId: _currentEpisode.id,
-      watchTime: currentSecs,
-      watchedPercent: percent,
-      watching: 1,
-      watched: watchedStatus,
-      movieDuration: totalSecs,
-    );
+      await _apiService.setUserEpisodeProgress(
+        token: _token,
+        profileId: _profileId,
+        episodeId: _currentEpisode.id,
+        watchTime: currentSecs,
+        watchedPercent: percent,
+        watching: 1,
+        watched: watchedStatus,
+        movieDuration: totalSecs,
+      );
+    } catch (e) {
+      print("Error syncing webseries episode progress: $e");
+    }
   }
 
-  void _startHideControlsTimer() {
-    _hideControlsTimer?.cancel();
-    _hideControlsTimer = Timer(const Duration(seconds: 4), () {
-      if (mounted && _isPlaying) {
-        setState(() {
-          _showControls = false;
-        });
-      }
-    });
-  }
-
-  void _togglePlayPause() {
-    setState(() {
-      if (_controller.value.isPlaying) {
-        _controller.pause();
-        _isPlaying = false;
-      } else {
-        _controller.play();
-        _isPlaying = true;
-        _startHideControlsTimer();
-      }
-    });
+  void _handleBack() {
+    if (_controller.isFullScreen) {
+      _controller.closeFullScreen();
+    }
+    Navigator.of(context).pop();
   }
 
   @override
   void dispose() {
     _syncProgress();
-    _progressSyncTimer?.cancel();
-    _hideControlsTimer?.cancel();
+    _playbackTimer?.cancel();
     _overlayTimer?.cancel();
-    if (_isInitialized) {
-      _controller.removeListener(_videoPlayerListener);
-      _controller.dispose();
-    }
+    _seekTimer?.cancel();
+    _controller.removeListener(_videoPlayerListener);
+    ScreenProtector.preventScreenshotOff();
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     WebseriesEpisodeModel? nextEp = _getNextEpisode();
+    String videoUrl = _getVideoUrl(_currentEpisode);
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        child: _isInitialized
-            ? GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _showControls = !_showControls;
-                  });
-                  if (_showControls) {
-                    _startHideControlsTimer();
-                  }
-                },
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Center(
-                      child: AspectRatio(
-                        aspectRatio: _controller.value.aspectRatio > 0
-                            ? _controller.value.aspectRatio
-                            : 16 / 9,
-                        child: VideoPlayer(_controller),
-                      ),
+    return PopScope(
+      canPop: !_controller.isFullScreen,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && _controller.isFullScreen) {
+          _controller.closeFullScreen();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: VideoViewerOrientation(
+          controller: _controller,
+          child: Stack(
+            children: [
+              Center(
+                child: enableController && videoUrl.isNotEmpty
+                    ? VideoViewer(
+                        key: ValueKey(_currentEpisode.id),
+                        controller: _controller,
+                        autoPlay: true,
+                        onFullscreenFixLandscape: true,
+                        source: {
+                          _currentEpisode.title.isNotEmpty ? _currentEpisode.title : "Episode": VideoSource(
+                            video: VideoPlayerController.networkUrl(Uri.parse(videoUrl)),
+                          ),
+                        },
+                        style: CustomWebseriesViewerStyle(
+                          seriesTitle: widget.webseriesTitle,
+                          episodeTitle: _currentEpisode.title,
+                          context: context,
+                          onBack: _handleBack,
+                        ),
+                      )
+                    : null,
+              ),
+              if (isSeekDuration || !enableController)
+                const BackgroundLoadingWidget(),
+              if (_showNextOverlay && nextEp != null)
+                Positioned(
+                  bottom: 60,
+                  right: 20,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.black87,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.redAccent, width: 1.5),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black54,
+                          blurRadius: 8,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
                     ),
-
-                    // Controls Overlay
-                    if (_showControls) ...[
-                      // Top Bar
-                      Positioned(
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          color: Colors.black54,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          child: Row(
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                                onPressed: () => Navigator.pop(context),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  "${widget.webseriesTitle} - ${_currentEpisode.title}",
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          "Up Next in $_overlayCountdown s",
+                          style: const TextStyle(
+                            color: Colors.redAccent,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      ),
-
-                      // Center Play/Pause
-                      Center(
-                        child: IconButton(
-                          iconSize: 64,
-                          icon: Icon(
-                            _isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                        const SizedBox(height: 4),
+                        Text(
+                          nextEp.title,
+                          style: const TextStyle(
                             color: Colors.white,
-                          ),
-                          onPressed: _togglePlayPause,
-                        ),
-                      ),
-
-                      // Bottom Progress Bar
-                      Positioned(
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          color: Colors.black54,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              VideoProgressIndicator(
-                                _controller,
-                                allowScrubbing: true,
-                                colors: const VideoProgressColors(
-                                  playedColor: Colors.red,
-                                  bufferedColor: Colors.white24,
-                                  backgroundColor: Colors.grey,
-                                ),
-                              ),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    _formatDuration(_controller.value.position),
-                                    style: const TextStyle(color: Colors.white70, fontSize: 12),
-                                  ),
-                                  Text(
-                                    _formatDuration(_controller.value.duration),
-                                    style: const TextStyle(color: Colors.white70, fontSize: 12),
-                                  ),
-                                ],
-                              ),
-                            ],
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ),
-                    ],
-
-                    // Next Episode Overlay (Bottom Right)
-                    if (_showNextOverlay && nextEp != null)
-                      Positioned(
-                        bottom: 60,
-                        right: 20,
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.black87,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.redAccent, width: 1.5),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                "Up Next in $_overlayCountdown s",
-                                style: const TextStyle(
-                                  color: Colors.redAccent,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(6),
                                 ),
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                nextEp.title,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
+                              onPressed: () => _playNextEpisode(nextEp),
+                              child: const Text("Play Now", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            ),
+                            const SizedBox(width: 8),
+                            OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.white70,
+                                side: const BorderSide(color: Colors.white38),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(6),
                                 ),
                               ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.red,
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                    ),
-                                    onPressed: () => _playNextEpisode(nextEp),
-                                    child: const Text("Play Now", style: TextStyle(fontSize: 12)),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  OutlinedButton(
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: Colors.white70,
-                                      side: const BorderSide(color: Colors.white38),
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                    ),
-                                    onPressed: _cancelNextOverlay,
-                                    child: const Text("Cancel", style: TextStyle(fontSize: 12)),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
+                              onPressed: _cancelNextOverlay,
+                              child: const Text("Cancel", style: TextStyle(fontSize: 12)),
+                            ),
+                          ],
                         ),
-                      ),
-                  ],
+                      ],
+                    ),
+                  ),
                 ),
-              )
-            : const LoadingWidget(),
+            ],
+          ),
+        ),
       ),
     );
-  }
-
-  String _formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, "0");
-    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
-    String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
-    if (duration.inHours > 0) {
-      return "${twoDigits(duration.inHours)}:$twoDigitMinutes:$twoDigitSeconds";
-    }
-    return "$twoDigitMinutes:$twoDigitSeconds";
   }
 }
