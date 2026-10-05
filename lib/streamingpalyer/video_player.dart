@@ -77,6 +77,8 @@ class _VideoAppState extends State<VideoApp> {
   List<RelatedMovieData> relatedMovieData = [];
   String _DirectorName = "";
   String _directorLabel = "Director";
+  String _producersNames = "";
+  String _producersLabel = "Producer";
 
   bool isLoading = false;
 
@@ -474,6 +476,33 @@ class _VideoAppState extends State<VideoApp> {
                               ),
                             ),
                           ),
+                        if (_producersNames.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4, left: 12, right: 12),
+                            child: RichText(
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              text: TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: '$_producersLabel: ',
+                                    style: const TextStyle(
+                                      color: Colors.white60,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: _producersNames,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
 
                         Padding(
                           padding: const EdgeInsets.only(
@@ -769,6 +798,70 @@ class _VideoAppState extends State<VideoApp> {
   }
 
   void getStartingBottomWidget() {
+    // 1. Deduplicate members by name and combine multiple roles
+    final Map<String, CastElement> uniqueMap = {};
+    for (var item in castElementList) {
+      final name = item.cast?.name?.toString().trim() ?? "";
+      if (name.isEmpty) continue;
+      final key = name.toLowerCase();
+      if (uniqueMap.containsKey(key)) {
+        final existingRole = uniqueMap[key]!.groupLabel?.toString().trim() ?? "";
+        final newRole = item.groupLabel?.toString().trim() ?? "";
+        if (newRole.isNotEmpty && !existingRole.toLowerCase().contains(newRole.toLowerCase())) {
+          uniqueMap[key]!.groupLabel = "$existingRole, $newRole";
+        }
+      } else {
+        uniqueMap[key] = item;
+      }
+    }
+
+    final uniqueList = uniqueMap.values.toList();
+
+    // 2. Organize into categorized sections
+    String getCategory(String rawRole) {
+      final r = rawRole.toLowerCase().trim();
+      if (r.contains('director') && !r.contains('music') && !r.contains('art')) {
+        return 'Director';
+      }
+      if (r.contains('actor') || r.contains('actress') || r.contains('cast') || r.contains('starring') || r.contains('lead') || r.contains('hero')) {
+        return 'Cast & Starring';
+      }
+      if (r.contains('producer') || r.contains('production')) {
+        return 'Producers';
+      }
+      if (r.contains('music') || r.contains('composer') || r.contains('singer') || r.contains('audio') || r.contains('sound')) {
+        return 'Music & Audio';
+      }
+      return 'Crew & Technical';
+    }
+
+    final Map<String, List<CastElement>> grouped = {
+      'Director': [],
+      'Cast & Starring': [],
+      'Producers': [],
+      'Music & Audio': [],
+      'Crew & Technical': [],
+    };
+
+    for (var item in uniqueList) {
+      final role = item.groupLabel?.toString().trim() ?? "";
+      final cat = getCategory(role);
+      grouped[cat]!.add(item);
+    }
+
+    final List<MapEntry<String, List<CastElement>>> activeSections = [];
+    for (var entry in grouped.entries) {
+      if (entry.value.isNotEmpty) {
+        String title = entry.key;
+        if (title == 'Director' && entry.value.length > 1) {
+          title = 'Directors';
+        } else if (title == 'Producers' && entry.value.length == 1) {
+          title = 'Producer';
+        }
+        activeSections.add(MapEntry(title, entry.value));
+      }
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -788,7 +881,7 @@ class _VideoAppState extends State<VideoApp> {
             ],
           ),
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.75,
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
           ),
           child: SafeArea(
             top: false,
@@ -825,11 +918,11 @@ class _VideoAppState extends State<VideoApp> {
                                 letterSpacing: 0.3,
                               ),
                             ),
-                            if (castElementList.isNotEmpty)
+                            if (uniqueList.isNotEmpty)
                               Padding(
                                 padding: const EdgeInsets.only(top: 2),
                                 child: Text(
-                                  "${castElementList.length} members",
+                                  "${uniqueList.length} members",
                                   style: const TextStyle(
                                     color: Colors.white54,
                                     fontSize: 12,
@@ -842,7 +935,7 @@ class _VideoAppState extends State<VideoApp> {
                       IconButton(
                         visualDensity: VisualDensity.compact,
                         style: IconButton.styleFrom(
-                          backgroundColor: Colors.white.withOpacity(0.08),
+                          backgroundColor: Colors.white.withValues(alpha: 0.08),
                           shape: const CircleBorder(),
                         ),
                         icon: const Icon(
@@ -856,99 +949,140 @@ class _VideoAppState extends State<VideoApp> {
                   ),
                 ),
                 const Divider(color: Colors.white12, height: 1, thickness: 1),
-                // Cast members list
+                // Categorized list
                 Flexible(
-                  child: castElementList.isEmpty
-                      ? Padding(
-                          padding: const EdgeInsets.all(32.0),
+                  child: uniqueList.isEmpty
+                      ? const Padding(
+                          padding: EdgeInsets.all(32.0),
                           child: Text(
-                            staringNames.isNotEmpty
-                                ? staringNames
-                                : "No cast details available",
-                            style: const TextStyle(color: Colors.white70, fontSize: 14),
+                            "No cast details available",
+                            style: TextStyle(color: Colors.white70, fontSize: 14),
                             textAlign: TextAlign.center,
                           ),
                         )
-                      : ListView.separated(
+                      : ListView.builder(
                           shrinkWrap: true,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          itemCount: castElementList.length,
-                          separatorBuilder: (context, index) => const Divider(
-                            color: Colors.white10,
-                            height: 1,
-                            indent: 64,
-                          ),
-                          itemBuilder: (context, index) {
-                            final castItem = castElementList[index];
-                            final personName = castItem.cast?.name?.toString().trim() ?? "";
-                            final role = castItem.groupLabel?.toString().trim() ?? "";
-                            final rawPhoto = castItem.cast?.photo?.toString().trim() ?? "";
+                          padding: const EdgeInsets.only(bottom: 20),
+                          itemCount: activeSections.length,
+                          itemBuilder: (context, sectionIndex) {
+                            final section = activeSections[sectionIndex];
+                            final sectionTitle = section.key;
+                            final members = section.value;
 
-                            String photoUrl = "";
-                            if (rawPhoto.isNotEmpty &&
-                                rawPhoto != "null" &&
-                                rawPhoto != "false") {
-                              if (rawPhoto.startsWith("http")) {
-                                photoUrl = rawPhoto;
-                              } else {
-                                photoUrl = "${AppConfig.BaseUrl}/$rawPhoto";
-                              }
-                            }
-
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 6.0),
-                              child: Row(
-                                children: [
-                                  CircleAvatar(
-                                    radius: 22,
-                                    backgroundColor: Colors.white12,
-                                    backgroundImage: photoUrl.isNotEmpty
-                                        ? NetworkImage(photoUrl)
-                                        : null,
-                                    child: photoUrl.isEmpty
-                                        ? const Icon(
-                                            Icons.person,
-                                            color: Colors.white54,
-                                            size: 24,
-                                          )
-                                        : null,
-                                  ),
-                                  const SizedBox(width: 14),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          personName.isNotEmpty
-                                              ? personName
-                                              : "Unknown",
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Section Header Banner
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                                  margin: EdgeInsets.only(top: sectionIndex > 0 ? 12 : 6, bottom: 4),
+                                  color: const Color(0xFF141414),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 3,
+                                        height: 14,
+                                        decoration: BoxDecoration(
+                                          color: AppDefaultColors.appRed,
+                                          borderRadius: BorderRadius.circular(2),
                                         ),
-                                        if (role.isNotEmpty)
-                                          Padding(
-                                            padding: const EdgeInsets.only(top: 2.0),
-                                            child: Text(
-                                              role,
-                                              style: TextStyle(
-                                                color: AppDefaultColors.appRed,
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w500,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        sectionTitle.toUpperCase(),
+                                        style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 1.0,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        "(${members.length})",
+                                        style: const TextStyle(
+                                          color: Colors.white38,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Member tiles
+                                ...members.map((castItem) {
+                                  final personName = castItem.cast?.name?.toString().trim() ?? "";
+                                  final role = castItem.groupLabel?.toString().trim() ?? "";
+                                  final rawPhoto = castItem.cast?.photo?.toString().trim() ?? "";
+
+                                  String photoUrl = "";
+                                  if (rawPhoto.isNotEmpty &&
+                                      rawPhoto != "null" &&
+                                      rawPhoto != "false") {
+                                    if (rawPhoto.startsWith("http")) {
+                                      photoUrl = rawPhoto;
+                                    } else {
+                                      photoUrl = "${AppConfig.BaseUrl}/$rawPhoto";
+                                    }
+                                  }
+
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6.0),
+                                    child: Row(
+                                      children: [
+                                        CircleAvatar(
+                                          radius: 22,
+                                          backgroundColor: Colors.white12,
+                                          backgroundImage: photoUrl.isNotEmpty
+                                              ? NetworkImage(photoUrl)
+                                              : null,
+                                          child: photoUrl.isEmpty
+                                              ? const Icon(
+                                                  Icons.person,
+                                                  color: Colors.white54,
+                                                  size: 24,
+                                                )
+                                              : null,
+                                        ),
+                                        const SizedBox(width: 14),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                personName.isNotEmpty
+                                                    ? personName
+                                                    : "Unknown",
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
                                               ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
+                                              if (role.isNotEmpty)
+                                                Padding(
+                                                  padding: const EdgeInsets.only(top: 2.0),
+                                                  child: Text(
+                                                    role,
+                                                    style: const TextStyle(
+                                                      color: AppDefaultColors.appRed,
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                            ],
                                           ),
+                                        ),
                                       ],
                                     ),
-                                  ),
-                                ],
-                              ),
+                                  );
+                                }),
+                              ],
                             );
                           },
                         ),
@@ -1182,10 +1316,16 @@ class _VideoAppState extends State<VideoApp> {
             }
           }
 
-          var staringNamesArray = [];
           castElementList.clear();
           _DirectorName = "";
           _directorLabel = "Director";
+          _producersNames = "";
+          _producersLabel = "Producer";
+          staringNames = "";
+
+          List<String> starringArray = [];
+          List<String> directorsArray = [];
+          List<String> producersArray = [];
 
           if (data["casts"] != null && data["casts"] is Iterable) {
             for (var castsData in data["casts"]) {
@@ -1206,18 +1346,27 @@ class _VideoAppState extends State<VideoApp> {
                 String groupLabel = castsData["group_label"]?.toString().trim() ?? "";
                 String castPersonName = castsData["cast"]["name"]?.toString().trim() ?? "";
 
-                if (groupLabel.toLowerCase() == "director") {
-                  _directorLabel = "Director";
-                  _DirectorName = castPersonName;
-                } else if (_DirectorName.isEmpty &&
-                    (groupLabel.toLowerCase() == "producer" ||
-                     groupLabel.toLowerCase().contains("director"))) {
-                  _directorLabel = groupLabel.isNotEmpty ? groupLabel : "Director";
-                  _DirectorName = castPersonName;
-                }
-
                 if (castPersonName.isNotEmpty) {
-                  staringNamesArray.add(castPersonName);
+                  final grp = groupLabel.toLowerCase();
+                  if (grp.contains("director") && !grp.contains("music") && !grp.contains("art")) {
+                    if (!directorsArray.contains(castPersonName)) {
+                      directorsArray.add(castPersonName);
+                    }
+                  } else if (grp.contains("producer")) {
+                    if (!producersArray.contains(castPersonName)) {
+                      producersArray.add(castPersonName);
+                    }
+                  } else if (grp.contains("actor") || grp.contains("actress") || grp.contains("cast") || grp.contains("starring") || grp.contains("lead")) {
+                    if (!starringArray.contains(castPersonName)) {
+                      starringArray.add(castPersonName);
+                    }
+                  } else {
+                    if (!grp.contains("music") && !grp.contains("crew")) {
+                      if (!starringArray.contains(castPersonName)) {
+                        starringArray.add(castPersonName);
+                      }
+                    }
+                  }
                 }
               }
 
@@ -1277,7 +1426,24 @@ class _VideoAppState extends State<VideoApp> {
               print("RelatedMovieDataID${castsData["movie"]["id"]}");
             }
           }
-          staringNames = staringNamesArray.join(', ');
+
+          if (directorsArray.isNotEmpty) {
+            _directorLabel = directorsArray.length > 1 ? "Directors" : "Director";
+            _DirectorName = directorsArray.join(', ');
+          }
+          if (producersArray.isNotEmpty) {
+            _producersLabel = producersArray.length > 1 ? "Producers" : "Producer";
+            _producersNames = producersArray.join(', ');
+          }
+          if (starringArray.isNotEmpty) {
+            staringNames = starringArray.join(', ');
+          } else {
+            staringNames = castElementList
+                .map((e) => e.cast?.name?.toString().trim() ?? "")
+                .where((n) => n.isNotEmpty && !directorsArray.contains(n) && !producersArray.contains(n))
+                .toSet()
+                .join(', ');
+          }
           setState(() {
             readyToPlay = true;
 

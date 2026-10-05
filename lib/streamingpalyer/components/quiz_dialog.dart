@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:bestcaststudios/app_config/appconfig.dart';
 import 'package:bestcaststudios/common_files/api_services.dart';
+import 'package:bestcaststudios/common_files/app_default_colors.dart';
 import 'package:bestcaststudios/streamingpalyer/models/quiz_data.dart';
 import 'package:flutter/material.dart';
 import '../video_player_source/video_viewer.dart';
@@ -230,9 +231,9 @@ class _QuizOverlayState extends State<QuizOverlay> with WidgetsBindingObserver {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration:
-                        BoxDecoration(color: _timeLeft <= 3 ? Colors.redAccent.withValues(alpha: 0.2) : Colors.blueAccent.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(20), border: Border.all(color: _timeLeft <= 3 ? Colors.redAccent : Colors.blueAccent, width: 1.5), boxShadow: [
+                        BoxDecoration(color: _timeLeft <= 3 ? AppDefaultColors.primaryRed.withValues(alpha: 0.2) : Colors.blueAccent.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(20), border: Border.all(color: _timeLeft <= 3 ? AppDefaultColors.primaryRed : Colors.blueAccent, width: 1.5), boxShadow: [
                       BoxShadow(
-                        color: (_timeLeft <= 3 ? Colors.redAccent : Colors.blueAccent).withValues(alpha: 0.4),
+                        color: (_timeLeft <= 3 ? AppDefaultColors.primaryRed : Colors.blueAccent).withValues(alpha: 0.4),
                         blurRadius: 8,
                         spreadRadius: 1,
                       )

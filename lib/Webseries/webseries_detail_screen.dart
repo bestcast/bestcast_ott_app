@@ -31,7 +31,6 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
 
   WebseriesItemModel? _webseriesDetail;
   int _selectedSeasonIndex = 0;
-  bool _isCastExpanded = false;
 
   @override
   void initState() {
@@ -364,7 +363,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
               if (targetEp != null)
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
+                    backgroundColor: AppDefaultColors.primaryRed,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     shape: RoundedRectangleBorder(
@@ -473,7 +472,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
               margin: const EdgeInsets.only(right: 12),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: isSelected ? Colors.red : Colors.white10,
+                color: isSelected ? AppDefaultColors.primaryRed : Colors.white10,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Center(
@@ -571,7 +570,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
                           child: LinearProgressIndicator(
                             value: (watchedPercent / 100).clamp(0.0, 1.0),
                             backgroundColor: Colors.white24,
-                            valueColor: const AlwaysStoppedAnimation<Color>(Colors.red),
+                            valueColor: const AlwaysStoppedAnimation<Color>(AppDefaultColors.primaryRed),
                             minHeight: 3,
                           ),
                         ),
@@ -628,167 +627,444 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
 
     if (validCasts.isEmpty) return const SizedBox.shrink();
 
-    // Group casts by role/groupName
-    final Map<String, List<String>> grouped = {};
+    List<String> directorsArray = [];
+    List<String> producersArray = [];
+    List<String> starringArray = [];
+
     for (var cast in validCasts) {
-      String group = cast.groupName.trim();
-      if (group.isEmpty) {
-        group = 'Cast';
+      final castName = cast.name.trim();
+      final grp = cast.groupName.trim().toLowerCase();
+      if (castName.isEmpty) continue;
+
+      if ((grp.contains("director") || grp.contains("creator")) &&
+          !grp.contains("music") &&
+          !grp.contains("art")) {
+        if (!directorsArray.contains(castName)) {
+          directorsArray.add(castName);
+        }
+      } else if (grp.contains("producer") || grp.contains("production")) {
+        if (!producersArray.contains(castName)) {
+          producersArray.add(castName);
+        }
+      } else if (grp.contains("actor") ||
+          grp.contains("actress") ||
+          grp.contains("cast") ||
+          grp.contains("starring") ||
+          grp.contains("lead")) {
+        if (!starringArray.contains(castName)) {
+          starringArray.add(castName);
+        }
+      } else {
+        if (!grp.contains("music") && !grp.contains("crew")) {
+          if (!starringArray.contains(castName)) {
+            starringArray.add(castName);
+          }
+        }
       }
-      grouped.putIfAbsent(group, () => []).add(cast.name.trim());
     }
 
-    final previewList = validCasts.take(3).map((c) => c.name).toList();
-    final previewText = previewList.join(', ');
-    final bool hasMore = validCasts.length > 3 || grouped.length > 1;
+    final String starringText = starringArray.isNotEmpty
+        ? starringArray.join(', ')
+        : validCasts
+            .map((c) => c.name.trim())
+            .where((n) => !directorsArray.contains(n) && !producersArray.contains(n))
+            .toSet()
+            .join(', ');
+
+    final String directorLabel = directorsArray.length > 1 ? "Directors" : "Director";
+    final String directorText = directorsArray.join(', ');
+
+    final String producerLabel = producersArray.length > 1 ? "Producers" : "Producer";
+    final String producerText = producersArray.join(', ');
 
     return Padding(
-      padding: const EdgeInsets.only(top: 12.0),
-      child: AnimatedCrossFade(
-        duration: const Duration(milliseconds: 250),
-        crossFadeState: _isCastExpanded
-            ? CrossFadeState.showSecond
-            : CrossFadeState.showFirst,
-        firstChild: GestureDetector(
-          onTap: () {
-            setState(() {
-              _isCastExpanded = true;
-            });
-          },
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: RichText(
-                  text: TextSpan(
+      padding: const EdgeInsets.only(top: 10.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (starringText.isNotEmpty)
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => _showCastAndCrewBottomSheet(validCasts),
+              child: RichText(
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                text: TextSpan(
+                  children: [
+                    const TextSpan(
+                      text: 'Starring: ',
+                      style: TextStyle(
+                        color: Colors.white60,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    TextSpan(
+                      text: starringText,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const TextSpan(
+                      text: '  more...',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          if (directorText.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: RichText(
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: '$directorLabel: ',
+                      style: const TextStyle(
+                        color: Colors.white60,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    TextSpan(
+                      text: directorText,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          if (producerText.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: RichText(
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: '$producerLabel: ',
+                      style: const TextStyle(
+                        color: Colors.white60,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    TextSpan(
+                      text: producerText,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showCastAndCrewBottomSheet(List<WebseriesCastModel> castList) {
+    // 1. Deduplicate members by name and combine roles if different
+    final Map<String, WebseriesCastModel> uniqueMap = {};
+    for (var item in castList) {
+      final name = item.name.trim();
+      if (name.isEmpty) continue;
+      final key = name.toLowerCase();
+      if (uniqueMap.containsKey(key)) {
+        final existing = uniqueMap[key]!;
+        final newRole = item.groupName.trim();
+        if (newRole.isNotEmpty && !existing.groupName.toLowerCase().contains(newRole.toLowerCase())) {
+          uniqueMap[key] = WebseriesCastModel(
+            name: existing.name,
+            group: existing.group,
+            groupName: "${existing.groupName}, $newRole",
+            photo: existing.photo.isNotEmpty ? existing.photo : item.photo,
+          );
+        }
+      } else {
+        uniqueMap[key] = item;
+      }
+    }
+
+    final uniqueList = uniqueMap.values.toList();
+
+    // 2. Organize into categorized sections
+    String getCategory(String rawRole) {
+      final r = rawRole.toLowerCase().trim();
+      if ((r.contains('director') || r.contains('creator')) && !r.contains('music') && !r.contains('art')) {
+        return 'Director';
+      }
+      if (r.contains('actor') || r.contains('actress') || r.contains('cast') || r.contains('starring') || r.contains('lead') || r.contains('hero')) {
+        return 'Cast & Starring';
+      }
+      if (r.contains('producer') || r.contains('production')) {
+        return 'Producers';
+      }
+      if (r.contains('music') || r.contains('composer') || r.contains('singer') || r.contains('audio') || r.contains('sound')) {
+        return 'Music & Audio';
+      }
+      return 'Crew & Technical';
+    }
+
+    final Map<String, List<WebseriesCastModel>> grouped = {
+      'Director': [],
+      'Cast & Starring': [],
+      'Producers': [],
+      'Music & Audio': [],
+      'Crew & Technical': [],
+    };
+
+    for (var item in uniqueList) {
+      final cat = getCategory(item.groupName);
+      grouped[cat]!.add(item);
+    }
+
+    final List<MapEntry<String, List<WebseriesCastModel>>> activeSections = [];
+    for (var entry in grouped.entries) {
+      if (entry.value.isNotEmpty) {
+        String title = entry.key;
+        if (title == 'Director' && entry.value.length > 1) {
+          title = 'Directors';
+        } else if (title == 'Producers' && entry.value.length == 1) {
+          title = 'Producer';
+        }
+        activeSections.add(MapEntry(title, entry.value));
+      }
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      enableDrag: true,
+      builder: (BuildContext sheetContext) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF181818),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black54,
+                blurRadius: 15,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Drag handle pill
+                Center(
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 12, bottom: 8),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                // Header with title and close button
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 16, 12),
+                  child: Row(
                     children: [
-                      const TextSpan(
-                        text: "Cast: ",
-                        style: TextStyle(
-                          color: Colors.white60,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Starring & Crew",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                            if (uniqueList.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Text(
+                                  "${uniqueList.length} members",
+                                  style: const TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
-                      TextSpan(
-                        text: previewText,
-                        style: const TextStyle(
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.white.withValues(alpha: 0.08),
+                          shape: const CircleBorder(),
+                        ),
+                        icon: const Icon(
+                          Icons.close,
                           color: Colors.white,
-                          fontSize: 13,
+                          size: 20,
                         ),
+                        onPressed: () => Navigator.pop(sheetContext),
                       ),
-                      if (hasMore)
-                        const TextSpan(
-                          text: " ...more",
-                          style: TextStyle(
-                            color: Colors.redAccent,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
                     ],
                   ),
                 ),
-              ),
-            ],
-          ),
-        ),
-        secondChild: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(12.0),
-          decoration: BoxDecoration(
-            color: const Color.fromRGBO(255, 255, 255, 0.05),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.white12),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    "Cast & Crew",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _isCastExpanded = false;
-                      });
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                      child: const Row(
-                        children: [
-                          Text(
-                            "less",
-                            style: TextStyle(
-                              color: Colors.redAccent,
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                            ),
+                const Divider(color: Colors.white12, height: 1, thickness: 1),
+                // Categorized list
+                Flexible(
+                  child: uniqueList.isEmpty
+                      ? const Padding(
+                          padding: EdgeInsets.all(32.0),
+                          child: Text(
+                            "No cast details available",
+                            style: TextStyle(color: Colors.white70, fontSize: 14),
+                            textAlign: TextAlign.center,
                           ),
-                          Icon(Icons.keyboard_arrow_up, color: Colors.redAccent, size: 16),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              ...grouped.entries.map((entry) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        entry.key.toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.white54,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.6,
+                        )
+                      : ListView.builder(
+                          shrinkWrap: true,
+                          padding: const EdgeInsets.only(bottom: 20),
+                          itemCount: activeSections.length,
+                          itemBuilder: (context, sectionIndex) {
+                            final section = activeSections[sectionIndex];
+                            final sectionTitle = section.key;
+                            final members = section.value;
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Section Header Banner
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                                  margin: EdgeInsets.only(top: sectionIndex > 0 ? 12 : 6, bottom: 4),
+                                  color: const Color(0xFF141414),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 3,
+                                        height: 14,
+                                        decoration: BoxDecoration(
+                                          color: AppDefaultColors.appRed,
+                                          borderRadius: BorderRadius.circular(2),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        sectionTitle.toUpperCase(),
+                                        style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 1.0,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        "(${members.length})",
+                                        style: const TextStyle(
+                                          color: Colors.white38,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Member tiles
+                                ...members.map((castItem) {
+                                  final personName = castItem.name;
+                                  final role = castItem.groupName;
+                                  final photoUrl = _buildImageUrl(castItem.photo);
+
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6.0),
+                                    child: Row(
+                                      children: [
+                                        CircleAvatar(
+                                          radius: 22,
+                                          backgroundColor: Colors.white12,
+                                          backgroundImage: photoUrl.isNotEmpty
+                                              ? NetworkImage(photoUrl)
+                                              : null,
+                                          child: photoUrl.isEmpty
+                                              ? const Icon(
+                                                  Icons.person,
+                                                  color: Colors.white54,
+                                                  size: 24,
+                                                )
+                                              : null,
+                                        ),
+                                        const SizedBox(width: 14),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                personName.isNotEmpty
+                                                    ? personName
+                                                    : "Unknown",
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              if (role.isNotEmpty)
+                                                Padding(
+                                                  padding: const EdgeInsets.only(top: 2.0),
+                                                  child: Text(
+                                                    role,
+                                                    style: const TextStyle(
+                                                      color: AppDefaultColors.appRed,
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }),
+                              ],
+                            );
+                          },
                         ),
-                      ),
-                      const SizedBox(height: 6),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: entry.value.map((name) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.black45,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.white24),
-                            ),
-                            child: Text(
-                              name,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ],
-                  ),
-                );
-              }),
-            ],
+                ),
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

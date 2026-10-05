@@ -45,7 +45,7 @@ app.*.map.json
 
 TODO
 analysis_output.txt
-/Extra/*
+/Extra
 
 # packages/helpers
 /lib/streamingpalyer/test_component.dart

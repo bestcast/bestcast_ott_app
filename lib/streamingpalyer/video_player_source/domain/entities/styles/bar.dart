@@ -68,7 +68,7 @@ class BarStyle {
     Color? identifier,
     this.identifierWidth = 2.0,
     BorderRadius? borderRadius,
-  })  : identifier = identifier ?? Colors.red,
+  })  : identifier = identifier ?? const Color(0xFFF80000),
         color = color ?? Colors.white,
         secondBackground = Colors.transparent,
         background = background ?? Colors.white.withOpacity(0.2),

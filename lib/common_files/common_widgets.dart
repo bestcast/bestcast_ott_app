@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
+import 'package:bestcaststudios/common_files/app_default_colors.dart';
+
 class CommonWidget extends StatelessWidget {
   const CommonWidget({super.key});
 
@@ -27,7 +29,7 @@ class CommonWidget extends StatelessWidget {
     AlertDialog alert = AlertDialog(
       content: Row(
         children: [
-          CircularProgressIndicator(strokeWidth: 5, color: Colors.red),
+          CircularProgressIndicator(strokeWidth: 5, color: AppDefaultColors.primaryRed),
           Container(
               color: Colors.transparent,
               margin: EdgeInsets.only(left: 7),

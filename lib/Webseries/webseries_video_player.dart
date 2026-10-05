@@ -429,7 +429,7 @@ class _WebseriesVideoPlayerState extends State<WebseriesVideoPlayer> {
                     decoration: BoxDecoration(
                       color: Colors.black87,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.redAccent, width: 1.5),
+                      border: Border.all(color: AppDefaultColors.primaryRed, width: 1.5),
                       boxShadow: const [
                         BoxShadow(
                           color: Colors.black54,
@@ -445,7 +445,7 @@ class _WebseriesVideoPlayerState extends State<WebseriesVideoPlayer> {
                         Text(
                           "Up Next in $_overlayCountdown s",
                           style: const TextStyle(
-                            color: Colors.redAccent,
+                            color: AppDefaultColors.primaryRed,
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
                           ),
@@ -465,7 +465,7 @@ class _WebseriesVideoPlayerState extends State<WebseriesVideoPlayer> {
                           children: [
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
+                                backgroundColor: AppDefaultColors.primaryRed,
                                 foregroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                                 shape: RoundedRectangleBorder(

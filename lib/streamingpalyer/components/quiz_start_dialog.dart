@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:bestcaststudios/common_files/app_default_colors.dart';
 
 class QuizStartDialog extends StatefulWidget {
   final Function(bool, String) onSelection;
@@ -133,11 +134,11 @@ class _QuizStartDialogState extends State<QuizStartDialog> {
                         child: ElevatedButton(
                           onPressed: () => widget.onSelection(false, selectedLanguage),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.redAccent.withValues(alpha: 0.2),
+                            backgroundColor: AppDefaultColors.primaryRed.withValues(alpha: 0.2),
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(30),
-                              side: const BorderSide(color: Colors.redAccent, width: 2),
+                              side: const BorderSide(color: AppDefaultColors.primaryRed, width: 2),
                             ),
                             elevation: 10,
                           ),

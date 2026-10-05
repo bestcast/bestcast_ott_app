@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:bestcaststudios/app_config/appconfig.dart';
 import 'package:bestcaststudios/common_files/api_services.dart';
+import 'package:bestcaststudios/common_files/app_default_colors.dart';
 
 class QuizRewardClaim extends StatefulWidget {
   final String userID;
@@ -115,7 +116,7 @@ class _QuizRewardClaimState extends State<QuizRewardClaim> {
   void _showError(String message) {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.red),
+        SnackBar(content: Text(message), backgroundColor: AppDefaultColors.primaryRed),
       );
     }
   }
@@ -287,11 +288,11 @@ class _QuizRewardClaimState extends State<QuizRewardClaim> {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.redAccent, width: 2),
+          borderSide: const BorderSide(color: AppDefaultColors.primaryRed, width: 2),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.redAccent, width: 2),
+          borderSide: const BorderSide(color: AppDefaultColors.primaryRed, width: 2),
         ),
       ),
       validator: validator ??

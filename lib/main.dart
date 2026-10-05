@@ -49,7 +49,7 @@ class MyApp extends StatelessWidget {
         //Player Theme
         scaffoldBackgroundColor: Color(0xFFf9fbfe),
         cardColor: Color(0xFFfbfafe),
-        primaryColor: Color(0xFFd81e27),
+        primaryColor: AppDefaultColors.primaryRed,
         shadowColor: Color(0xFF324754).withOpacity(0.24),
         textTheme: TextTheme(
           headlineMedium: GoogleFonts.montserrat(

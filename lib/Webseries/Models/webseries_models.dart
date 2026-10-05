@@ -281,29 +281,39 @@ class WebseriesCastModel {
   final String name;
   final int group;
   final String groupName;
+  final String photo;
 
   WebseriesCastModel({
     required this.name,
     this.group = 0,
     this.groupName = '',
+    this.photo = '',
   });
 
   factory WebseriesCastModel.fromJson(Map<String, dynamic> json) {
     String name = json['name']?.toString() ?? '';
-    if ((name.isEmpty || name == 'null') && json['cast'] != null && json['cast'] is Map) {
-      name = json['cast']['name']?.toString() ??
-          "${json['cast']['firstname'] ?? ''} ${json['cast']['lastname'] ?? ''}".trim();
+    String photo = json['photo']?.toString() ?? '';
+    if (json['cast'] != null && json['cast'] is Map) {
+      if (name.isEmpty || name == 'null') {
+        name = json['cast']['name']?.toString() ??
+            "${json['cast']['firstname'] ?? ''} ${json['cast']['lastname'] ?? ''}".trim();
+      }
+      if (photo.isEmpty || photo == 'null') {
+        photo = json['cast']['photo']?.toString() ?? '';
+      }
     }
     String groupName = json['group_name']?.toString() ??
         json['group_label']?.toString() ??
         '';
     if (name == 'null') name = '';
     if (groupName == 'null') groupName = '';
+    if (photo == 'null' || photo == 'false') photo = '';
 
     return WebseriesCastModel(
       name: name.trim(),
       group: int.tryParse(json['group']?.toString() ?? '0') ?? 0,
       groupName: groupName.trim(),
+      photo: photo.trim(),
     );
   }
 }
