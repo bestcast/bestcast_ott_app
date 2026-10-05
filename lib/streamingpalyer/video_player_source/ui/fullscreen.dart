@@ -52,11 +52,12 @@ class _FullScreenPageState extends State<FullScreenPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: WillPopScope(
-        onWillPop: () async {
+      body: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) async {
+          if (didPop) return;
           _systemResetTimer.cancel();
           await _query.video(context).openOrCloseFullscreen();
-          return false;
         },
         child: Center(
           child: VideoViewerCore(),

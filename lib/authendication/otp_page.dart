@@ -370,11 +370,12 @@ class _OTPactivityState extends State<OTPactivity> {
           await pref.setBool(AppPreferences.loggedStatus, true);
 
           if (!mounted) return;
-          Navigator.pushReplacement(
+          Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
               builder: (context) => WhosWatchingPage(activityType: "New"),
             ),
+            (route) => false,
           );
         } else {
           final String message = jsonReponse['message'] ?? "Invalid OTP. Please try again.";

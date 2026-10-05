@@ -71,6 +71,7 @@ class _VideoAppState extends State<VideoApp> {
   var watchTime = "0";
   bool _showControls = true;
   Timer? _hideControlsTimer;
+  LifecycleEventHandler? _lifecycleHandler;
 
   late MovieData? movieData;
   List<CastElement> castElementList = [];
@@ -119,22 +120,53 @@ class _VideoAppState extends State<VideoApp> {
 
     getInitalValue();
 
-    WidgetsBinding.instance.addObserver(LifecycleEventHandler(
-        resumeCallBack: () async => setState(() {
-              print("Page Resumed");
-            })));
+    _lifecycleHandler = LifecycleEventHandler(
+      resumeCallBack: () async {
+        if (mounted) {
+          setState(() {
+            print("Page Resumed");
+          });
+        }
+      },
+    );
+    WidgetsBinding.instance.addObserver(_lifecycleHandler!);
+  }
+
+  void _onControllerProgress() {
+    if (!mounted) return;
+    try {
+      if (!_controller.value.isInitialized) return;
+      final double duration = _controller.value.duration.inSeconds.toDouble();
+      if (duration > 0) {
+        final double progress = (_controller.value.position.inSeconds.toDouble() / duration).clamp(0.0, 1.0);
+        if ((progress - _progressValue).abs() > 0.005) {
+          if (mounted) {
+            setState(() {
+              _progressValue = progress;
+            });
+          }
+        }
+      }
+    } catch (_) {}
   }
 
   void getPlayerController(String loaderUrl) {
     print("LoaderUrl:$loaderUrl");
+    try {
+      _controller.removeListener(_onControllerProgress);
+      if (_controller.value.isPlaying) {
+        _controller.pause();
+      }
+      _controller.dispose();
+    } catch (_) {}
+
     _controller = VideoPlayerController.networkUrl(Uri.parse(loaderUrl))
       ..initialize().then((_) {
+        if (!mounted) return;
         setState(() {});
-        _controller.addListener(() {
-          setState(() {
-            _progressValue = _controller.value.position.inSeconds.toDouble() / _controller.value.duration.inSeconds.toDouble();
-          });
-        });
+        _controller.addListener(_onControllerProgress);
+      }).catchError((error) {
+        print("VideoPlayerController init error: $error");
       });
 
     _controller.play();
@@ -146,10 +178,12 @@ class _VideoAppState extends State<VideoApp> {
   void _startHideControlsTimer() {
     _hideControlsTimer?.cancel();
     _hideControlsTimer = Timer(Duration(seconds: 5), () {
-      setState(() {
-        print("HideConrolles");
-        _showControls = false;
-      });
+      if (mounted) {
+        setState(() {
+          print("HideConrolles");
+          _showControls = false;
+        });
+      }
     });
   }
 
@@ -258,12 +292,12 @@ class _VideoAppState extends State<VideoApp> {
                                         right: -10,
                                         child: LayoutBuilder(builder: (context, constraints) {
                                           return Slider(
-                                            value: _progressValue,
+                                            value: _progressValue.clamp(0.0, 1.0),
                                             activeColor: AppDefaultColors.thikRed,
                                             inactiveColor: AppDefaultColors.white,
                                             onChanged: (double value) {
                                               setState(() {
-                                                _progressValue = value;
+                                                _progressValue = value.clamp(0.0, 1.0);
                                                 final Duration newPosition = Duration(seconds: (_controller.value.duration.inSeconds * _progressValue).toInt());
                                                 _controller.seekTo(newPosition);
                                               });
@@ -1171,8 +1205,17 @@ class _VideoAppState extends State<VideoApp> {
 
   @override
   void dispose() {
-    _controller.dispose();
-    _controller.pause();
+    if (_lifecycleHandler != null) {
+      WidgetsBinding.instance.removeObserver(_lifecycleHandler!);
+    }
+    _hideControlsTimer?.cancel();
+    try {
+      _controller.removeListener(_onControllerProgress);
+      if (_controller.value.isPlaying) {
+        _controller.pause();
+      }
+      _controller.dispose();
+    } catch (_) {}
     _isPlaying = false;
     super.dispose();
   }
@@ -1598,43 +1641,72 @@ class _VideoAppState extends State<VideoApp> {
     });
   }
 
-  void getTokenValid(String token) async {
+  Future<void> getTokenValid(String token) async {
+    if (token.isEmpty) return;
+    if (!mounted) return;
     setState(() {
       isLoading = true;
     });
-    ApiServices().postRequestTokenWithoutBody(AppConfig.tokenexist, token).then((response) async {
+
+    try {
+      final response = await ApiServices()
+          .postRequestTokenWithoutBody(AppConfig.tokenexist, token)
+          .timeout(const Duration(seconds: 10));
+
       String jsonsDataString = response.body.toString();
       print("getTokenExist_Response: $jsonsDataString");
       print("getTokenExist_Token: $token");
+
       if (response.statusCode == 200) {
-        try {
-          var jsonReponse = jsonDecode(jsonsDataString);
-          String status = jsonReponse['status'];
+        var jsonReponse = jsonDecode(jsonsDataString);
+        String status = jsonReponse['status'] ?? "";
 
-          if (status == "error") {
-            final pref = await SharedPreferences.getInstance();
-            pref.clear();
+        if (status == "error") {
+          final pref = await SharedPreferences.getInstance();
+          await AppPreferences.clearUserSession(pref);
 
+          if (mounted) {
             setState(() {
+              _token = "";
+              profileID = "";
               loggedStatus = false;
             });
 
-            getUserMoviesDetails(_token, profileID, widget.getMovieID);
+            getUserMoviesDetails("", "", widget.getMovieID);
           }
-        } catch (e) {
-          print('getTokenExistException:$e');
         }
-      } else {
-        print("geTokenResError: $response");
+      } else if (response.statusCode == 401) {
+        final pref = await SharedPreferences.getInstance();
+        await AppPreferences.clearUserSession(pref);
+
+        if (mounted) {
+          setState(() {
+            _token = "";
+            profileID = "";
+            loggedStatus = false;
+          });
+
+          getUserMoviesDetails("", "", widget.getMovieID);
+        }
       }
-    });
-    setState(() {
-      isLoading = false;
-    });
+    } catch (e) {
+      print('getTokenExistException:$e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
   }
 
   void setUserMovies(String token, String profileID, String movieID, Map<String, int> postValues) async {
-    ApiServices().postRequestToken("${AppConfig.setUserMovie}$movieID?profile_id=$profileID", postValues, token).then((response) async {
+    String resolvedProfileId = profileID;
+    if (resolvedProfileId.isEmpty) {
+      final pref = await SharedPreferences.getInstance();
+      resolvedProfileId = pref.getString(AppPreferences.profileID) ?? pref.getString(AppPreferences.id) ?? '';
+    }
+    ApiServices().postRequestToken("${AppConfig.setUserMovie}$movieID?profile_id=$resolvedProfileId", postValues, token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("setuserMovie_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -2023,19 +2095,24 @@ class SimulatedDownloadController extends DownloadController with ChangeNotifier
         _downloadStatus = DownloadStatus.downloading;
         notifyListeners();
 
+        bool downloadSuccess = false;
         try {
           Dio dio = Dio();
           double downloadProgress = 0;
           var dir = await getApplicationDocumentsDirectory();
+          final sanitizedTitle = _downloadMovieTitle.replaceAll(RegExp(r'[\/\\:?*"<>|]'), '_');
+          movieDirPath = "${dir.path}/$sanitizedTitle.mp4";
           print("DownloadDirectory: ${dir.path}");
           print("_downloadUrl: $_downloadUrl");
-          movieDirPath = "${dir.path}/$_downloadMovieTitle.mp4";
-          await dio.download(_downloadUrl, "${dir.path}/$_downloadMovieTitle.mp4", cancelToken: cancelToken, onReceiveProgress: (rec, total) {
+
+          await dio.download(_downloadUrl, movieDirPath, cancelToken: cancelToken, onReceiveProgress: (rec, total) {
             _onReceiveProgress(rec, total);
-            downloadProgress = ((rec / total) * 100.toInt()) / 100;
+            if (total > 0) {
+              downloadProgress = ((rec / total) * 100.toInt()) / 100;
+            }
             print("Rec: $rec , Total: $total, Progress percent: $downloadProgress");
 
-            if (rec == total) {
+            if (rec == total && total > 0) {
               downloadProgress = 1;
             }
 
@@ -2046,21 +2123,26 @@ class SimulatedDownloadController extends DownloadController with ChangeNotifier
             _progress = downloadProgress;
             notifyListeners();
           });
+          downloadSuccess = true;
         } catch (e) {
-          print(e);
           print("Download_Error: $e");
+          if (!cancelToken.isCancelled) {
+            Fluttertoast.showToast(msg: "Download failed. Please check your connection.");
+          }
+        }
+
+        if (!downloadSuccess || !_isDownloading || cancelToken.isCancelled) {
+          _isDownloading = false;
+          _downloadStatus = DownloadStatus.notDownloaded;
+          _progress = 0.0;
+          notifyListeners();
+          return;
         }
 
         print("Download completed");
 
-        //
-        //   // If the user chose to cancel the download, stop the simulation.
-        //
-        //   // Update the download progress.
-
         await Future<void>.delayed(const Duration(seconds: 1));
 
-        // If the user chose to cancel the download, stop the simulation.
         if (!_isDownloading) {
           return;
         }
@@ -2069,7 +2151,12 @@ class SimulatedDownloadController extends DownloadController with ChangeNotifier
         _downloadStatus = DownloadStatus.downloaded;
         _isDownloading = false;
 
-        var dbValue = {'movieUrl': movieDirPath.toString(), 'movieID': _downloadMovieID.toString(), 'movieThumnail': _downloadThumnail.toString(), 'movieTitle': _downloadMovieTitle.toString()};
+        var dbValue = {
+          'movieUrl': movieDirPath.toString(),
+          'movieID': _downloadMovieID.toString(),
+          'movieThumnail': _downloadThumnail.toString(),
+          'movieTitle': _downloadMovieTitle.toString()
+        };
         await dbHelper.insertData(dbValue);
 
         notifyListeners();

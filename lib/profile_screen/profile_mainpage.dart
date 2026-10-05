@@ -1373,16 +1373,21 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
   }
 
   void setUserMovies(String token, String profileID, String movieID, Map<String, int> postValues, int type) async {
+    String resolvedProfileId = profileID;
+    if (resolvedProfileId.isEmpty) {
+      final pref = await SharedPreferences.getInstance();
+      resolvedProfileId = pref.getString(AppPreferences.profileID) ?? pref.getString(AppPreferences.id) ?? '';
+    }
     appUtils.showLoaderDialog(context);
-    ApiServices().postRequestToken("${AppConfig.setUserMovie}$movieID?profile_id=$profileID", postValues, token).then((response) async {
+    ApiServices().postRequestToken("${AppConfig.setUserMovie}$movieID?profile_id=$resolvedProfileId", postValues, token).then((response) async {
       if (mounted) {
         appUtils.hideLoaderDialog(context);
       }
       if (response.statusCode == 200) {
         if (type == 1) {
-          getUserMoviesLitWatching(_token, profileID, "1");
+          getUserMoviesLitWatching(_token, resolvedProfileId, "1");
         } else {
-          getUserMoviesLitRWatched(_token, profileID, "1");
+          getUserMoviesLitRWatched(_token, resolvedProfileId, "1");
         }
         Fluttertoast.showToast(msg: "Updated list");
       }
@@ -1391,6 +1396,38 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
         appUtils.hideLoaderDialog(context);
       }
     });
+  }
+
+  Future<void> _clearUserSession(SharedPreferences pref) async {
+    final sessionKeys = [
+      AppPreferences.loggedStatus,
+      AppPreferences.id,
+      AppPreferences.email,
+      AppPreferences.phone,
+      AppPreferences.name,
+      AppPreferences.firstname,
+      AppPreferences.lastname,
+      AppPreferences.dob,
+      AppPreferences.gender,
+      AppPreferences.plan,
+      AppPreferences.plan_expiry,
+      AppPreferences.plan_device_status,
+      AppPreferences.plan_status,
+      AppPreferences.photo,
+      AppPreferences.otp,
+      AppPreferences.tvcode,
+      AppPreferences.token,
+      AppPreferences.accountCreatedStatus,
+      AppPreferences.profileID,
+      AppPreferences.profileName,
+      AppPreferences.profilePictureID,
+      AppPreferences.profilePictureTitle,
+      AppPreferences.profilePicture,
+      AppPreferences.isChild,
+    ];
+    for (final key in sessionKeys) {
+      await pref.remove(key);
+    }
   }
 
   void getTokenValid(String token) async {
@@ -1402,7 +1439,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
 
           if (status == "error") {
             final pref = await SharedPreferences.getInstance();
-            pref.clear();
+            await _clearUserSession(pref);
 
             if (mounted) {
               setState(() {
@@ -1432,45 +1469,35 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
   void getLogout(String token) async {
     appUtils.showLoaderDialog(context);
 
-    ApiServices().postRequestTokenWithoutBody(AppConfig.logoutUrl, token).then((response) async {
+    Future<void> performLocalSignout() async {
+      try {
+        final pref = await SharedPreferences.getInstance();
+        await _clearUserSession(pref);
+      } catch (e) {
+        print('Error clearing session: $e');
+      }
+
+      await Future.delayed(const Duration(milliseconds: 300));
+
       if (mounted) {
         appUtils.hideLoaderDialog(context);
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          'mainscreen',
+          (route) => false,
+        );
       }
-      if (response.statusCode == 200) {
-        try {
-          var jsonReponse = jsonDecode(response.body);
-          String status = jsonReponse['status'];
+    }
 
-          if (status == "success") {
-            final pref = await SharedPreferences.getInstance();
-            await pref.clear();
-
-            await Future.delayed(const Duration(milliseconds: 500));
-
-            if (mounted) {
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                'mainscreen',
-                (route) => false,
-              );
-            }
-          }
-        } catch (e) {
-          print('logoutException: $e');
-        }
-      } else {
-        if (mounted) {
-          CommonWidget().showSnackBar(
-            context,
-            ContentType.failure,
-            "Error",
-            "Logout failed. Please try again.",
-          );
-        }
+    try {
+      if (token.isNotEmpty) {
+        await ApiServices()
+            .postRequestTokenWithoutBody(AppConfig.logoutUrl, token)
+            .timeout(const Duration(seconds: 4));
       }
-    }).catchError((_) {
-      if (mounted) {
-        appUtils.hideLoaderDialog(context);
-      }
-    });
+    } catch (e) {
+      print('logoutException (continuing optimistic local logout): $e');
+    } finally {
+      await performLocalSignout();
+    }
   }
 }

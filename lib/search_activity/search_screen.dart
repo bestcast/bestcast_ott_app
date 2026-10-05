@@ -325,6 +325,11 @@ class _SearchScreenState extends State<SearchScreen> {
 
       if (!mounted) return;
 
+      // Discard stale out-of-order response if search query changed or was cleared
+      if (_searchController.text.trim().toLowerCase() != searchText.toLowerCase()) {
+        return;
+      }
+
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
 
@@ -338,9 +343,11 @@ class _SearchScreenState extends State<SearchScreen> {
         _filterContent();
       }
 
-      setState(() {
-        _isSearchLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isSearchLoading = false;
+        });
+      }
     } catch (_) {
       if (mounted) {
         setState(() {
@@ -756,24 +763,6 @@ class _SearchScreenState extends State<SearchScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-          child: Row(
-            children: const [
-              Icon(Icons.local_fire_department_rounded, color: AppDefaultColors.primaryRed, size: 20),
-              SizedBox(width: 6),
-              Text(
-                "Popular Searches",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 17.0,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.2,
-                ),
-              ),
-            ],
-          ),
-        ),
         Expanded(
           child: ListView.separated(
             padding: const EdgeInsets.only(left: 14, right: 14, bottom: 20),

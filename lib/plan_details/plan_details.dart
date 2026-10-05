@@ -30,6 +30,7 @@ class PlanDetailsPage extends StatefulWidget {
 
 class _PlanDetailsPageState extends State<PlanDetailsPage> {
   final AppUtils appUtils = AppUtils();
+  late final Razorpay _razorpay;
   bool isLoading = false;
   List<SubscriptionListModel> subscriptionListModel = [];
   String _phone = "";
@@ -166,7 +167,18 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
     ]);
     super.initState();
 
+    _razorpay = Razorpay();
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, handlePaymentErrorResponse);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, handlePaymentSuccessResponse);
+    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, handleExternalWalletSelected);
+
     getInitalValue();
+  }
+
+  @override
+  void dispose() {
+    _razorpay.clear();
+    super.dispose();
   }
 
   Future<void> getInitalValue() async {
@@ -192,33 +204,38 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
       print("_token: $_token");
       getPlanDetails(_token);
     } else {
-      CommonWidget().showSnackBar(context, ContentType.warning, "Check your internet connection.", "");
+      if (mounted) {
+        CommonWidget().showSnackBar(context, ContentType.warning, "Check your internet connection.", "");
+      }
     }
   }
 
-  void payRazor(String amount, String description, String mobilenumber, orderId) {
+  void payRazor(String amount, String description, String mobilenumber, dynamic orderId) {
     print("_gateWayKey:$_gateWayKey");
     print("logo_gateWay:$_logo");
 
-    Razorpay razorpay = Razorpay();
-    var options = {
-      'key': _gateWayKey,
-      'amount': amount,
-      'name': 'BESTCAST',
-      'image': _logo,
-      'description': description,
-      'order_id': orderId,
-      'retry': {'enabled': true, 'max_count': 1},
-      'send_sms_hash': true,
-      'prefill': {'contact': mobilenumber, 'email': ''},
-      'external': {
-        'wallets': ['paytm']
+    try {
+      var options = {
+        'key': _gateWayKey,
+        'amount': amount,
+        'name': 'BESTCAST',
+        'image': _logo,
+        'description': description,
+        'order_id': orderId,
+        'retry': {'enabled': true, 'max_count': 1},
+        'send_sms_hash': true,
+        'prefill': {'contact': mobilenumber, 'email': ''},
+        'external': {
+          'wallets': ['paytm']
+        }
+      };
+      _razorpay.open(options);
+    } catch (e) {
+      print("payRazor exception: $e");
+      if (mounted) {
+        CommonWidget().showSnackBar(context, ContentType.failure, "Payment Error", "Unable to launch payment gateway: $e");
       }
-    };
-    razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, handlePaymentErrorResponse);
-    razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, handlePaymentSuccessResponse);
-    razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, handleExternalWalletSelected);
-    razorpay.open(options);
+    }
   }
 
   void handlePaymentErrorResponse(PaymentFailureResponse response) {
@@ -228,7 +245,6 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
     * 2. Error Description
     * 3. Metadata
     * */
-
     appUtils.showToast("Payment Failed.");
   }
 
@@ -239,19 +255,16 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
     * 2. Payment ID
     * 3. Signature
     * */
-
     updatetransaction(_token, response.orderId.toString(), response.paymentId.toString(), response.signature.toString());
   }
 
   void handleExternalWalletSelected(ExternalWalletResponse response) {}
 
   void showAlertDialog(BuildContext context, String title, String message) {
-    // set up the AlertDialog
     AlertDialog alert = AlertDialog(
       title: Text(title),
       content: Text(message),
     );
-    // show the dialog
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -260,243 +273,330 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
     );
   }
 
-  void getPaymentgatewayinfo(String token) async {
-    setState(() {
-      isLoading = true;
-    });
-    ApiServices().getRequestData(AppConfig.paymentgatewayinfo, token).then((response) async {
+  void _showPaymentRecoveryDialog(String token, String orderId, String errorMessage) {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext ctx) {
+        return AlertDialog(
+          backgroundColor: AppDefaultColors.hardDarkGray,
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.amber, size: 28),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  "Verification Pending",
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            "Your payment may have succeeded, but verification encountered a network issue:\n\n$errorMessage\n\nPlease tap 'Retry Verification' to complete your subscription activation.",
+            style: const TextStyle(color: Colors.white70, fontSize: 14),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+              },
+              child: const Text("Later", style: TextStyle(color: Colors.white54)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppDefaultColors.appColor,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                verifypaymentstatus(token, orderId);
+              },
+              child: const Text("Retry Verification"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> getPaymentgatewayinfo(String token) async {
+    try {
+      final response = await ApiServices()
+          .getRequestData(AppConfig.paymentgatewayinfo, token)
+          .timeout(const Duration(seconds: 15));
       String jsonsDataString = response.body.toString();
       print("paymentgatewayinfo_Response: $jsonsDataString");
       if (response.statusCode == 200) {
-        try {
-          var jsonReponse = jsonDecode(jsonsDataString);
-
-          String status = jsonReponse['status'];
-
-          if (status == "success") {
-            var data = jsonReponse['results']['razorpay'];
-            print("DataObject:$data");
-            _gateWayKey = data["key"].toString();
-            _logo = data["logo"].toString();
+        var jsonReponse = jsonDecode(jsonsDataString);
+        String status = jsonReponse['status'] ?? "";
+        if (status == "success") {
+          var data = jsonReponse['results']?['razorpay'];
+          if (data != null) {
+            _gateWayKey = data["key"]?.toString() ?? "";
+            _logo = data["logo"]?.toString() ?? "";
           }
-
-          setState(() {
-            isLoading = false;
-          });
-        } catch (e) {
-          setState(() {
-            isLoading = false;
-          });
-          print('PaymentInfoException:$e');
         }
-      } else {
-        print("PaymentInfoError: $response");
-        isLoading = false;
       }
-
-      setState(() {
-        isLoading = false;
-      });
-    });
+    } catch (e) {
+      print('PaymentInfoException:$e');
+    }
   }
 
-  void CreateSubscription(String token, String planID, String subscriptionAmount, String description, String phone) async {
+  Future<void> CreateSubscription(String token, String planID, String subscriptionAmount, String description, String phone) async {
+    if (!mounted) return;
     setState(() {
       isLoading = true;
     });
+    try {
+      context.loaderOverlay.show();
+    } catch (_) {}
 
-    final pref = await SharedPreferences.getInstance();
-    final refCode = (widget.refCode != null && widget.refCode!.isNotEmpty) ? widget.refCode : (pref.getString(AppPreferences.bmpReferralCode) ?? pref.getString(AppPreferences.refferer));
+    try {
+      final pref = await SharedPreferences.getInstance();
+      final refCode = (widget.refCode != null && widget.refCode!.isNotEmpty)
+          ? widget.refCode
+          : (pref.getString(AppPreferences.bmpReferralCode) ?? pref.getString(AppPreferences.refferer));
 
-    final apiFuture = (refCode != null && refCode.isNotEmpty) ? ApiServices().postRequestToken(AppConfig.createsubscription + planID, {'ref': refCode, 'bmp_referral_code': refCode}, token) : ApiServices().postRequestTokenWithoutBody(AppConfig.createsubscription + planID, token);
+      final response = (refCode != null && refCode.isNotEmpty)
+          ? await ApiServices().postRequestToken(AppConfig.createsubscription + planID, {'ref': refCode, 'bmp_referral_code': refCode}, token).timeout(const Duration(seconds: 15))
+          : await ApiServices().postRequestTokenWithoutBody(AppConfig.createsubscription + planID, token).timeout(const Duration(seconds: 15));
 
-    apiFuture.then((response) async {
       String jsonsDataString = response.body.toString();
       print("createSubscription_Response: $jsonsDataString");
       if (response.statusCode == 200) {
-        try {
-          var jsonReponse = jsonDecode(jsonsDataString);
-
-          String status = jsonReponse['status'];
-
-          if (status == "success") {
-            var orderId = jsonReponse['results']['razorpay_order_id'];
-            print("DataObject:$orderId");
-
-            payRazor(subscriptionAmount, description, phone, orderId);
+        var jsonReponse = jsonDecode(jsonsDataString);
+        String status = jsonReponse['status'] ?? "";
+        if (status == "success") {
+          var orderId = jsonReponse['results']?['razorpay_order_id'];
+          print("DataObject:$orderId");
+          payRazor(subscriptionAmount, description, phone, orderId);
+        } else {
+          if (mounted) {
+            CommonWidget().showSnackBar(context, ContentType.failure, "Order Creation Failed", jsonReponse['message']?.toString() ?? "Could not initiate payment order.");
           }
-
-          setState(() {
-            isLoading = false;
-          });
-        } catch (e) {
-          setState(() {
-            isLoading = false;
-          });
-          print('createSubscriptionException:$e');
         }
       } else {
         print("createSubscriptionError: $response");
-        isLoading = false;
-        CommonWidget().showSnackBar(context, ContentType.failure, "Error", response.toString());
+        if (mounted) {
+          CommonWidget().showSnackBar(context, ContentType.failure, "Error", response.toString());
+        }
       }
-
-      setState(() {
-        isLoading = false;
-      });
-    });
+    } catch (e) {
+      print('createSubscriptionException:$e');
+      if (mounted) {
+        CommonWidget().showSnackBar(context, ContentType.failure, "Network Error", "Failed to initiate subscription: $e");
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+        try {
+          context.loaderOverlay.hide();
+        } catch (_) {}
+      }
+    }
   }
 
-  void getPlanDetails(String token) async {
-    isLoading = true;
-    context.loaderOverlay.show();
+  Future<void> getPlanDetails(String token) async {
+    if (!mounted) return;
+    setState(() {
+      isLoading = true;
+    });
+    try {
+      context.loaderOverlay.show();
+    } catch (_) {}
     subscriptionListModel.clear();
-    ApiServices().getRequestData(AppConfig.subscriptionlist, token).then((response) async {
+
+    try {
+      final response = await ApiServices()
+          .getRequestData(AppConfig.subscriptionlist, token)
+          .timeout(const Duration(seconds: 15));
+
       String jsonsDataString = response.body.toString();
       print("Subscription_Response: $jsonsDataString");
       if (response.statusCode == 200) {
-        try {
-          var jsonReponse = jsonDecode(jsonsDataString);
-          var data = jsonReponse['data'];
-
-          print("SubscriptionDataObject:$data");
-
-          var responseData = json.decode(response.body);
-
+        var responseData = json.decode(response.body);
+        if (responseData["data"] != null && responseData["data"] is List) {
           for (var plandetailsObject in responseData["data"]) {
             subscriptionListModel.add(SubscriptionListModel(
               id: plandetailsObject["id"].toString(),
               urlkey: plandetailsObject["urlkey"].toString(),
               title: plandetailsObject["title"].toString(),
               content: plandetailsObject["content"].toString(),
-              before_price: plandetailsObject["before_price"].toInt(),
-              price: plandetailsObject["price"].toInt(),
+              before_price: (plandetailsObject["before_price"] is num) ? plandetailsObject["before_price"].toInt() : 0,
+              price: (plandetailsObject["price"] is num) ? plandetailsObject["price"].toInt() : 0,
               tagtext: plandetailsObject["tagtext"].toString(),
-              sortorder: plandetailsObject["sortorder"].toInt(),
+              sortorder: (plandetailsObject["sortorder"] is num) ? plandetailsObject["sortorder"].toInt() : 0,
               razorpay_id: plandetailsObject["razorpay_id"].toString(),
               duration_text: plandetailsObject["duration_text"].toString(),
             ));
           }
-
-          getPaymentgatewayinfo(token);
-
-          print("datachanged");
-          setState(() {
-            isLoading = false;
-          });
-          context.loaderOverlay.hide();
-        } catch (e) {
-          print('Exception:$e');
-          setState(() {
-            isLoading = false;
-          });
         }
+        await getPaymentgatewayinfo(token);
       } else {
         print("Error: $response");
-        context.loaderOverlay.hide();
-        CommonWidget().showSnackBar(context, ContentType.failure, "Error", response.toString());
-      }
-      setState(() {
-        isLoading = false;
-      });
-      context.loaderOverlay.hide();
-    });
-    setState(() {
-      isLoading = false;
-    });
-    context.loaderOverlay.hide();
-  }
-
-  void updatetransaction(String token, String orderId, String paymentId, String signature) async {
-    setState(() {
-      isLoading = true;
-    });
-    context.loaderOverlay.show();
-    final pref = await SharedPreferences.getInstance();
-    final refCode = (widget.refCode != null && widget.refCode!.isNotEmpty) ? widget.refCode : (pref.getString(AppPreferences.bmpReferralCode) ?? pref.getString(AppPreferences.refferer));
-
-    final Map<String, dynamic> postValues = {
-      'razorpay_order_id': orderId,
-      'razorpay_payment_id': paymentId,
-      'razorpay_signature': signature,
-    };
-    if (refCode != null && refCode.isNotEmpty) {
-      postValues['ref'] = refCode;
-      postValues['bmp_referral_code'] = refCode;
-    }
-
-    ApiServices().postRequestToken(AppConfig.updatetransaction, postValues, token).then((response) async {
-      String jsonsDataString = response.body.toString();
-      print("updatetransaction_Response: $jsonsDataString");
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        try {
-          appUtils.showToast("Payment Successful");
-          verifypaymentstatus(token, orderId);
-        } catch (e) {
-          setState(() {
-            isLoading = false;
-            context.loaderOverlay.hide();
-          });
-          print('updatetransactionException:$e');
+        if (mounted) {
+          CommonWidget().showSnackBar(context, ContentType.failure, "Error", response.toString());
         }
-      } else {
+      }
+    } catch (e) {
+      print('getPlanDetails Exception:$e');
+      if (mounted) {
+        CommonWidget().showSnackBar(context, ContentType.failure, "Network Error", "Unable to load subscription plans. Please check your connection.");
+      }
+    } finally {
+      if (mounted) {
         setState(() {
           isLoading = false;
-          context.loaderOverlay.hide();
         });
-        print("TransactionError: $response");
-        CommonWidget().showSnackBar(context, ContentType.failure, "Error", response.toString());
+        try {
+          context.loaderOverlay.hide();
+        } catch (_) {}
       }
-    });
+    }
   }
 
-  void verifypaymentstatus(String token, String orderId) async {
+  Future<void> updatetransaction(String token, String orderId, String paymentId, String signature) async {
+    if (!mounted) return;
     setState(() {
       isLoading = true;
-      context.loaderOverlay.show();
     });
-    final pref = await SharedPreferences.getInstance();
-    final refCode = (widget.refCode != null && widget.refCode!.isNotEmpty) ? widget.refCode : (pref.getString(AppPreferences.bmpReferralCode) ?? pref.getString(AppPreferences.refferer));
+    try {
+      context.loaderOverlay.show();
+    } catch (_) {}
 
-    final Map<String, dynamic> postValues = {
-      'oid': orderId,
-      'razorpay_order_id': orderId,
-      'order_id': orderId,
-    };
-    if (refCode != null && refCode.isNotEmpty) {
-      postValues['ref'] = refCode;
-      postValues['bmp_referral_code'] = refCode;
+    try {
+      final pref = await SharedPreferences.getInstance();
+      final refCode = (widget.refCode != null && widget.refCode!.isNotEmpty)
+          ? widget.refCode
+          : (pref.getString(AppPreferences.bmpReferralCode) ?? pref.getString(AppPreferences.refferer));
+
+      final Map<String, dynamic> postValues = {
+        'razorpay_order_id': orderId,
+        'razorpay_payment_id': paymentId,
+        'razorpay_signature': signature,
+      };
+      if (refCode != null && refCode.isNotEmpty) {
+        postValues['ref'] = refCode;
+        postValues['bmp_referral_code'] = refCode;
+      }
+
+      final response = await ApiServices()
+          .postRequestToken(AppConfig.updatetransaction, postValues, token)
+          .timeout(const Duration(seconds: 20));
+
+      String jsonsDataString = response.body.toString();
+      print("updatetransaction_Response: $jsonsDataString");
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        appUtils.showToast("Payment Successful");
+        await verifypaymentstatus(token, orderId);
+      } else {
+        print("TransactionError: $response");
+        if (mounted) {
+          _showPaymentRecoveryDialog(
+            token,
+            orderId,
+            "Could not update transaction details on server (${response.statusCode}). Please verify your payment.",
+          );
+        }
+      }
+    } catch (e) {
+      print('updatetransactionException:$e');
+      if (mounted) {
+        _showPaymentRecoveryDialog(
+          token,
+          orderId,
+          "Network connection error: $e. You can retry verifying your payment status.",
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+        try {
+          context.loaderOverlay.hide();
+        } catch (_) {}
+      }
     }
+  }
 
-    ApiServices().postRequestToken(AppConfig.verifypaymentstatus, postValues, token).then((response) async {
+  Future<void> verifypaymentstatus(String token, String orderId) async {
+    if (!mounted) return;
+    setState(() {
+      isLoading = true;
+    });
+    try {
+      context.loaderOverlay.show();
+    } catch (_) {}
+
+    try {
+      final pref = await SharedPreferences.getInstance();
+      final refCode = (widget.refCode != null && widget.refCode!.isNotEmpty)
+          ? widget.refCode
+          : (pref.getString(AppPreferences.bmpReferralCode) ?? pref.getString(AppPreferences.refferer));
+
+      final Map<String, dynamic> postValues = {
+        'oid': orderId,
+        'razorpay_order_id': orderId,
+        'order_id': orderId,
+      };
+      if (refCode != null && refCode.isNotEmpty) {
+        postValues['ref'] = refCode;
+        postValues['bmp_referral_code'] = refCode;
+      }
+
+      final response = await ApiServices()
+          .postRequestToken(AppConfig.verifypaymentstatus, postValues, token)
+          .timeout(const Duration(seconds: 20));
+
       String jsonsDataString = response.body.toString();
       print("verifypaymentstatus_Response: $jsonsDataString");
+
       if (response.statusCode == 200 || response.statusCode == 201) {
-        try {
-          appUtils.showToast("Payment Successful");
+        appUtils.showToast("Payment Successful");
+        await pref.setString(AppPreferences.plan_status, "1");
 
-          await pref.setString(AppPreferences.plan_status, "1");
-
-          if (mounted) {
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => MainScreen()));
-          }
-
-          context.loaderOverlay.hide();
-        } catch (e) {
-          print('verifypaymentstatusException:$e');
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => MainScreen()),
+            (route) => false,
+          );
         }
       } else {
-        setState(() {
-          context.loaderOverlay.hide();
-        });
         print("TransactionError: $response");
-        CommonWidget().showSnackBar(context, ContentType.failure, "Error", response.toString());
+        if (mounted) {
+          _showPaymentRecoveryDialog(
+            token,
+            orderId,
+            "Server returned status ${response.statusCode}. If your account was debited, retrying will activate your plan.",
+          );
+        }
       }
-      setState(() {
-        isLoading = false;
-        context.loaderOverlay.hide();
-      });
-    });
+    } catch (e) {
+      print('verifypaymentstatusException:$e');
+      if (mounted) {
+        _showPaymentRecoveryDialog(
+          token,
+          orderId,
+          "Network connection issue: $e. Your transaction ID is saved.",
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+        try {
+          context.loaderOverlay.hide();
+        } catch (_) {}
+      }
+    }
   }
 
   String _parseHtmlString(String htmlString) {

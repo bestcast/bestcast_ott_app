@@ -127,10 +127,10 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
 
   bool isSeekDuration = false;
   bool enableController = false;
-  late File _videoFile;
+  File? _videoFile;
 
   // Quiz State
-  final bool _useStaticQuizTimeForTesting = true; // Toggle to true to force exactly 10 seconds between popups
+  final bool _useStaticQuizTimeForTesting = false; // Toggle to true to force exactly 10 seconds between popups
   bool _hasAskedQuiz = false;
   bool _quizEnabled = false;
   bool _isQuizActive = false;
@@ -253,10 +253,20 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
 
   void initializeVideo() async {
     if (widget.playType == 2) {
-      Directory appDocDir = await getApplicationDocumentsDirectory();
-      String videoPath = '${appDocDir.path}/${widget.getMainMovieUrl}.mp4';
-
-      _videoFile = File(videoPath);
+      String path = widget.getMainMovieUrl;
+      if (!path.startsWith('/') && !path.contains(Platform.pathSeparator)) {
+        Directory appDocDir = await getApplicationDocumentsDirectory();
+        path = '${appDocDir.path}/$path';
+      }
+      if (!path.endsWith('.mp4')) {
+        path = '$path.mp4';
+      }
+      final file = File(path);
+      if (mounted) {
+        setState(() {
+          _videoFile = file;
+        });
+      }
     }
   }
 
@@ -285,7 +295,7 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
       controller: _controller,
       child: Stack(children: [
         Center(
-          child: enableController
+          child: enableController && (widget.playType == 1 || _videoFile != null)
               ? VideoViewer(
                   controller: _controller,
                   onFullscreenFixLandscape: true,
@@ -294,13 +304,13 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
                       video: widget.playType == 1
                           // ignore: deprecated_member_use
                           ? VideoPlayerController.network(widget.getMainMovieUrl)
-                          : VideoPlayerController.file(_videoFile),
+                          : VideoPlayerController.file(_videoFile!),
                       subtitle: subtitleMap.isNotEmpty ? subtitleMap : null,
                     ),
                   },
                   style: CustomVideoViewerStyle(movie: movie, context: context),
                 )
-              : null,
+              : const BackgroundLoadingWidget(),
         ),
         if (isSeekDuration) BackgroundLoadingWidget(),
         if (_isLoadingQuiz)
@@ -357,13 +367,13 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
     _timer?.cancel();
     _quizGapTimer?.cancel();
     _seekTimer?.cancel();
-    super.dispose();
     ScreenProtector.preventScreenshotOff();
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    super.dispose();
   }
 
   Future<void> getInitalValue() async {
@@ -384,36 +394,67 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
   }
 
   void getSeekPosition() {
-    _timer = Timer.periodic(Duration(seconds: 5), (timer) {
-      setState(() {
-        if (_controller.isPlaying) {
-          final Duration currentPostion = _controller.position;
-          final Duration total = _controller.duration;
-          var watchingSeconds = currentPostion.inSeconds;
+    _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_controller.isPlaying) {
+        final Duration currentPostion = _controller.position;
+        final Duration total = _controller.duration;
+        final int totalSeconds = total.inSeconds;
 
-          final percentage = (currentPostion.inSeconds / total.inSeconds * 100).truncate();
+        // Guard against zero / uninitialized video duration
+        if (totalSeconds <= 0) return;
 
-          if (currentPostion == total) {
-            final postValuesWatched = {
-              'watched': 1,
-            };
-            setUserMovies(_token, userID, widget.getMainMovieID, postValuesWatched);
-          } else {
-            final postValues = {
-              'watching': 1,
-              'watch_time': watchingSeconds,
-              'watched_percent': percentage,
-            };
-            setUserMovies(_token, userID, widget.getMainMovieID, postValues);
-          }
+        final int watchingSeconds = currentPostion.inSeconds;
+        final int percentage =
+            ((watchingSeconds / totalSeconds) * 100).clamp(0, 100).truncate();
+
+        final String activeProfileOrUserId =
+            profileID.isNotEmpty ? profileID : userID;
+
+        if (currentPostion >= total || percentage >= 95) {
+          final postValuesWatched = {
+            'watched': 1,
+            'watching': 0,
+            'watch_time': watchingSeconds,
+            'watched_percent': 100,
+          };
+          setUserMovies(_token, activeProfileOrUserId, widget.getMainMovieID,
+              postValuesWatched);
+        } else {
+          final postValues = {
+            'watching': 1,
+            'watch_time': watchingSeconds,
+            'watched_percent': percentage,
+          };
+          setUserMovies(_token, activeProfileOrUserId, widget.getMainMovieID,
+              postValues);
         }
-      });
+      }
     });
   }
 
-  void setUserMovies(String token, String userID, String movieID, Map<String, int> postValues) async {
-    ApiServices().postRequestToken("${AppConfig.setUserMovie}$movieID?profile_id=$userID", postValues, token).then((response) async {
-      String jsonsDataString = response.body.toString();
+  void setUserMovies(String token, String targetProfileId, String movieID,
+      Map<String, int> postValues) async {
+    if (token.isEmpty || movieID.isEmpty) return;
+
+    String resolvedProfileId = targetProfileId;
+    if (resolvedProfileId.isEmpty) {
+      final pref = await SharedPreferences.getInstance();
+      resolvedProfileId = pref.getString(AppPreferences.profileID) ??
+          pref.getString(AppPreferences.id) ??
+          '';
+    }
+
+    ApiServices()
+        .postRequestToken(
+            "${AppConfig.setUserMovie}$movieID?profile_id=$resolvedProfileId",
+            postValues,
+            token)
+        .then((response) async {
+      final String jsonsDataString = response.body.toString();
       print("setuserMovie_Response: $jsonsDataString");
       if (response.statusCode == 200) {
         try {
@@ -424,6 +465,8 @@ class _MovieVideoViewerState extends State<MovieVideoViewer> {
       } else {
         print("UserMovieResponseError: $response");
       }
+    }).catchError((err) {
+      print("setUserMovies error: $err");
     });
   }
 

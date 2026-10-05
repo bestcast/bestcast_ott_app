@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -63,7 +62,8 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        exit(0);
+        SystemNavigator.pop();
+        return false;
       },
       child: Scaffold(
         backgroundColor: AppDefaultColors.appColor,
@@ -76,8 +76,11 @@ class _LoginPageState extends State<LoginPage> {
           leading: BackButton(
             color: Colors.white,
             onPressed: () {
-              SystemNavigator.pop();
-              exit(0);
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+              } else {
+                SystemNavigator.pop();
+              }
             },
           ),
         ),
@@ -335,123 +338,135 @@ class _LoginPageState extends State<LoginPage> {
 
   //Api Login Integrations
   Future<void> LoginProcess(String userName, String password) async {
-    isLoading = true;
-    final postValues = {
-      'email': userName,
-      'password': password,
-      'device': "mobile"
-    };
-    ApiServices()
-        .postRequest(AppConfig.LoginUrl, postValues)
-        .then((response) async {
-      String jsonsDataString = response.body.toString();
+    setState(() => isLoading = true);
+    context.loaderOverlay.show();
+
+    try {
+      final postValues = {
+        'email': userName,
+        'password': password,
+        'device': "mobile"
+      };
+
+      final response = await ApiServices()
+          .postRequest(AppConfig.LoginUrl, postValues)
+          .timeout(const Duration(seconds: 15));
+
+      if (!mounted) return;
+
+      final String jsonsDataString = response.body.toString();
       print("Login_Response: $jsonsDataString");
 
-      try {
-        var jsonReponse = jsonDecode(jsonsDataString);
-        String status = jsonReponse['status'];
+      final dynamic jsonReponse = jsonDecode(jsonsDataString);
+      final String status = jsonReponse['status']?.toString() ?? "";
 
-        if (status == "success") {
-          String? id = jsonReponse['results']['user']['id'].toString();
-          String? email = jsonReponse['results']['user']['email'].toString();
-          String? phone = jsonReponse['results']['user']['phone'].toString();
-          String? name = jsonReponse['results']['user']['name'].toString();
-          String? firstname =
-              jsonReponse['results']['user']['firstname'].toString();
-          String? lastname =
-              jsonReponse['results']['user']['lastname'].toString();
-          String? dob = jsonReponse['results']['user']['dob'].toString();
-          String? gender = jsonReponse['results']['user']['gender'].toString();
-          String? plan = jsonReponse['results']['user']['plan'].toString();
-          String? planExpiry =
-              jsonReponse['results']['user']['plan_expiry'].toString();
-          String? photo = jsonReponse['results']['user']['photo'].toString();
-          String? otp = jsonReponse['results']['user']['otp'].toString();
-          String? tvcode = jsonReponse['results']['user']['tvcode'].toString();
-          String? referalCode =
-              jsonReponse['results']['user']['referal_code'].toString();
-          String? creditsUsed =
-              jsonReponse['results']['user']['credits_used'].toString();
-          String? refferer =
-              jsonReponse['results']['user']['refferer'].toString();
-          String? bmpReferralCode =
-              jsonReponse['results']['user']['bmp_referral_code']?.toString();
-          String? planStatus =
-              jsonReponse['results']['user']['plan_status'].toString();
-          String? planDeviceStatus =
-              jsonReponse['results']['user']['plan_device_status'].toString();
-          String? token = jsonReponse['results']['token'].toString();
+      if (status == "success") {
+        String? id = jsonReponse['results']['user']['id'].toString();
+        String? email = jsonReponse['results']['user']['email'].toString();
+        String? phone = jsonReponse['results']['user']['phone'].toString();
+        String? name = jsonReponse['results']['user']['name'].toString();
+        String? firstname =
+            jsonReponse['results']['user']['firstname'].toString();
+        String? lastname =
+            jsonReponse['results']['user']['lastname'].toString();
+        String? dob = jsonReponse['results']['user']['dob'].toString();
+        String? gender = jsonReponse['results']['user']['gender'].toString();
+        String? plan = jsonReponse['results']['user']['plan'].toString();
+        String? planExpiry =
+            jsonReponse['results']['user']['plan_expiry'].toString();
+        String? photo = jsonReponse['results']['user']['photo'].toString();
+        String? otp = jsonReponse['results']['user']['otp'].toString();
+        String? tvcode = jsonReponse['results']['user']['tvcode'].toString();
+        String? referalCode =
+            jsonReponse['results']['user']['referal_code'].toString();
+        String? creditsUsed =
+            jsonReponse['results']['user']['credits_used'].toString();
+        String? refferer =
+            jsonReponse['results']['user']['refferer'].toString();
+        String? bmpReferralCode =
+            jsonReponse['results']['user']['bmp_referral_code']?.toString();
+        String? planStatus =
+            jsonReponse['results']['user']['plan_status'].toString();
+        String? planDeviceStatus =
+            jsonReponse['results']['user']['plan_device_status'].toString();
+        String? token = jsonReponse['results']['token'].toString();
 
-          print("TokenLogin$token");
+        print("TokenLogin$token");
 
-          final pref = await SharedPreferences.getInstance();
-          await pref.setString(AppPreferences.id, id);
-          await pref.setString(AppPreferences.email, email);
-          await pref.setString(AppPreferences.phone, phone);
-          await pref.setString(AppPreferences.name, name);
-          await pref.setString(AppPreferences.firstname, firstname);
-          await pref.setString(AppPreferences.lastname, lastname);
-          await pref.setString(AppPreferences.dob, dob);
-          await pref.setString(AppPreferences.gender, gender);
-          await pref.setString(AppPreferences.plan, plan);
-          await pref.setString(AppPreferences.plan_expiry, planExpiry);
-          await pref.setString(AppPreferences.photo, photo);
-          await pref.setString(AppPreferences.otp, otp);
-          await pref.setString(AppPreferences.tvcode, tvcode);
-          await pref.setString(AppPreferences.referal_code, referalCode);
-          await pref.setString(AppPreferences.credits_used, creditsUsed);
-          await pref.setString(AppPreferences.refferer, refferer);
-          if (bmpReferralCode != null && bmpReferralCode.isNotEmpty && bmpReferralCode != "null") {
-            await pref.setString(AppPreferences.bmpReferralCode, bmpReferralCode);
-            await pref.setString(AppPreferences.refferer, bmpReferralCode);
-          }
-          await pref.setString(AppPreferences.token, token);
+        final pref = await SharedPreferences.getInstance();
+        await pref.setString(AppPreferences.id, id);
+        await pref.setString(AppPreferences.email, email);
+        await pref.setString(AppPreferences.phone, phone);
+        await pref.setString(AppPreferences.name, name);
+        await pref.setString(AppPreferences.firstname, firstname);
+        await pref.setString(AppPreferences.lastname, lastname);
+        await pref.setString(AppPreferences.dob, dob);
+        await pref.setString(AppPreferences.gender, gender);
+        await pref.setString(AppPreferences.plan, plan);
+        await pref.setString(AppPreferences.plan_expiry, planExpiry);
+        await pref.setString(AppPreferences.photo, photo);
+        await pref.setString(AppPreferences.otp, otp);
+        await pref.setString(AppPreferences.tvcode, tvcode);
+        await pref.setString(AppPreferences.referal_code, referalCode);
+        await pref.setString(AppPreferences.credits_used, creditsUsed);
+        await pref.setString(AppPreferences.refferer, refferer);
+        if (bmpReferralCode != null && bmpReferralCode.isNotEmpty && bmpReferralCode != "null") {
+          await pref.setString(AppPreferences.bmpReferralCode, bmpReferralCode);
+          await pref.setString(AppPreferences.refferer, bmpReferralCode);
+        }
+        await pref.setString(AppPreferences.token, token);
 
-          context.loaderOverlay.hide();
-          isLoading = false;
+        if (!mounted) return;
 
-          if (plan == "0") {
-            await pref.setBool(AppPreferences.accountCreatedStatus, true);
-            Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => CreateAccount(requiredEmail: email)));
-          } else if (planStatus == "0" && plan != "0") {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (context) => PlanExpiredScreen()));
-          } else if (planDeviceStatus == "0") {
-            Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => DeviceSignOutAlertScreen(
-                          email: email,
-                        )));
-          } else {
-            await pref.setBool(AppPreferences.loggedStatus, true);
-
-            Navigator.pushReplacement(
+        if (plan == "0") {
+          await pref.setBool(AppPreferences.accountCreatedStatus, true);
+          Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                builder: (context) => WhosWatchingPage(
-                  activityType: 'New',
-                ),
-              ),
-            );
-          }
+                  builder: (context) => CreateAccount(requiredEmail: email)));
+        } else if (planStatus == "0" && plan != "0") {
+          Navigator.pushReplacement(context,
+              MaterialPageRoute(builder: (context) => const PlanExpiredScreen()));
+        } else if (planDeviceStatus == "0") {
+          Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => DeviceSignOutAlertScreen(
+                        email: email,
+                      )));
         } else {
-          String errorMessage = jsonReponse['message'];
-          setState(() {
-            _errorMessage = errorMessage;
-          });
+          await pref.setBool(AppPreferences.loggedStatus, true);
+
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (context) => WhosWatchingPage(
+                activityType: 'New',
+              ),
+            ),
+            (route) => false,
+          );
         }
-      } catch (e) {
-        print('LoginError:$e');
-        CommonWidget().showSnackBar(
-            context, ContentType.failure, "", "Something went wrong");
+      } else {
+        String errorMessage = jsonReponse['message']?.toString() ?? "Login failed";
+        setState(() {
+          _errorMessage = errorMessage;
+        });
       }
-      isLoading = false;
-      context.loaderOverlay.hide();
-    });
+    } catch (e) {
+      print('LoginError:$e');
+      if (mounted) {
+        CommonWidget().showSnackBar(
+            context, ContentType.failure, "Connection Error", "Unable to connect to server. Please try again.");
+      }
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
+        try {
+          context.loaderOverlay.hide();
+        } catch (_) {}
+      }
+    }
   }
 
   @override

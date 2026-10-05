@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 
@@ -56,12 +57,6 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
     downloadQualityStatus = "Standard";
     mobileDataStatus = "Automatic";
     getInitalValue();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    getDeviceInfo();
     initDeviceInfo();
   }
 
@@ -1116,49 +1111,28 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
   }
 
   void initDeviceInfo() async {
-    DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+    final DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
 
     try {
-      if (Theme.of(context).platform == TargetPlatform.android) {
-        AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
-
-        setState(() {
-          deviceDetails =
-              "Device Model: ${androidInfo.model}\nDevice ID: ${androidInfo.id}\nVersion: ${androidInfo.version.release}\n";
-        });
-
-        print('Device Model: ${androidInfo.model}');
-        print('Android Version: ${androidInfo.version}');
-      } else if (Theme.of(context).platform == TargetPlatform.iOS) {
-        IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
-
-        setState(() {
-          deviceDetails =
-              "Device Model: ${iosInfo.model}\nDevice ID: ${iosInfo.identifierForVendor}\nVersion: ${iosInfo.systemVersion}\n";
-        });
-
-        print('Device Model: ${iosInfo.model}');
-        print('iOS Version: ${iosInfo.systemVersion}');
+      if (Platform.isAndroid) {
+        final AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+        if (mounted) {
+          setState(() {
+            deviceDetails =
+                "Device Model: ${androidInfo.model}\nDevice ID: ${androidInfo.id}\nVersion: ${androidInfo.version.release}\n";
+          });
+        }
+      } else if (Platform.isIOS) {
+        final IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
+        if (mounted) {
+          setState(() {
+            deviceDetails =
+                "Device Model: ${iosInfo.model}\nDevice ID: ${iosInfo.identifierForVendor}\nVersion: ${iosInfo.systemVersion}\n";
+          });
+        }
       }
     } catch (e) {
-      print('Failed to get device info: $e');
-    }
-  }
-
-  void getDeviceInfo() async {
-    DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
-    if (Theme.of(context).platform == TargetPlatform.android) {
-      AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
-      print('Device Name: ${androidInfo.model}');
-      print('Device ID: ${androidInfo.id}');
-      print('Device Version: ${androidInfo.version.release}');
-      // You can access more device information from androidInfo
-    } else if (Theme.of(context).platform == TargetPlatform.iOS) {
-      IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
-      print('Device Name: ${iosInfo.name}');
-      print('Device ID: ${iosInfo.identifierForVendor}');
-      print('Device System Name: ${iosInfo.systemName}');
-      // You can access more device information from iosInfo
+      debugPrint('Failed to get device info: $e');
     }
   }
 

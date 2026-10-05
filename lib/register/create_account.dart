@@ -329,151 +329,160 @@ class _CreateAccountState extends State<CreateAccount> {
       isLoading = true;
     });
     context.loaderOverlay.show();
-    final postValues = {
-      'email': userName,
-      'password': password,
-      'device': "mobile"
-    };
-    ApiServices()
-        .postRequest(AppConfig.registerUrl, postValues)
-        .then((response) async {
-      String jsonsDataString = response.body.toString();
+
+    try {
+      final postValues = {
+        'email': userName,
+        'password': password,
+        'device': "mobile"
+      };
+
+      final response = await ApiServices()
+          .postRequest(AppConfig.registerUrl, postValues)
+          .timeout(const Duration(seconds: 15));
+
+      if (!mounted) return;
+
+      final String jsonsDataString = response.body.toString();
       if (response.statusCode == 200) {
         print("register_Response: $jsonsDataString");
 
-        try {
-          var jsonReponse = jsonDecode(jsonsDataString);
-          String status = jsonReponse['status'];
+        final dynamic jsonReponse = jsonDecode(jsonsDataString);
+        final String status = jsonReponse['status']?.toString() ?? "";
 
-          if (status == "success") {
-            String? id = jsonReponse['results']['user']['id'].toString();
-            String? email = jsonReponse['results']['user']['email'].toString();
-            String? phone = jsonReponse['results']['user']['phone'].toString();
-            String? name = jsonReponse['results']['user']['name'].toString();
-            String? firstname =
-                jsonReponse['results']['user']['firstname'].toString();
-            String? lastname =
-                jsonReponse['results']['user']['lastname'].toString();
-            String? dob = jsonReponse['results']['user']['dob'].toString();
-            String? gender =
-                jsonReponse['results']['user']['gender'].toString();
-            String? plan = jsonReponse['results']['user']['plan'].toString();
-            String? planExpiry =
-                jsonReponse['results']['user']['plan_expiry'].toString();
-            String? photo = jsonReponse['results']['user']['photo'].toString();
-            String? otp = jsonReponse['results']['user']['otp'].toString();
-            String? tvcode =
-                jsonReponse['results']['user']['tvcode'].toString();
-            String? referalCode =
-                jsonReponse['results']['user']['referal_code'].toString();
-            String? creditsUsed =
-                jsonReponse['results']['user']['credits_used'].toString();
-            String? refferer =
-                jsonReponse['results']['user']['refferer'].toString();
-            String? bmpReferralCode =
-                jsonReponse['results']['user']['bmp_referral_code']?.toString();
-            String? token = jsonReponse['results']['token'].toString();
+        if (status == "success") {
+          String? id = jsonReponse['results']['user']['id'].toString();
+          String? email = jsonReponse['results']['user']['email'].toString();
+          String? phone = jsonReponse['results']['user']['phone'].toString();
+          String? name = jsonReponse['results']['user']['name'].toString();
+          String? firstname =
+              jsonReponse['results']['user']['firstname'].toString();
+          String? lastname =
+              jsonReponse['results']['user']['lastname'].toString();
+          String? dob = jsonReponse['results']['user']['dob'].toString();
+          String? gender =
+              jsonReponse['results']['user']['gender'].toString();
+          String? plan = jsonReponse['results']['user']['plan'].toString();
+          String? planExpiry =
+              jsonReponse['results']['user']['plan_expiry'].toString();
+          String? photo = jsonReponse['results']['user']['photo'].toString();
+          String? otp = jsonReponse['results']['user']['otp'].toString();
+          String? tvcode =
+              jsonReponse['results']['user']['tvcode'].toString();
+          String? referalCode =
+              jsonReponse['results']['user']['referal_code'].toString();
+          String? creditsUsed =
+              jsonReponse['results']['user']['credits_used'].toString();
+          String? refferer =
+              jsonReponse['results']['user']['refferer'].toString();
+          String? bmpReferralCode =
+              jsonReponse['results']['user']['bmp_referral_code']?.toString();
+          String? token = jsonReponse['results']['token'].toString();
 
-            final pref = await SharedPreferences.getInstance();
-            await pref.setString(AppPreferences.id, id);
-            await pref.setString(AppPreferences.email, email);
-            await pref.setString(AppPreferences.phone, phone);
-            await pref.setString(AppPreferences.name, name);
-            await pref.setString(AppPreferences.firstname, firstname);
-            await pref.setString(AppPreferences.lastname, lastname);
-            await pref.setString(AppPreferences.dob, dob);
-            await pref.setString(AppPreferences.gender, gender);
-            await pref.setString(AppPreferences.plan, plan);
-            await pref.setString(AppPreferences.plan_expiry, planExpiry);
-            await pref.setString(AppPreferences.photo, photo);
-            await pref.setString(AppPreferences.otp, otp);
-            await pref.setString(AppPreferences.tvcode, tvcode);
-            await pref.setString(AppPreferences.referal_code, referalCode);
-            await pref.setString(AppPreferences.credits_used, creditsUsed);
-            await pref.setString(AppPreferences.refferer, refferer);
-            if (bmpReferralCode != null && bmpReferralCode.isNotEmpty && bmpReferralCode != "null") {
-              await pref.setString(AppPreferences.bmpReferralCode, bmpReferralCode);
-              await pref.setString(AppPreferences.refferer, bmpReferralCode);
-            }
-            await pref.setString(AppPreferences.token, token);
-
-            context.loaderOverlay.hide();
-            setState(() {
-              token = token;
-              pref.setBool(AppPreferences.accountCreatedStatus, true);
-              accountCreatedStatus = true;
-              registerEmail = email;
-              isLoading = false;
-            });
-          } else {
-            String message = jsonReponse['message'];
-            appUtils.showToast(message);
-            context.loaderOverlay.hide();
-            isLoading = false;
+          final pref = await SharedPreferences.getInstance();
+          await pref.setString(AppPreferences.id, id);
+          await pref.setString(AppPreferences.email, email);
+          await pref.setString(AppPreferences.phone, phone);
+          await pref.setString(AppPreferences.name, name);
+          await pref.setString(AppPreferences.firstname, firstname);
+          await pref.setString(AppPreferences.lastname, lastname);
+          await pref.setString(AppPreferences.dob, dob);
+          await pref.setString(AppPreferences.gender, gender);
+          await pref.setString(AppPreferences.plan, plan);
+          await pref.setString(AppPreferences.plan_expiry, planExpiry);
+          await pref.setString(AppPreferences.photo, photo);
+          await pref.setString(AppPreferences.otp, otp);
+          await pref.setString(AppPreferences.tvcode, tvcode);
+          await pref.setString(AppPreferences.referal_code, referalCode);
+          await pref.setString(AppPreferences.credits_used, creditsUsed);
+          await pref.setString(AppPreferences.refferer, refferer);
+          if (bmpReferralCode != null && bmpReferralCode.isNotEmpty && bmpReferralCode != "null") {
+            await pref.setString(AppPreferences.bmpReferralCode, bmpReferralCode);
+            await pref.setString(AppPreferences.refferer, bmpReferralCode);
           }
-        } catch (e) {
-          print('RegisterError:$e');
-          context.loaderOverlay.hide();
-          isLoading = false;
-          CommonWidget().showSnackBar(
-              context, ContentType.failure, "", "Something went wrong");
+          await pref.setString(AppPreferences.token, token);
+
+          if (!mounted) return;
+          setState(() {
+            this.token = token;
+            pref.setBool(AppPreferences.accountCreatedStatus, true);
+            accountCreatedStatus = true;
+            registerEmail = email;
+          });
+        } else {
+          String message = jsonReponse['message']?.toString() ?? "Registration failed";
+          appUtils.showToast(message);
         }
       } else {
         print("Error: $response");
-        context.loaderOverlay.hide();
-        isLoading = false;
-        CommonWidget().showSnackBar(
-            context, ContentType.failure, "Error", "Something went wrong.");
+        if (mounted) {
+          CommonWidget().showSnackBar(
+              context, ContentType.failure, "Error", "Something went wrong.");
+        }
       }
-      context.loaderOverlay.hide();
-      isLoading = false;
-    });
+    } catch (e) {
+      print('RegisterError:$e');
+      if (mounted) {
+        CommonWidget().showSnackBar(
+            context,
+            ContentType.failure,
+            "Connection Error",
+            "Registration timed out or network error occurred. Please try again.");
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+        try {
+          context.loaderOverlay.hide();
+        } catch (_) {}
+      }
+    }
   }
 
-  void getLogout(String token) async {
-    context.loaderOverlay.show();
+  Future<void> getLogout(String token) async {
+    if (!mounted) return;
     setState(() {
       isLoading = true;
     });
+    try {
+      context.loaderOverlay.show();
+    } catch (_) {}
 
-    ApiServices()
-        .postRequestTokenWithoutBody(AppConfig.logoutUrl, token)
-        .then((response) async {
-      String jsonsDataString = response.body.toString();
-      print("logout_Response: $jsonsDataString");
-      if (response.statusCode == 200) {
-        try {
-          var jsonReponse = jsonDecode(jsonsDataString);
-          String status = jsonReponse['status'];
+    Future<void> performLocalSignout() async {
+      try {
+        final pref = await SharedPreferences.getInstance();
+        await AppPreferences.clearUserSession(pref);
+      } catch (e) {
+        print('Error clearing session: $e');
+      }
 
-          if (status == "success") {
-            final pref = await SharedPreferences.getInstance();
-            await pref.clear();
-
-            await Future.delayed(Duration(seconds: 1));
-            context.loaderOverlay.hide();
-            isLoading = false;
-            Navigator.of(context).pushNamedAndRemoveUntil(
-              'login',
-              (route) => false, // Removes all routes from the stack
-            );
-          }
-        } catch (e) {
-          isLoading = false;
-          context.loaderOverlay.hide();
-          print('logoutException:$e');
-        }
-      } else {
+      if (mounted) {
         setState(() {
           isLoading = false;
-          context.loaderOverlay.hide();
         });
-        print("logoutError: $response");
-        CommonWidget().showSnackBar(
-            context, ContentType.failure, "Error", response.toString());
+        try {
+          context.loaderOverlay.hide();
+        } catch (_) {}
+
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          'login',
+          (route) => false,
+        );
       }
-    });
-    isLoading = false;
-    context.loaderOverlay.hide();
+    }
+
+    try {
+      if (token.isNotEmpty) {
+        await ApiServices()
+            .postRequestTokenWithoutBody(AppConfig.logoutUrl, token)
+            .timeout(const Duration(seconds: 4));
+      }
+    } catch (e) {
+      print("Remote logout error: $e");
+    } finally {
+      await performLocalSignout();
+    }
   }
 }

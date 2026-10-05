@@ -96,6 +96,7 @@ class _WebseriesVideoPlayerState extends State<WebseriesVideoPlayer> {
   Timer? _overlayTimer;
   Timer? _playbackTimer;
   Timer? _seekTimer;
+  Timer? _initTimer;
   int _syncTickCounter = 0;
 
   @override
@@ -119,7 +120,7 @@ class _WebseriesVideoPlayerState extends State<WebseriesVideoPlayer> {
       isSeekDuration = true;
     }
 
-    Timer(const Duration(milliseconds: 500), () {
+    _initTimer = Timer(const Duration(milliseconds: 500), () {
       if (mounted) {
         setState(() {
           enableController = true;
@@ -280,6 +281,7 @@ class _WebseriesVideoPlayerState extends State<WebseriesVideoPlayer> {
     if (_isSwitchingEpisode) return;
     _isSwitchingEpisode = true;
 
+    _initTimer?.cancel();
     _overlayTimer?.cancel();
     _playbackTimer?.cancel();
     _seekTimer?.cancel();
@@ -365,12 +367,33 @@ class _WebseriesVideoPlayerState extends State<WebseriesVideoPlayer> {
 
   @override
   void dispose() {
-    _syncProgress();
+    _initTimer?.cancel();
+    _initTimer = null;
     _playbackTimer?.cancel();
+    _playbackTimer = null;
     _overlayTimer?.cancel();
+    _overlayTimer = null;
     _seekTimer?.cancel();
-    _controller.removeListener(_videoPlayerListener);
-    ScreenProtector.preventScreenshotOff();
+    _seekTimer = null;
+
+    try {
+      _syncProgress();
+    } catch (_) {}
+
+    try {
+      _controller.removeListener(_videoPlayerListener);
+      if (_controller.isPlaying) {
+        _controller.pause();
+      }
+      _controller.dispose();
+    } catch (e) {
+      print("Webseries player controller dispose: $e");
+    }
+
+    try {
+      ScreenProtector.preventScreenshotOff();
+    } catch (_) {}
+
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,

@@ -47,21 +47,30 @@ class CommonWidget extends StatelessWidget {
     );
   }
 
-  void showSnackBar(context, contentType, titleText, contentText) {
+  void showSnackBar(BuildContext context, dynamic contentType, dynamic titleText, dynamic contentText) {
+    if (!context.mounted) return;
+
+    String cleanMessage = contentText?.toString() ?? '';
+    if (cleanMessage.contains("Instance of 'Response'") || cleanMessage.isEmpty) {
+      cleanMessage = "Something went wrong. Please check your connection and try again.";
+    }
+
     final snackBar = SnackBar(
       elevation: 0,
       behavior: SnackBarBehavior.floating,
       backgroundColor: Colors.transparent,
       content: AwesomeSnackbarContent(
-        title: titleText,
-        message: contentText,
+        title: titleText?.toString() ?? '',
+        message: cleanMessage,
         contentType: contentType,
       ),
     );
 
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(snackBar);
+    try {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(snackBar);
+    } catch (_) {}
   }
 
   Future<bool> isInternetConnectivity() async {

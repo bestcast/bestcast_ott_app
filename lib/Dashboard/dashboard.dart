@@ -1739,31 +1739,76 @@ class _DashboardState extends State<Dashboard> {
     });
   }
 
-  void getTokenValid(String token) async {
+  Future<void> getTokenValid(String token) async {
+    if (token.isEmpty) return;
+    if (!mounted) return;
     setState(() {
       isLoading = true;
     });
-    ApiServices().postRequestTokenWithoutBody(AppConfig.tokenexist, token).then((response) async {
+
+    try {
+      final response = await ApiServices()
+          .postRequestTokenWithoutBody(AppConfig.tokenexist, token)
+          .timeout(const Duration(seconds: 10));
+
       String jsonsDataString = response.body.toString();
       print("getTokenExist_Response: $jsonsDataString");
-      if (response.statusCode == 200) {
-        try {
-          var jsonReponse = jsonDecode(jsonsDataString);
-          String status = jsonReponse['status'];
 
-          if (status == "error") {
-            final pref = await SharedPreferences.getInstance();
-            pref.clear();
+      if (response.statusCode == 200) {
+        var jsonReponse = jsonDecode(jsonsDataString);
+        String status = jsonReponse['status'] ?? "";
+
+        if (status == "error") {
+          final pref = await SharedPreferences.getInstance();
+          await AppPreferences.clearUserSession(pref);
+
+          if (mounted) {
+            setState(() {
+              _token = "";
+              loggedStatus = false;
+              profileID = "";
+              profileName = "";
+            });
+
+            CommonWidget().showSnackBar(
+              context,
+              ContentType.warning,
+              "Session Expired",
+              "Your session has expired. Please sign in again.",
+            );
+
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const LoginPage()),
+            );
           }
-        } catch (e) {
-          print('getTokenExistException:$e');
         }
-      } else {
-        print("geTokenResError: $response");
+      } else if (response.statusCode == 401) {
+        final pref = await SharedPreferences.getInstance();
+        await AppPreferences.clearUserSession(pref);
+
+        if (mounted) {
+          setState(() {
+            _token = "";
+            loggedStatus = false;
+            profileID = "";
+            profileName = "";
+          });
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const LoginPage()),
+          );
+        }
       }
-    });
-    setState(() {
-      isLoading = false;
-    });
+    } catch (e) {
+      print('getTokenExistException:$e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
   }
 }

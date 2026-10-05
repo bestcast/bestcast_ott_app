@@ -61,12 +61,15 @@ class _NotificationScreenState extends State<NotificationScreen> {
       });
     }
 
-    final String url = _loggedStatus && _profileID.isNotEmpty
+    final bool hasToken = _token.trim().isNotEmpty;
+    final String url = (_loggedStatus && hasToken && _profileID.isNotEmpty)
         ? "${AppConfig.appnotifylistuser}/$_profileID"
         : "${AppConfig.appnotifylist}/0";
 
     try {
-      final response = await ApiServices().getRequestData(url, _token);
+      final response = hasToken
+          ? await ApiServices().getRequestData(url, _token)
+          : await ApiServices().getRequestWithoutToken(url);
       if (!mounted) return;
 
       if (response.statusCode == 200) {

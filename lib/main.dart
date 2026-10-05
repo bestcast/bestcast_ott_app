@@ -15,6 +15,7 @@ import 'app_config/app_preferences.dart';
 import 'common_files/app_default_colors.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 
@@ -47,8 +48,8 @@ class MyApp extends StatelessWidget {
             thumbColor: WidgetStateProperty.resolveWith((states) => states.contains(WidgetState.selected) ? AppDefaultColors.textLightGray : AppDefaultColors.textLightGray)),
 
         //Player Theme
-        scaffoldBackgroundColor: Color(0xFFf9fbfe),
-        cardColor: Color(0xFFfbfafe),
+        scaffoldBackgroundColor: AppDefaultColors.appColor,
+        cardColor: AppDefaultColors.darkGray,
         primaryColor: AppDefaultColors.primaryRed,
         shadowColor: Color(0xFF324754).withOpacity(0.24),
         textTheme: TextTheme(
@@ -114,15 +115,9 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> getInitialValue() async {
     final pref = await SharedPreferences.getInstance();
     loggedStatus = pref.getBool(AppPreferences.loggedStatus) ?? false;
+    print("loggedStatus: $loggedStatus");
 
-    print("loggedStatus$loggedStatus");
-
-    if (loggedStatus) {
-      await Future.delayed(Duration(seconds: 3));
-      setState(() {
-        loadStatus = true;
-      });
-    } else {
+    if (mounted) {
       setState(() {
         loadStatus = true;
       });

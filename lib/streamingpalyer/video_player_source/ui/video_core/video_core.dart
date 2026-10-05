@@ -194,15 +194,16 @@ class _VideoViewerCoreState extends State<VideoViewerCore> {
   //----------------------------//
   //VIDEO VOLUME (VERTICAL DRAG)//
   //----------------------------//
-  void _setVolume(double volume) async {
+  void _setVolume(double volume) {
     volume = volume.clamp(0.0, _maxVolume);
     _currentVolume.value = volume;
-    switch (_query.videoMetadata(context).volumeManager) {
+    final volumeManager = _query.videoMetadata(context).volumeManager;
+    switch (volumeManager) {
       case VideoViewerVolumeManager.device:
-        await VolumeController.instance.setVolume(volume);
+        VolumeController.instance.setVolume(volume);
         break;
       case VideoViewerVolumeManager.video:
-        await _query.video(context).video!.setVolume(volume);
+        _query.video(context).video?.setVolume(volume);
         break;
     }
   }

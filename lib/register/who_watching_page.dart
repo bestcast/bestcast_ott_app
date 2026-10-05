@@ -208,7 +208,7 @@ class _WhosWatchingPageState extends State<WhosWatchingPage> {
                             height: 48,
                             child: ElevatedButton(
                               onPressed: selectedProfile != null
-                                  ? () => _selectAndSwitchProfile(selectedProfile!)
+                                  ? () => getUserDetails(_token, selectedProfile!)
                                   : null,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppDefaultColors.primaryRed,
@@ -617,20 +617,31 @@ class _WhosWatchingPageState extends State<WhosWatchingPage> {
   }
 
   void getUserDetails(String token, WhoWatchingModel model) async {
-    ApiServices().postRequestTokenWithoutBody(AppConfig.getUserDetails, token).then((response) async {
-      if (response.statusCode == 200) {
-        try {
-          var jsonReponse = jsonDecode(response.body);
-          String status = jsonReponse['status'];
+    setState(() {
+      isLoading = true;
+    });
 
-          if (status == "success") {
-            String? planStatus = jsonReponse['results']?['user']?['plan_status']?.toString();
-            String? planDeviceStatus = jsonReponse['results']?['user']?['plan_device_status']?.toString();
+    try {
+      if (token.isNotEmpty) {
+        final response = await ApiServices()
+            .postRequestTokenWithoutBody(AppConfig.getUserDetails, token);
+
+        if (response.statusCode == 200) {
+          final jsonResponse = jsonDecode(response.body);
+          if (jsonResponse['status'] == "success") {
+            final String? planStatus =
+                jsonResponse['results']?['user']?['plan_status']?.toString();
+            final String? planDeviceStatus =
+                jsonResponse['results']?['user']?['plan_device_status']?.toString();
 
             if (planStatus == "0") {
               if (mounted) {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => PlanExpiredScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const PlanExpiredScreen()),
+                );
               }
+              return;
             } else if (planDeviceStatus == "0") {
               if (mounted) {
                 Navigator.push(
@@ -640,14 +651,22 @@ class _WhosWatchingPageState extends State<WhosWatchingPage> {
                   ),
                 );
               }
-            } else {
-              _selectAndSwitchProfile(model);
+              return;
             }
           }
-        } catch (e) {
-          print('getUserDetailsException: $e');
         }
       }
-    });
+      await _selectAndSwitchProfile(model);
+    } catch (e) {
+      debugPrint('getUserDetailsException: $e');
+      // Optimistic fallback: switch profile locally even if network fails
+      await _selectAndSwitchProfile(model);
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
   }
 }
