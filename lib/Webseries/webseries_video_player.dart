@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:helpers/helpers.dart';
 import 'package:screen_protector/screen_protector.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:video_player/video_player.dart';
 
 import 'package:bestcaststudios/app_config/app_preferences.dart';
 import 'package:bestcaststudios/app_config/appconfig.dart';

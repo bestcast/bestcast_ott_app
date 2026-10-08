@@ -724,22 +724,31 @@ class _DashboardState extends State<Dashboard> {
           borderRadius: BorderRadius.circular(8),
           onTap: () {
             if (isWebseries) {
+              WebseriesItemModel item = moviesModel.webseriesItem ??
+                  WebseriesItemModel(
+                    id: moviesModel.id.toString(),
+                    title: moviesModel.title ?? '',
+                    content: moviesModel.content ?? '',
+                    trailer: moviesModel.trailer ?? '',
+                    certificate: moviesModel.certificate ?? '',
+                    publishedDate: moviesModel.publishedDate ?? '',
+                    duration: moviesModel.duration ?? '',
+                    thumbnail: moviesModel.thumbnail ?? '',
+                    image: (moviesModel.thumbnail != null && moviesModel.thumbnail!.isNotEmpty)
+                        ? moviesModel.thumbnail!
+                        : (moviesModel.portrait ?? ''),
+                    portrait: moviesModel.portrait ?? '',
+                    portraitsmall: moviesModel.portraitsmall ?? '',
+                    movieAccess: int.tryParse(moviesModel.movie_access ?? '0') ?? 0,
+                    seasons: moviesModel.seasons ?? [],
+                  );
+
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => WebseriesDetailScreen(
                     webseriesId: moviesModel.id.toString(),
-                    initialItem: WebseriesItemModel(
-                      id: moviesModel.id.toString(),
-                      title: moviesModel.title ?? '',
-                      thumbnail: moviesModel.thumbnail ?? '',
-                      image: (moviesModel.thumbnail != null && moviesModel.thumbnail!.isNotEmpty)
-                          ? moviesModel.thumbnail!
-                          : (moviesModel.portrait ?? ''),
-                      portrait: moviesModel.portrait ?? '',
-                      portraitsmall: moviesModel.portraitsmall ?? '',
-                      seasons: [],
-                    ),
+                    initialItem: item,
                   ),
                 ),
               );
@@ -1389,6 +1398,19 @@ class _DashboardState extends State<Dashboard> {
                 String portraitsmallUrl = portraitsmall.isNotEmpty ? (portraitsmall.startsWith("http") ? portraitsmall : "${AppConfig.BaseUrl}/$portraitsmall") : imgFallbackUrl;
                 String portraitUrl = portrait.isNotEmpty ? (portrait.startsWith("http") ? portrait : "${AppConfig.BaseUrl}/$portrait") : imgFallbackUrl;
 
+                WebseriesItemModel? webseriesItem;
+                List<WebseriesSeasonModel>? seasonsList;
+                if (movieData["seasons"] != null && movieData["seasons"] is List) {
+                  seasonsList = (movieData["seasons"] as List)
+                      .map((x) => WebseriesSeasonModel.fromJson(x))
+                      .toList();
+                }
+                if (movieData["is_webseries"] == true || movieData["is_webseries"] == 1 || seasonsList != null) {
+                  try {
+                    webseriesItem = WebseriesItemModel.fromJson(movieData);
+                  } catch (_) {}
+                }
+
                 userMainCategoryModelList.add(Movies(
                   id: movieData["id"]?.toString() ?? "",
                   title: movieData["title"]?.toString() ?? "",
@@ -1404,6 +1426,12 @@ class _DashboardState extends State<Dashboard> {
                   thumbnail: thumbnailUrl,
                   portraitsmall: portraitsmallUrl,
                   portrait: portraitUrl,
+                  content: (movieData["content_plain"] ?? movieData["content"])?.toString() ?? "",
+                  image: movieData["image"]?.toString() ?? "",
+                  medium: movieData["medium"]?.toString() ?? "",
+                  isWebseries: movieData["is_webseries"] == true || movieData["is_webseries"] == 1 || seasonsList != null,
+                  seasons: seasonsList,
+                  webseriesItem: webseriesItem,
                   usermovies: usermovies,
                 ));
               }

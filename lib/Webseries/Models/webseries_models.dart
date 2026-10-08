@@ -35,6 +35,7 @@ class WebseriesItemModel {
   final String medium;
   final String portrait;
   final String portraitsmall;
+  final String duration;
   final int movieAccess;
   final String trailer;
   final int topten;
@@ -56,6 +57,7 @@ class WebseriesItemModel {
     this.medium = '',
     this.portrait = '',
     this.portraitsmall = '',
+    this.duration = '',
     this.movieAccess = 0,
     this.trailer = '',
     this.topten = 0,
@@ -123,6 +125,7 @@ class WebseriesItemModel {
       medium: medium,
       portrait: portrait,
       portraitsmall: portraitsmall,
+      duration: getString('duration'),
       movieAccess: int.tryParse(getString('movie_access')) ?? 0,
       trailer: getString('trailer'),
       topten: int.tryParse(getString('topten')) ?? 0,

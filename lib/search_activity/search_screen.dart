@@ -358,26 +358,35 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _navigateToMovie(Movies movie) {
-    final bool isWebseries = (movie.title ?? '').toLowerCase().contains('webseries') ||
+    final bool isWebseries = movie.isWebseries == true ||
+        (movie.title ?? '').toLowerCase().contains('webseries') ||
         (movie.tagText ?? '').toLowerCase().contains('webseries');
 
     if (isWebseries) {
+      WebseriesItemModel item = movie.webseriesItem ??
+          WebseriesItemModel(
+            id: movie.id.toString(),
+            title: movie.title ?? '',
+            content: movie.content ?? '',
+            trailer: movie.trailer ?? '',
+            certificate: movie.certificate ?? '',
+            publishedDate: movie.publishedDate ?? '',
+            duration: movie.duration ?? '',
+            thumbnail: movie.thumbnail ?? '',
+            image: (movie.thumbnail != null && movie.thumbnail!.isNotEmpty)
+                ? movie.thumbnail!
+                : (movie.portrait ?? ''),
+            portrait: movie.portrait ?? '',
+            portraitsmall: movie.portraitsmall ?? '',
+            movieAccess: int.tryParse(movie.movie_access ?? '0') ?? 0,
+            seasons: movie.seasons ?? [],
+          );
       Navigator.push(
         context,
         CupertinoPageRoute(
           builder: (context) => WebseriesDetailScreen(
             webseriesId: movie.id.toString(),
-            initialItem: WebseriesItemModel(
-              id: movie.id.toString(),
-              title: movie.title ?? '',
-              thumbnail: movie.thumbnail ?? '',
-              image: (movie.thumbnail != null && movie.thumbnail!.isNotEmpty)
-                  ? movie.thumbnail!
-                  : (movie.portrait ?? ''),
-              portrait: movie.portrait ?? '',
-              portraitsmall: movie.portraitsmall ?? '',
-              seasons: [],
-            ),
+            initialItem: item,
           ),
         ),
       );

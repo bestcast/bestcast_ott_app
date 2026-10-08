@@ -1,12 +1,21 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:video_player/video_player.dart';
+
 import 'package:bestcaststudios/app_config/app_preferences.dart';
+import 'package:bestcaststudios/app_config/app_utils.dart';
 import 'package:bestcaststudios/app_config/appconfig.dart';
+import 'package:bestcaststudios/authendication/login_page.dart';
 import 'package:bestcaststudios/common_files/app_default_colors.dart';
 import 'package:bestcaststudios/common_files/loading_widget.dart';
-import 'Models/webseries_models.dart';
-import 'webseries_api_service.dart';
-import 'webseries_video_player.dart';
+import 'package:bestcaststudios/common_files/submit_white_button.dart';
+import 'package:bestcaststudios/streamingpalyer/components/video_action_buttons.dart';
+import 'package:bestcaststudios/plan_details/plan_details.dart';
+import 'package:bestcaststudios/Webseries/Models/webseries_models.dart';
+import 'package:bestcaststudios/Webseries/webseries_api_service.dart';
+import 'package:bestcaststudios/Webseries/webseries_video_player.dart';
 
 class WebseriesDetailScreen extends StatefulWidget {
   final String webseriesId;
@@ -28,22 +37,107 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
   bool _isLoading = true;
   String _token = "";
   String _profileId = "";
+  bool _loggedStatus = false;
+  String _planStatus = "";
 
   WebseriesItemModel? _webseriesDetail;
   int _selectedSeasonIndex = 0;
+
+  // Trailer Player Controller
+  VideoPlayerController? _trailerController;
+  bool _isTrailerPlaying = false;
+  bool _isTrailerMuted = true;
+  bool _showTrailerControls = false;
+  double _trailerProgressValue = 0.0;
+  Timer? _hideControlsTimer;
+
+  // Interaction States
+  bool _isRated = false;
+  bool _isLike = false;
+  bool _isDisLike = false;
 
   @override
   void initState() {
     super.initState();
     _webseriesDetail = widget.initialItem;
     _isLoading = _webseriesDetail == null || _webseriesDetail!.seasons.isEmpty;
+
+    if (_webseriesDetail != null && _webseriesDetail!.trailer.isNotEmpty) {
+      _initTrailerPlayer(_webseriesDetail!.trailer);
+    }
+
     _loadInitialData();
+  }
+
+  @override
+  void dispose() {
+    _hideControlsTimer?.cancel();
+    try {
+      _trailerController?.removeListener(_onTrailerProgress);
+      _trailerController?.pause();
+      _trailerController?.dispose();
+    } catch (_) {}
+    super.dispose();
+  }
+
+  void _onTrailerProgress() {
+    if (!mounted || _trailerController == null) return;
+    try {
+      if (!_trailerController!.value.isInitialized) return;
+      final double duration = _trailerController!.value.duration.inSeconds.toDouble();
+      if (duration > 0) {
+        final double progress = (_trailerController!.value.position.inSeconds.toDouble() / duration).clamp(0.0, 1.0);
+        if ((progress - _trailerProgressValue).abs() > 0.005) {
+          if (mounted) {
+            setState(() {
+              _trailerProgressValue = progress;
+            });
+          }
+        }
+      }
+    } catch (_) {}
+  }
+
+  void _initTrailerPlayer(String trailerUrl) {
+    if (trailerUrl.isEmpty || !trailerUrl.startsWith('http')) return;
+    try {
+      _trailerController?.removeListener(_onTrailerProgress);
+      _trailerController?.dispose();
+    } catch (_) {}
+
+    _trailerController = VideoPlayerController.networkUrl(Uri.parse(trailerUrl))
+      ..initialize().then((_) {
+        if (!mounted) return;
+        _trailerController?.setVolume(_isTrailerMuted ? 0.0 : 1.0);
+        _trailerController?.setLooping(true);
+        _trailerController?.play();
+        setState(() {
+          _isTrailerPlaying = true;
+        });
+        _trailerController?.addListener(_onTrailerProgress);
+        _startHideControlsTimer();
+      }).catchError((error) {
+        print("Trailer player error: $error");
+      });
+  }
+
+  void _startHideControlsTimer() {
+    _hideControlsTimer?.cancel();
+    _hideControlsTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted) {
+        setState(() {
+          _showTrailerControls = false;
+        });
+      }
+    });
   }
 
   Future<void> _loadInitialData() async {
     final pref = await SharedPreferences.getInstance();
     _token = pref.getString(AppPreferences.token) ?? '';
     _profileId = pref.getString(AppPreferences.profileID) ?? '';
+    _loggedStatus = pref.getBool(AppPreferences.loggedStatus) ?? false;
+    _planStatus = pref.getString(AppPreferences.plan_status) ?? '';
 
     await _fetchDetails();
   }
@@ -56,31 +150,43 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
     }
 
     try {
-      final results = await Future.wait([
-        _apiService.getWebseriesWatchDetail(
-          token: _token,
-          webseriesId: widget.webseriesId,
-          profileId: _profileId,
-        ),
-        _apiService.getWebseriesDetail(
-          token: _token,
-          webseriesId: widget.webseriesId,
-          profileId: _profileId,
-        ),
-        _apiService.getSeasonEpisodeBannerList(
-          token: _token,
-          webseriesId: widget.webseriesId,
-          profileId: _profileId,
-        ),
-      ]);
+      WebseriesItemModel? watchDetail;
+      WebseriesItemModel? fullDetail;
+      WebseriesBannerModel? bannerDetail;
 
-      final watchDetail = results[0] as WebseriesItemModel?;
-      final fullDetail = results[1] as WebseriesItemModel?;
-      final bannerDetail = results[2] as WebseriesBannerModel?;
+      if (_token.isNotEmpty) {
+        final results = await Future.wait([
+          _apiService.getWebseriesWatchDetail(
+            token: _token,
+            webseriesId: widget.webseriesId,
+            profileId: _profileId,
+          ),
+          _apiService.getWebseriesDetail(
+            token: _token,
+            webseriesId: widget.webseriesId,
+            profileId: _profileId,
+          ),
+          _apiService.getSeasonEpisodeBannerList(
+            token: _token,
+            webseriesId: widget.webseriesId,
+            profileId: _profileId,
+          ),
+        ]);
+
+        watchDetail = results[0] as WebseriesItemModel?;
+        fullDetail = results[1] as WebseriesItemModel?;
+        bannerDetail = results[2] as WebseriesBannerModel?;
+      }
+
+      // Guest / Fallback: If logged out or authenticated calls yielded empty seasons
+      WebseriesItemModel? guestDetail;
+      if (watchDetail == null && fullDetail == null && (_webseriesDetail == null || _webseriesDetail!.seasons.isEmpty)) {
+        guestDetail = await _apiService.getGuestWebseriesDetail(widget.webseriesId);
+      }
 
       if (mounted) {
         setState(() {
-          WebseriesItemModel? base = watchDetail ?? fullDetail ?? widget.initialItem;
+          WebseriesItemModel? base = watchDetail ?? fullDetail ?? guestDetail ?? widget.initialItem;
           if (base != null) {
             String image = '';
             if (base.image.isNotEmpty && base.image != 'null') {
@@ -91,6 +197,8 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
               image = bannerDetail.image;
             } else if (bannerDetail?.webseries?.image.isNotEmpty == true && bannerDetail!.webseries!.image != 'null') {
               image = bannerDetail.webseries!.image;
+            } else if (guestDetail?.image.isNotEmpty == true && guestDetail!.image != 'null') {
+              image = guestDetail.image;
             } else if (widget.initialItem?.image.isNotEmpty == true && widget.initialItem!.image != 'null') {
               image = widget.initialItem!.image;
             }
@@ -104,45 +212,63 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
               thumbnail = bannerDetail.thumbnail;
             } else if (bannerDetail?.webseries?.thumbnail.isNotEmpty == true && bannerDetail!.webseries!.thumbnail != 'null') {
               thumbnail = bannerDetail.webseries!.thumbnail;
+            } else if (guestDetail?.thumbnail.isNotEmpty == true && guestDetail!.thumbnail != 'null') {
+              thumbnail = guestDetail.thumbnail;
             } else if (widget.initialItem?.thumbnail.isNotEmpty == true && widget.initialItem!.thumbnail != 'null') {
               thumbnail = widget.initialItem!.thumbnail;
             }
 
             String medium = base.medium.isNotEmpty && base.medium != 'null'
                 ? base.medium
-                : (fullDetail?.medium ?? widget.initialItem?.medium ?? '');
+                : (fullDetail?.medium ?? guestDetail?.medium ?? widget.initialItem?.medium ?? '');
             String portrait = base.portrait.isNotEmpty && base.portrait != 'null'
                 ? base.portrait
-                : (fullDetail?.portrait ?? widget.initialItem?.portrait ?? '');
+                : (fullDetail?.portrait ?? guestDetail?.portrait ?? widget.initialItem?.portrait ?? '');
             String portraitsmall = base.portraitsmall.isNotEmpty && base.portraitsmall != 'null'
                 ? base.portraitsmall
-                : (fullDetail?.portraitsmall ?? widget.initialItem?.portraitsmall ?? '');
+                : (fullDetail?.portraitsmall ?? guestDetail?.portraitsmall ?? widget.initialItem?.portraitsmall ?? '');
             String content = base.content.isNotEmpty
                 ? base.content
-                : (fullDetail?.content ?? widget.initialItem?.content ?? '');
+                : (fullDetail?.content ?? guestDetail?.content ?? widget.initialItem?.content ?? '');
 
             List<WebseriesCastModel> casts = fullDetail != null && fullDetail.casts.isNotEmpty
                 ? fullDetail.casts
-                : base.casts;
+                : (guestDetail?.casts.isNotEmpty == true ? guestDetail!.casts : base.casts);
 
             List<WebseriesSeasonModel> seasons = base.seasons.isNotEmpty
                 ? base.seasons
-                : (fullDetail?.seasons ?? widget.initialItem?.seasons ?? []);
+                : (fullDetail?.seasons ?? guestDetail?.seasons ?? widget.initialItem?.seasons ?? []);
+
+            String trailer = base.trailer.isNotEmpty
+                ? base.trailer
+                : (fullDetail?.trailer ?? guestDetail?.trailer ?? widget.initialItem?.trailer ?? '');
+
+            String publishedDate = base.publishedDate.isNotEmpty
+                ? base.publishedDate
+                : (fullDetail?.publishedDate ?? guestDetail?.publishedDate ?? widget.initialItem?.publishedDate ?? '');
+
+            String certificate = base.certificate.isNotEmpty
+                ? base.certificate
+                : (fullDetail?.certificate ?? guestDetail?.certificate ?? widget.initialItem?.certificate ?? '');
+
+            String tagText = base.tagText.isNotEmpty
+                ? base.tagText
+                : (fullDetail?.tagText ?? guestDetail?.tagText ?? widget.initialItem?.tagText ?? '');
 
             _webseriesDetail = WebseriesItemModel(
               id: base.id,
-              title: base.title.isNotEmpty ? base.title : (fullDetail?.title ?? widget.initialItem?.title ?? ''),
+              title: base.title.isNotEmpty ? base.title : (fullDetail?.title ?? guestDetail?.title ?? widget.initialItem?.title ?? ''),
               content: content,
-              publishedDate: base.publishedDate.isNotEmpty ? base.publishedDate : (fullDetail?.publishedDate ?? ''),
-              certificate: base.certificate.isNotEmpty ? base.certificate : (fullDetail?.certificate ?? ''),
-              tagText: base.tagText.isNotEmpty ? base.tagText : (fullDetail?.tagText ?? ''),
+              publishedDate: publishedDate,
+              certificate: certificate,
+              tagText: tagText,
               thumbnail: thumbnail,
               image: image,
               medium: medium,
               portrait: portrait,
               portraitsmall: portraitsmall,
-              movieAccess: base.movieAccess,
-              trailer: base.trailer.isNotEmpty ? base.trailer : (fullDetail?.trailer ?? ''),
+              movieAccess: base.movieAccess != 0 ? base.movieAccess : (guestDetail?.movieAccess ?? widget.initialItem?.movieAccess ?? 0),
+              trailer: trailer,
               topten: base.topten,
               resumeEpisodeId: base.resumeEpisodeId,
               resumeDate: base.resumeDate,
@@ -150,6 +276,10 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
               seasons: seasons,
               casts: casts,
             );
+
+            if (_trailerController == null && trailer.isNotEmpty) {
+              _initTrailerPlayer(trailer);
+            }
           }
           _isLoading = false;
         });
@@ -232,6 +362,19 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
     return htmlString.replaceAll(exp, '').replaceAll('&nbsp;', ' ').trim();
   }
 
+  String _formatYear(String dateStr) {
+    if (dateStr.isEmpty) return '';
+    try {
+      return AppUtils().getDateTimeToYear(dateStr);
+    } catch (_) {
+      try {
+        final dt = DateTime.tryParse(dateStr);
+        if (dt != null) return dt.year.toString();
+      } catch (_) {}
+      return dateStr.length >= 4 ? dateStr.substring(0, 4) : dateStr;
+    }
+  }
+
   WebseriesEpisodeModel? _findResumeOrFirstEpisode() {
     if (_webseriesDetail == null || _webseriesDetail!.seasons.isEmpty) {
       return null;
@@ -248,14 +391,29 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
       }
     }
 
-    // Fallback to first episode of first season
-    if (_webseriesDetail!.seasons.first.episodes.isNotEmpty) {
-      return _webseriesDetail!.seasons.first.episodes.first;
+    // Fallback to first episode of first season that has episodes
+    for (var season in _webseriesDetail!.seasons) {
+      if (season.episodes.isNotEmpty) {
+        return season.episodes.first;
+      }
     }
     return null;
   }
 
   void _playEpisode(WebseriesEpisodeModel episode, List<WebseriesEpisodeModel> currentSeasonEpisodes) {
+    if (!_loggedStatus || _token.isEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => LoginPage()),
+      ).then((_) => _loadInitialData());
+      return;
+    }
+
+    _trailerController?.pause();
+    setState(() {
+      _isTrailerPlaying = false;
+    });
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -277,16 +435,9 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
     return Scaffold(
       backgroundColor: AppDefaultColors.appColor,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: AppDefaultColors.appColor,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          _webseriesDetail?.title ?? 'Webseries',
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
+        leading: const BackButton(color: Colors.white),
       ),
       body: _isLoading
           ? const LoadingWidget()
@@ -297,154 +448,378 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
                     style: TextStyle(color: Colors.white70, fontSize: 16),
                   ),
                 )
-              : SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildHeaderBanner(),
-                      _buildInfoSection(),
-                      _buildSeasonTabs(),
-                      _buildEpisodeList(),
-                      const SizedBox(height: 30),
-                    ],
+              : SafeArea(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildVideoPlayerOrBanner(),
+                        _buildInfoSection(),
+                        if (_loggedStatus) ...[
+                          _buildSeasonTabs(),
+                          _buildEpisodeList(),
+                        ],
+                        const SizedBox(height: 30),
+                      ],
+                    ),
                   ),
                 ),
     );
   }
 
-  Widget _buildHeaderBanner() {
-    String bgUrl = _getHeaderBannerUrl();
+  Widget _buildVideoPlayerOrBanner() {
+    final bool hasTrailer = _trailerController != null && _trailerController!.value.isInitialized;
 
-    WebseriesEpisodeModel? targetEp = _findResumeOrFirstEpisode();
-
-    return Stack(
-      children: [
-        SizedBox(
-          height: 230,
-          width: double.infinity,
-          child: bgUrl.isNotEmpty
-              ? Image.network(
-                  bgUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) =>
-                      Image.asset('images/default_portrate_large.jpg', fit: BoxFit.cover),
-                )
-              : Image.asset('images/default_portrate_large.jpg', fit: BoxFit.cover),
-        ),
-        Container(
-          height: 230,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.black.withOpacity(0.3),
-                Colors.black.withOpacity(0.9),
-              ],
+    if (hasTrailer) {
+      return AspectRatio(
+        aspectRatio: _trailerController!.value.aspectRatio > 0
+            ? _trailerController!.value.aspectRatio
+            : 16 / 9,
+        child: Stack(
+          children: [
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _showTrailerControls = !_showTrailerControls;
+                  if (_showTrailerControls && _trailerController!.value.isPlaying) {
+                    _startHideControlsTimer();
+                  }
+                });
+              },
+              child: VideoPlayer(_trailerController!),
             ),
-          ),
-        ),
-        Positioned(
-          bottom: 20,
-          left: 16,
-          right: 16,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _webseriesDetail!.title,
-                style: const TextStyle(
+            // Volume Toggle Button
+            Positioned(
+              top: 8,
+              right: 8,
+              child: IconButton(
+                icon: Icon(
+                  _isTrailerMuted ? Icons.volume_off : Icons.volume_up,
                   color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _isTrailerMuted = !_isTrailerMuted;
+                    _trailerController?.setVolume(_isTrailerMuted ? 0.0 : 1.0);
+                  });
+                },
+              ),
+            ),
+            // Progress Slider at bottom
+            Positioned(
+              bottom: 0,
+              left: -10,
+              right: -10,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return Slider(
+                    value: _trailerProgressValue.clamp(0.0, 1.0),
+                    activeColor: AppDefaultColors.thikRed,
+                    inactiveColor: AppDefaultColors.white,
+                    onChanged: (double value) {
+                      setState(() {
+                        _trailerProgressValue = value.clamp(0.0, 1.0);
+                        final Duration newPosition = Duration(
+                          seconds: (_trailerController!.value.duration.inSeconds * _trailerProgressValue).toInt(),
+                        );
+                        _trailerController?.seekTo(newPosition);
+                      });
+                    },
+                  );
+                },
+              ),
+            ),
+            // Controls Overlay
+            if (_showTrailerControls)
+              Positioned.fill(
+                child: Container(
+                  color: Colors.black38,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        icon: const Image(
+                          image: AssetImage("images/rotate_left.png"),
+                          height: 30,
+                        ),
+                        onPressed: () {
+                          _trailerController?.seekTo(
+                            Duration(seconds: _trailerController!.value.position.inSeconds - 10),
+                          );
+                        },
+                      ),
+                      const SizedBox(width: 16),
+                      IconButton(
+                        icon: Icon(
+                          _isTrailerPlaying ? Icons.pause : Icons.play_arrow,
+                          color: Colors.white,
+                          size: 40,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            if (_isTrailerPlaying) {
+                              _trailerController?.pause();
+                              _isTrailerPlaying = false;
+                            } else {
+                              _trailerController?.play();
+                              _isTrailerPlaying = true;
+                              _startHideControlsTimer();
+                            }
+                          });
+                        },
+                      ),
+                      const SizedBox(width: 16),
+                      IconButton(
+                        icon: const Image(
+                          image: AssetImage("images/rotate_right.png"),
+                          height: 30,
+                        ),
+                        onPressed: () {
+                          _trailerController?.seekTo(
+                            Duration(seconds: _trailerController!.value.position.inSeconds + 10),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 8),
-              if (targetEp != null)
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppDefaultColors.primaryRed,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                  ),
-                  icon: const Icon(Icons.play_arrow),
-                  label: Text(
-                    _webseriesDetail!.resumeEpisodeId != null &&
-                            _webseriesDetail!.resumeEpisodeId!.isNotEmpty
-                        ? "Resume Watching"
-                        : "Play S1:E1",
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  onPressed: () {
-                    List<WebseriesEpisodeModel> currentSeasonEps =
-                        _webseriesDetail!.seasons.isNotEmpty
-                            ? _webseriesDetail!.seasons.first.episodes
-                            : [targetEp];
-                    _playEpisode(targetEp, currentSeasonEps);
-                  },
-                ),
-            ],
-          ),
+          ],
         ),
-      ],
+      );
+    }
+
+    // Static Backdrop Banner Fallback
+    String bgUrl = _getHeaderBannerUrl();
+    return SizedBox(
+      height: 230,
+      width: double.infinity,
+      child: Stack(
+        children: [
+          SizedBox(
+            height: 230,
+            width: double.infinity,
+            child: bgUrl.isNotEmpty
+                ? Image.network(
+                    bgUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) =>
+                        Image.asset('images/default_portrate_large.jpg', fit: BoxFit.cover),
+                  )
+                : Image.asset('images/default_portrate_large.jpg', fit: BoxFit.cover),
+          ),
+          Container(
+            height: 230,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withOpacity(0.4),
+                  Colors.black.withOpacity(0.85),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildInfoSection() {
     String cleanContent = _stripHtml(_webseriesDetail!.content);
+    String yearText = _formatYear(_webseriesDetail!.publishedDate);
+    WebseriesEpisodeModel? targetEp = _findResumeOrFirstEpisode();
+
+    bool hasSubscription = _planStatus == "1" || _webseriesDetail!.movieAccess == 1;
+    String playButtonText = "Subscribe to Watch";
+    if (_loggedStatus && _webseriesDetail!.resumeEpisodeId != null && _webseriesDetail!.resumeEpisodeId!.isNotEmpty) {
+      playButtonText = "Resume Watching";
+    } else if (_loggedStatus && hasSubscription) {
+      playButtonText = "Play";
+    } else {
+      playButtonText = "Subscribe to Watch";
+    }
+
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.only(top: 10, right: 12, left: 12, bottom: 5),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Title
+          Text(
+            _webseriesDetail!.title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 25.0,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // Metadata Badges Row (Year, Certificate, Seasons count)
           Row(
             children: [
-              if (_webseriesDetail!.publishedDate.isNotEmpty)
-                Container(
-                  margin: const EdgeInsets.only(right: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white12,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
+              if (yearText.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
                   child: Text(
-                    _webseriesDetail!.publishedDate,
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    yearText,
+                    style: TextStyle(color: AppDefaultColors.textLightGray, fontSize: 13),
                   ),
                 ),
               if (_webseriesDetail!.certificate.isNotEmpty)
-                Container(
-                  margin: const EdgeInsets.only(right: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.white38),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    _webseriesDetail!.certificate,
-                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: Container(
+                    height: 24,
+                    padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 2.0),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: AppDefaultColors.textLightGray,
+                        width: 1.0,
+                      ),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Center(
+                      child: Text(
+                        _webseriesDetail!.certificate,
+                        style: TextStyle(color: AppDefaultColors.textLightGray, fontSize: 11),
+                      ),
+                    ),
                   ),
                 ),
               if (_webseriesDetail!.seasons.isNotEmpty)
                 Text(
                   "${_webseriesDetail!.seasons.length} Season${_webseriesDetail!.seasons.length > 1 ? 's' : ''}",
-                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                  style: TextStyle(color: AppDefaultColors.textLightGray, fontSize: 13),
+                ),
+              if (_webseriesDetail!.tagText.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: Text(
+                    _stripHtml(_webseriesDetail!.tagText),
+                    style: TextStyle(color: AppDefaultColors.textLightGray, fontSize: 12),
+                  ),
                 ),
             ],
           ),
+
+          // Synopsis / Content Text
           if (cleanContent.isNotEmpty) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             Text(
               cleanContent,
-              style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.4),
+              style: TextStyle(color: AppDefaultColors.white, fontSize: 14, height: 1.4),
               maxLines: 4,
               overflow: TextOverflow.ellipsis,
             ),
           ],
+
+          // Cast & Crew inline section
           _buildCastInlineSection(),
+
+          // Main Play / Resume Button
+          Padding(
+            padding: const EdgeInsets.only(top: 18.0),
+            child: SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: SubmitWhiteButton(
+                playButtonText,
+                Icons.play_arrow,
+                onTap: () {
+                  if (!_loggedStatus || _token.isEmpty) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => LoginPage()),
+                    ).then((_) => _loadInitialData());
+                  } else if (!hasSubscription) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const PlanDetailsPage()),
+                    ).then((_) => _loadInitialData());
+                  } else {
+                    if (targetEp != null) {
+                      List<WebseriesEpisodeModel> currentSeasonEps =
+                          _webseriesDetail!.seasons.isNotEmpty
+                              ? _webseriesDetail!.seasons.first.episodes
+                              : [targetEp];
+                      _playEpisode(targetEp, currentSeasonEps);
+                    } else if (_webseriesDetail!.seasons.isNotEmpty &&
+                        _webseriesDetail!.seasons.first.episodes.isNotEmpty) {
+                      _playEpisode(_webseriesDetail!.seasons.first.episodes.first,
+                          _webseriesDetail!.seasons.first.episodes);
+                    }
+                  }
+                },
+              ),
+            ),
+          ),
+
+          // Video Action Buttons (My List, Like, Dislike, Share)
+          VideoActionButtons(
+            isRated: _isRated,
+            isLike: _isLike,
+            isDisLike: _isDisLike,
+            onRate: () {
+              if (!_loggedStatus || _token.isEmpty) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => LoginPage()),
+                ).then((_) => _loadInitialData());
+              } else {
+                setState(() {
+                  _isRated = !_isRated;
+                });
+              }
+            },
+            onLike: () {
+              if (!_loggedStatus || _token.isEmpty) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => LoginPage()),
+                ).then((_) => _loadInitialData());
+              } else {
+                setState(() {
+                  _isDisLike = false;
+                  _isLike = !_isLike;
+                });
+              }
+            },
+            onDislike: () {
+              if (!_loggedStatus || _token.isEmpty) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => LoginPage()),
+                ).then((_) => _loadInitialData());
+              } else {
+                setState(() {
+                  _isLike = false;
+                  _isDisLike = !_isDisLike;
+                });
+              }
+            },
+            onShare: () {
+              final encodedTitle = Uri.encodeComponent(_webseriesDetail!.title);
+              Share.share('Watch ${_webseriesDetail!.title} on Bestcast OTT, \n\nCheck it out here: ${AppConfig.BaseUrl}/search?search=$encodedTitle');
+            },
+          ),
+
+          if (_loggedStatus) ...[
+            const SizedBox(height: 14),
+            Divider(
+              color: AppDefaultColors.textLightGray,
+              height: 1,
+            ),
+            const SizedBox(height: 14),
+            const Text(
+              "Episodes",
+              style: TextStyle(color: Colors.white, fontSize: 20.0, fontWeight: FontWeight.w700),
+            ),
+          ],
         ],
       ),
     );
@@ -453,41 +828,44 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
   Widget _buildSeasonTabs() {
     if (_webseriesDetail!.seasons.isEmpty) return const SizedBox.shrink();
 
-    return SizedBox(
-      height: 45,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: _webseriesDetail!.seasons.length,
-        itemBuilder: (context, index) {
-          bool isSelected = index == _selectedSeasonIndex;
-          var season = _webseriesDetail!.seasons[index];
-          return GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedSeasonIndex = index;
-              });
-            },
-            child: Container(
-              margin: const EdgeInsets.only(right: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: isSelected ? AppDefaultColors.primaryRed : Colors.white10,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Center(
-                child: Text(
-                  season.title.isNotEmpty ? season.title : "Season ${season.seasonNumber}",
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.white70,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    fontSize: 14,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: SizedBox(
+        height: 42,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          itemCount: _webseriesDetail!.seasons.length,
+          itemBuilder: (context, index) {
+            bool isSelected = index == _selectedSeasonIndex;
+            var season = _webseriesDetail!.seasons[index];
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedSeasonIndex = index;
+                });
+              },
+              child: Container(
+                margin: const EdgeInsets.only(right: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppDefaultColors.primaryRed : Colors.white10,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Center(
+                  child: Text(
+                    season.title.isNotEmpty ? season.title : "Season ${season.seasonNumber}",
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : Colors.white70,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -516,7 +894,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       itemCount: episodes.length,
       itemBuilder: (context, index) {
         var ep = episodes[index];
@@ -528,6 +906,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
           margin: const EdgeInsets.only(bottom: 12),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           child: InkWell(
+            borderRadius: BorderRadius.circular(8),
             onTap: () => _playEpisode(ep, episodes),
             child: Padding(
               padding: const EdgeInsets.all(10.0),
@@ -555,7 +934,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
                       Container(
                         width: 32,
                         height: 32,
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: Colors.black54,
                           shape: BoxShape.circle,
                         ),

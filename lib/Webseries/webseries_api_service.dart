@@ -160,4 +160,51 @@ class WebseriesApiService {
     }
     return false;
   }
+
+  // 6. Get Guest Webseries Detail (Fallback when logged out or token invalid)
+  Future<WebseriesItemModel?> getGuestWebseriesDetail(String webseriesId) async {
+    try {
+      final response = await _apiServices.getRequestWithoutToken("${AppConfig.movieblockslist}1");
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+        final List<dynamic> blocks = jsonResponse['data'] ?? [];
+        for (var block in blocks) {
+          final List<dynamic> movies = block['movies'] ?? [];
+          for (var movie in movies) {
+            if (movie['id']?.toString() == webseriesId) {
+              return WebseriesItemModel.fromJson(movie);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      print("Error fetching guest webseries: $e");
+    }
+    return null;
+  }
+
+  // 7. Get Guest Related Items for "More Like This"
+  Future<List<dynamic>> getGuestRelatedItems({String excludeId = ""}) async {
+    List<dynamic> relatedList = [];
+    try {
+      final response = await _apiServices.getRequestWithoutToken("${AppConfig.movieblockslist}1");
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+        final List<dynamic> blocks = jsonResponse['data'] ?? [];
+        for (var block in blocks) {
+          final List<dynamic> movies = block['movies'] ?? [];
+          for (var movie in movies) {
+            String mId = movie['id']?.toString() ?? "";
+            if (mId.isNotEmpty && mId != excludeId) {
+              relatedList.add(movie);
+              if (relatedList.length >= 12) return relatedList;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      print("Error fetching guest related items: $e");
+    }
+    return relatedList;
+  }
 }
