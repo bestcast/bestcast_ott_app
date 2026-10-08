@@ -2,10 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:flutter_otp_text_field/flutter_otp_text_field.dart';
-import 'package:loader_overlay/loader_overlay.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../app_config/app_preferences.dart';
@@ -17,7 +17,6 @@ import '../common_files/common_widgets.dart';
 import '../components/widgets/button_widgets.dart';
 import '../register/who_watching_page.dart';
 
-// ignore: must_be_immutable
 class OTPactivity extends StatefulWidget {
   final String otpEmailorPhone;
   final String? getOtpMessageType;
@@ -35,165 +34,249 @@ class OTPactivity extends StatefulWidget {
 }
 
 class _OTPactivityState extends State<OTPactivity> {
-  GlobalKey<FormState> formkey = GlobalKey<FormState>();
+  final GlobalKey<FormState> formkey = GlobalKey<FormState>();
   final AppUtils appUtils = AppUtils();
 
-  var registerContent = "";
-  var otpMessageType = "";
-  var countryCode = "";
-  var isButtonEnabled;
-  var _resesndButtonEnabled;
+  late final String registerContent;
+  late final String otpMessageType;
+  late final String countryCode;
+
+  bool _resendButtonEnabled = false;
+  bool _isLoading = false;
   bool clearText = false;
   String? _errorMessage;
-  String? _otp = "";
+  String _otp = "";
 
-  int _secondsRemaining = 10;
-  late Timer _timer;
+  int _secondsRemaining = 30;
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    isButtonEnabled = false;
-    _resesndButtonEnabled = false;
     registerContent = widget.otpEmailorPhone;
-    otpMessageType = widget.getOtpMessageType!;
-    countryCode = widget.getCountryCode!;
+    otpMessageType = widget.getOtpMessageType ?? "sms";
+    countryCode = widget.getCountryCode ?? "+91";
     _startTimer();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        if (_secondsRemaining > 0) {
+          _secondsRemaining--;
+        } else {
+          _resendButtonEnabled = true;
+          timer.cancel();
+        }
+      });
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppDefaultColors.appColor,
-      resizeToAvoidBottomInset: false,
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: AppDefaultColors.appColor,
+        backgroundColor: Colors.black,
         elevation: 0,
+        scrolledUnderElevation: 0,
         leading: IconButton(
-          icon:
-              const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: LoaderOverlay(
-        child: Form(
-          key: formkey,
-          autovalidateMode: AutovalidateMode.onUserInteraction,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18.0),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Form(
+            key: formkey,
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                SizedBox(height: 60),
-                // ! Text 001
-                Text(
-                  "Enter the code we just sent.",
-                  style: TextStyle(
-                      color: AppDefaultColors.white,
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 25),
-                // ! Text 002
-                Text(
-                    "We sent a OTP to $registerContent. \nThe code will expire in 15 minutes.",
-                    style: TextStyle(
-                        fontSize: 18.0, color: AppDefaultColors.textLightGray),
-                    textAlign: TextAlign.center),
-                SizedBox(height: 25),
-                // ! OTP TextField
-                OtpTextField(
-                  numberOfFields: 4,
-                  cursorColor: AppDefaultColors.white,
-                  borderWidth: 2,
-                  fieldWidth: 62,
-                  borderColor: AppDefaultColors.boxDarkGray,
-                  focusedBorderColor: AppDefaultColors.white,
-                  disabledBorderColor: AppDefaultColors.boxDarkGray,
-                  enabledBorderColor: AppDefaultColors.boxDarkGray,
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(
-                      borderSide: BorderSide(width: 5),
-                    ),
+                const SizedBox(height: 16),
+
+                // Brand Logo / Emblem
+                Center(
+                  child: Image.asset(
+                    'images/logo_bestcast.png',
+                    height: 40,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                   ),
-                  clearText: clearText,
-                  showFieldAsBox: true,
-                  textStyle: TextStyle(
-                      color: AppDefaultColors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600),
-                  //runs when a code is typed in
-                  onCodeChanged: (String code) {
-                    if (code.isEmpty) {
-                      setState(() {
-                        isButtonEnabled = false;
-                      });
-                    }
-                  },
-                  //runs when every textfield is filled
-                  onSubmit: (String verificationCode) {
-                    setState(() {
-                      if (verificationCode.length == 4) {
-                        _otp = verificationCode;
-                        isButtonEnabled = true;
-                      } else {
-                        isButtonEnabled = false;
-                      }
-                    });
-                  }, // end onSubmit
                 ),
-                SizedBox(height: 35),
-                SendButtonWidgets(
-                  "Sign In",
-                  onPressed: () async {
-                    if (await CommonWidget().isInternetConnectivity()) {
-                      context.loaderOverlay.show();
-                      verifyOTP(registerContent, _otp!);
-                    } else {
-                      CommonWidget().showSnackBar(context, ContentType.warning,
-                          "Check your internet connection.", "");
-                    }
-                  },
+
+                const SizedBox(height: 36),
+
+                // Heading & Subtitle
+                const Text(
+                  'Verify Code',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5,
+                  ),
                 ),
-                // ! Error Message
-                if (_errorMessage != null)
-                  Align(
-                    alignment: Alignment.topLeft,
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 20.0),
-                      child: Text(
-                        _errorMessage!,
-                        style: TextStyle(color: Colors.orange),
+                const SizedBox(height: 8),
+
+                // Phone recipient with Edit button
+                Row(
+                  children: [
+                    const Text(
+                      'Code sent to ',
+                      style: TextStyle(
+                        color: Colors.white54,
+                        fontSize: 14,
                       ),
                     ),
-                  ),
-                SizedBox(height: 35),
-                const Text(
-                  "Didn't receive a code?",
-                  style: TextStyle(
-                      color: AppDefaultColors.textLightGray, fontSize: 18),
+                    Text(
+                      registerContent,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        Navigator.pop(context);
+                      },
+                      child: const Text(
+                        'Edit',
+                        style: TextStyle(
+                          color: AppDefaultColors.primaryRed,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                // ! Resend Code Button
-                TextButton(
-                  onPressed: () async {
-                    if (await CommonWidget().isInternetConnectivity()) {
-                      if (_resesndButtonEnabled) {
-                        context.loaderOverlay.show();
-                        resendOTP(registerContent, otpMessageType, countryCode);
-                      }
-                    } else {
-                      CommonWidget().showSnackBar(context, ContentType.warning,
-                          "Check your internet connection.", "");
-                    }
-                  },
-                  child: Text(
-                    _resesndButtonEnabled
-                        ? 'Resend Code'
-                        : 'Resend enabled in $_secondsRemaining seconds',
-                    style:
-                        TextStyle(color: AppDefaultColors.appRed, fontSize: 20),
-                    textAlign: TextAlign.center,
+
+                const SizedBox(height: 36),
+
+                // Sleek Dark OTP Input Boxes
+                Center(
+                  child: OtpTextField(
+                    numberOfFields: 4,
+                    fieldWidth: 64,
+                    cursorColor: AppDefaultColors.primaryRed,
+                    borderWidth: 1.5,
+                    borderRadius: BorderRadius.circular(12),
+                    showFieldAsBox: true,
+                    filled: true,
+                    fillColor: const Color(0xFF141416),
+                    borderColor: Colors.white.withValues(alpha: 0.12),
+                    enabledBorderColor: Colors.white.withValues(alpha: 0.12),
+                    focusedBorderColor: AppDefaultColors.primaryRed,
+                    clearText: clearText,
+                    textStyle: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    onCodeChanged: (String code) {
+                      setState(() {
+                        _otp = code;
+                        _errorMessage = null;
+                      });
+                    },
+                    onSubmit: (String verificationCode) {
+                      setState(() {
+                        _otp = verificationCode;
+                        _errorMessage = null;
+                      });
+                      _onVerifyPressed();
+                    },
                   ),
                 ),
+
+                // Inline Error Display
+                if (_errorMessage != null) ...[
+                  const SizedBox(height: 16),
+                  Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.info_outline_rounded, color: Colors.redAccent, size: 15),
+                        const SizedBox(width: 6),
+                        Text(
+                          _errorMessage!,
+                          style: const TextStyle(
+                            color: Colors.redAccent,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: 32),
+
+                // Submit Button
+                SendButtonWidgets(
+                  "Verify & Continue",
+                  isLoading: _isLoading,
+                  onPressed: _onVerifyPressed,
+                ),
+
+                const SizedBox(height: 28),
+
+                // Resend Section
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      "Didn't receive code? ",
+                      style: TextStyle(
+                        color: Colors.white54,
+                        fontSize: 14,
+                      ),
+                    ),
+                    if (_resendButtonEnabled)
+                      GestureDetector(
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          resendOTP(registerContent, otpMessageType, countryCode);
+                        },
+                        child: const Text(
+                          'Resend Code',
+                          style: TextStyle(
+                            color: AppDefaultColors.primaryRed,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      )
+                    else
+                      Text(
+                        'Resend in ${_secondsRemaining}s',
+                        style: const TextStyle(
+                          color: Colors.white38,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                  ],
+                ),
+
+                const SizedBox(height: 36),
               ],
             ),
           ),
@@ -202,153 +285,171 @@ class _OTPactivityState extends State<OTPactivity> {
     );
   }
 
+  void _onVerifyPressed() async {
+    HapticFeedback.lightImpact();
+
+    if (_otp.length < 4) {
+      setState(() => _errorMessage = "Please enter the 4-digit code");
+      return;
+    }
+
+    if (await CommonWidget().isInternetConnectivity()) {
+      verifyOTP(registerContent, _otp);
+    } else {
+      if (!mounted) return;
+      CommonWidget().showSnackBar(
+        context,
+        ContentType.warning,
+        "No Connection",
+        "Please check your internet connection and try again.",
+      );
+    }
+  }
+
   void verifyOTP(String email, String otp) async {
-    context.loaderOverlay.show();
-
-    final postValues = {'email': email, 'otp': otp, 'device': "mobile"};
-    ApiServices()
-        .postRequest(AppConfig.verifyOtp, postValues)
-        .then((response) async {
-      String jsonsDataString = response.body.toString();
-      print("verifyOtp_Response: $jsonsDataString");
-      if (response.statusCode == 200) {
-        try {
-          var jsonReponse = jsonDecode(jsonsDataString);
-          String status = jsonReponse['status'];
-
-          if (status == "success") {
-            String? id = jsonReponse['results']['user']['id'].toString();
-            String? email = jsonReponse['results']['user']['email'].toString();
-            String? phone = jsonReponse['results']['user']['phone'].toString();
-            String? name = jsonReponse['results']['user']['name'].toString();
-            String? firstname =
-                jsonReponse['results']['user']['firstname'].toString();
-            String? lastname =
-                jsonReponse['results']['user']['lastname'].toString();
-            String? dob = jsonReponse['results']['user']['dob'].toString();
-            String? gender =
-                jsonReponse['results']['user']['gender'].toString();
-            String? plan = jsonReponse['results']['user']['plan'].toString();
-            String? planExpiry =
-                jsonReponse['results']['user']['plan_expiry'].toString();
-            String? photo = jsonReponse['results']['user']['photo'].toString();
-            String? otp = jsonReponse['results']['user']['otp'].toString();
-            String? tvcode =
-                jsonReponse['results']['user']['tvcode'].toString();
-            String? referalCode =
-                jsonReponse['results']['user']['referal_code'].toString();
-            String? creditsUsed =
-                jsonReponse['results']['user']['credits_used'].toString();
-            String? refferer =
-                jsonReponse['results']['user']['refferer'].toString();
-            String? token = jsonReponse['results']['token'].toString();
-
-            final pref = await SharedPreferences.getInstance();
-            await pref.setString(AppPreferences.id, id);
-            await pref.setString(AppPreferences.email, email);
-            await pref.setString(AppPreferences.phone, phone);
-            await pref.setString(AppPreferences.name, name);
-            await pref.setString(AppPreferences.firstname, firstname);
-            await pref.setString(AppPreferences.lastname, lastname);
-            await pref.setString(AppPreferences.dob, dob);
-            await pref.setString(AppPreferences.gender, gender);
-            await pref.setString(AppPreferences.plan, plan);
-            await pref.setString(AppPreferences.plan_expiry, planExpiry);
-            await pref.setString(AppPreferences.photo, photo);
-            await pref.setString(AppPreferences.otp, otp);
-            await pref.setString(AppPreferences.tvcode, tvcode);
-            await pref.setString(AppPreferences.referal_code, referalCode);
-            await pref.setString(AppPreferences.credits_used, creditsUsed);
-            await pref.setString(AppPreferences.refferer, refferer);
-            await pref.setString(AppPreferences.token, token);
-            await pref.setBool(AppPreferences.loggedStatus, true);
-
-            print("_token_OTPLogin$token");
-
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => WhosWatchingPage(activityType: "New"),
-              ),
-            );
-          } else {
-            String message = jsonReponse['message'];
-            appUtils.showToast(message);
-          }
-          context.loaderOverlay.hide();
-        } catch (e) {
-          print('verifyOtpException:$e');
-          CommonWidget().showSnackBar(
-              context, ContentType.failure, "", "Something went wrong");
-        }
-      } else {
-        print("verifyOtpError: $response");
-        context.loaderOverlay.hide();
-        CommonWidget().showSnackBar(
-            context, ContentType.failure, "Error", response.toString());
-      }
-      context.loaderOverlay.hide();
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
     });
-  }
 
-  void resendOTP(String email, String otpMessageType, String countryCode,) async {
-    context.loaderOverlay.hide();
-    final postValues = {'email': email, "otp_message_type": otpMessageType, "country_code": countryCode};
-    ApiServices()
-        .postRequest(AppConfig.sendOtp, postValues)
-        .then((response) async {
-      String jsonsDataString = response.body.toString();
+    final pref = await SharedPreferences.getInstance();
+    final refCode =
+        pref.getString(AppPreferences.bmpReferralCode) ?? pref.getString(AppPreferences.refferer);
+
+    final Map<String, dynamic> postValues = {
+      'email': email,
+      'otp': otp,
+      'device': "mobile",
+    };
+    if (refCode != null && refCode.isNotEmpty) {
+      postValues['ref'] = refCode;
+    }
+
+    try {
+      final response = await ApiServices().postRequest(AppConfig.verifyOtp, postValues);
+
+      if (!mounted) return;
+      final String jsonsDataString = response.body.toString();
+
       if (response.statusCode == 200) {
-        try {
-          var jsonReponse = jsonDecode(jsonsDataString);
-          String status = jsonReponse['status'];
+        final jsonReponse = jsonDecode(jsonsDataString);
+        final String status = jsonReponse['status'] ?? "";
 
-          if (status == "success") {
-            appUtils.showToast("OTP has resent successfully.");
-            setState(() {
-              isButtonEnabled = false;
-              _resesndButtonEnabled = false;
-              _secondsRemaining = 10;
-            });
-            _startTimer();
-          } else {
-            String errorMessage = jsonReponse['message'];
-            setState(() {
-              _errorMessage = errorMessage;
-            });
+        if (status == "success") {
+          final results = jsonReponse['results'];
+          final user = results?['user'];
+          if (user != null && user is Map) {
+            await pref.setString(AppPreferences.id, (user['id'] ?? '').toString());
+            await pref.setString(AppPreferences.email, (user['email'] ?? '').toString());
+            await pref.setString(AppPreferences.phone, (user['phone'] ?? '').toString());
+            await pref.setString(AppPreferences.name, (user['name'] ?? '').toString());
+            await pref.setString(AppPreferences.firstname, (user['firstname'] ?? '').toString());
+            await pref.setString(AppPreferences.lastname, (user['lastname'] ?? '').toString());
+            await pref.setString(AppPreferences.dob, (user['dob'] ?? '').toString());
+            await pref.setString(AppPreferences.gender, (user['gender'] ?? '').toString());
+            await pref.setString(AppPreferences.plan, (user['plan'] ?? '').toString());
+            await pref.setString(AppPreferences.plan_expiry, (user['plan_expiry'] ?? '').toString());
+            await pref.setString(AppPreferences.photo, (user['photo'] ?? '').toString());
+            await pref.setString(AppPreferences.otp, (user['otp'] ?? '').toString());
+            await pref.setString(AppPreferences.tvcode, (user['tvcode'] ?? '').toString());
+            await pref.setString(AppPreferences.referal_code, (user['referal_code'] ?? '').toString());
+            await pref.setString(AppPreferences.credits_used, (user['credits_used'] ?? '').toString());
+            await pref.setString(AppPreferences.refferer, (user['refferer'] ?? '').toString());
+
+            final bmpReferralCode = user['bmp_referral_code']?.toString();
+            if (bmpReferralCode != null &&
+                bmpReferralCode.isNotEmpty &&
+                bmpReferralCode != "null") {
+              await pref.setString(AppPreferences.bmpReferralCode, bmpReferralCode);
+              await pref.setString(AppPreferences.refferer, bmpReferralCode);
+            }
           }
-          context.loaderOverlay.hide();
-        } catch (e) {
-          print('sendOTPmailException:$e');
-          CommonWidget().showSnackBar(
-              context, ContentType.failure, "", "Something went wrong");
-        }
-      } else {
-        print("Error: $response");
-        context.loaderOverlay.hide();
-        CommonWidget().showSnackBar(
-            context, ContentType.failure, "Error", response.toString());
-      }
-      context.loaderOverlay.hide();
-    });
-  }
 
-  void _startTimer() {
-    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
-      setState(() {
-        if (_secondsRemaining > 0) {
-          _secondsRemaining--;
+          final String token = (results?['token'] ?? '').toString();
+          await pref.setString(AppPreferences.token, token);
+          await pref.setBool(AppPreferences.loggedStatus, true);
+
+          if (!mounted) return;
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (context) => WhosWatchingPage(activityType: "New"),
+            ),
+            (route) => false,
+          );
         } else {
-          _resesndButtonEnabled = true;
-          _timer.cancel();
+          final String message = jsonReponse['message'] ?? "Invalid OTP. Please try again.";
+          setState(() => _errorMessage = message);
         }
-      });
-    });
+      } else {
+        setState(() => _errorMessage = "Invalid verification code");
+      }
+    } catch (e) {
+      if (!mounted) return;
+      CommonWidget().showSnackBar(
+        context,
+        ContentType.failure,
+        "Error",
+        "Something went wrong. Please try again.",
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
-  @override
-  void dispose() {
-    _timer.cancel();
-    super.dispose();
+  void resendOTP(String email, String otpMessageType, String countryCode) async {
+    setState(() => _isLoading = true);
+    final postValues = {
+      'email': email,
+      "otp_message_type": otpMessageType,
+      "country_code": countryCode,
+    };
+
+    try {
+      final response = await ApiServices().postRequest(AppConfig.sendOtp, postValues);
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final jsonReponse = jsonDecode(response.body.toString());
+        final String status = jsonReponse['status'] ?? "";
+
+        if (status == "success") {
+          appUtils.showToast("OTP has been resent successfully.");
+          setState(() {
+            _otp = "";
+            _resendButtonEnabled = false;
+            _secondsRemaining = 30;
+            _errorMessage = null;
+          });
+          _startTimer();
+        } else {
+          setState(() {
+            _errorMessage = jsonReponse['message'] ?? "Failed to resend code";
+          });
+        }
+      } else {
+        CommonWidget().showSnackBar(
+          context,
+          ContentType.failure,
+          "Error",
+          "Failed to resend OTP. Please try again.",
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      CommonWidget().showSnackBar(
+        context,
+        ContentType.failure,
+        "Error",
+        "Something went wrong. Please try again.",
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 }

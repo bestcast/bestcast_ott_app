@@ -25,7 +25,6 @@ class BestcastWebView extends StatefulWidget {
 }
 
 class _BestcastWebViewState extends State<BestcastWebView> {
-
   late Timer _timer;
 
   String _loadUrl = "";
@@ -87,8 +86,7 @@ class _BestcastWebViewState extends State<BestcastWebView> {
             //I first had this line to prevent redirection to anywhere on the internet via hrefs
             //but this prevented ANYTHING from being displayed
 
-            return NavigationDecision
-                .navigate; //changed it to this, and it works now
+            return NavigationDecision.navigate; //changed it to this, and it works now
           },
           onProgress: (int progress) {
             LoadingWidget();
@@ -133,10 +131,7 @@ class _BestcastWebViewState extends State<BestcastWebView> {
             leading: const BackButton(color: Colors.white),
           ),
           body: Stack(children: [
-            if (controller != null)
-              isWebviewEnabled
-                  ? WebViewWidget(controller: controller!)
-                  : LoadingWidget(),
+            if (controller != null) isWebviewEnabled ? WebViewWidget(controller: controller!) : LoadingWidget(),
             if (isLoading)
               Center(
                 child: LoadingWidget(),

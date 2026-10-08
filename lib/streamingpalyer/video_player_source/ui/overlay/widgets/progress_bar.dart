@@ -146,6 +146,9 @@ class __ProgressBarGestureState extends State<_ProgressBarGesture> {
 
   @override
   Widget build(BuildContext context) {
+    final controller = _query.video(context);
+    if (!controller.enableSkip) return widget.child;
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onHorizontalDragStart: (DragStartDetails details) {

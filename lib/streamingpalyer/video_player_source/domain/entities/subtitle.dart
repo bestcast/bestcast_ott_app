@@ -33,10 +33,9 @@ class VideoViewerSubtitle {
         _intializedType = _SubtitleIntializeType.network;
 
   VideoViewerSubtitle.content(
-    String content, {
+    this.content, {
     this.type = SubtitleType.webvtt,
-  })  : content = content,
-        _intializedType = _SubtitleIntializeType.string;
+  })  : _intializedType = _SubtitleIntializeType.string;
 
   Future<void> initialize() async {
     switch (_intializedType) {

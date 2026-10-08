@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
-import 'package:loader_overlay/loader_overlay.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-import '../app_config/app_utils.dart';
+import '../app_config/app_preferences.dart';
 import '../app_config/appconfig.dart';
 import '../authendication/login_page.dart';
 import '../authendication/otp_page.dart';
@@ -24,20 +24,17 @@ class RegisterPage extends StatefulWidget {
   State<RegisterPage> createState() => _RegisterPageState();
 }
 
-enum SingingCharacter { smsOtp, whatsAppOtp }
-
 class _RegisterPageState extends State<RegisterPage> {
-  final AppUtils appUtils = AppUtils();
   bool isLoading = false;
 
   String? _nameErrorMessage;
   String? _phoneErrorMessage;
 
-  SingingCharacter? character = SingingCharacter.whatsAppOtp;
-  TextEditingController userNameController = TextEditingController();
-  TextEditingController getCountryCode = TextEditingController();
-  TextEditingController mobileNumberController = TextEditingController();
-  GlobalKey<FormState> formkey = GlobalKey<FormState>();
+  SingingCharacter character = SingingCharacter.whatsAppOtp;
+  final TextEditingController userNameController = TextEditingController();
+  final TextEditingController getCountryCode = TextEditingController();
+  final TextEditingController mobileNumberController = TextEditingController();
+  final GlobalKey<FormState> formkey = GlobalKey<FormState>();
 
   @override
   void initState() {
@@ -49,154 +46,159 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   @override
+  void dispose() {
+    userNameController.dispose();
+    getCountryCode.dispose();
+    mobileNumberController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppDefaultColors.appColor,
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: AppDefaultColors.appColor,
+        backgroundColor: Colors.black,
         elevation: 0,
+        scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: SingleChildScrollView(
-        child: LoaderOverlay(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Form(
             key: formkey,
-            autovalidateMode: AutovalidateMode.onUserInteraction,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: <Widget>[
-                  SizedBox(height: 60),
-                  // ! Text Heading
-                  Align(
-                    alignment: Alignment.topLeft,
-                    child: Text(
-                      'Ready To Watch.',
-                      style: TextStyle(color: AppDefaultColors.white, fontSize: 30, fontWeight: FontWeight.bold),
-                    ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                const SizedBox(height: 16),
+
+                // Brand Logo / Emblem
+                Center(
+                  child: Image.asset(
+                    'images/logo_bestcast.png',
+                    height: 40,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                   ),
-                  // ! Text Widgets
-                  Align(
-                    alignment: Alignment.topLeft,
-                    child: Text(
-                      "Enter your mobile number to create your account.",
-                      style: TextStyle(fontSize: 16.0, color: AppDefaultColors.textLightGray),
-                    ),
+                ),
+
+                const SizedBox(height: 36),
+
+                // Heading & Subtitle
+                const Text(
+                  'Create Account',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5,
                   ),
-                  SizedBox(height: 25),
-                  // ! Button for sms and whatsapp otp
-                  RadioGroup<SingingCharacter>(
-                    groupValue: character,
-                    onChanged: (SingingCharacter? value) {
-                      setState(() {
-                        character = value;
-                      });
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Join Bestcast to start streaming movies and exclusive series.',
+                  style: TextStyle(
+                    color: Colors.white54,
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
+                ),
+
+                const SizedBox(height: 28),
+
+                // Sleek Delivery Mode Selector (Segmented Pill Switcher)
+                _buildDeliverySelector(),
+
+                const SizedBox(height: 18),
+
+                // Full Name Input Field
+                TextfieldWidget(
+                  label: 'Full Name',
+                  controller: userNameController,
+                  prefixIcon: const Icon(
+                    Icons.person_outline_rounded,
+                    color: Colors.white38,
+                    size: 20,
+                  ),
+                ),
+                if (_nameErrorMessage != null) _buildError(_nameErrorMessage!),
+
+                const SizedBox(height: 14),
+
+                // Mobile Number Input Field
+                if (character == SingingCharacter.whatsAppOtp)
+                  WhatsApptextfieldWidget(
+                    controller: mobileNumberController,
+                    onChanged: (phone) {
+                      getCountryCode.text = phone.countryCode;
                     },
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: RadioListTile<SingingCharacter>(
-                            title: Text('Whats App', style: TextStyle(color: Colors.white)),
-                            activeColor: AppDefaultColors.thikRed,
-                            value: SingingCharacter.whatsAppOtp,
-                          ),
-                        ),
-                        Expanded(
-                          child: RadioListTile<SingingCharacter>(
-                            title: Text('SMS', style: TextStyle(color: Colors.white)),
-                            activeColor: AppDefaultColors.thikRed,
-                            value: SingingCharacter.smsOtp,
-                          ),
-                        ),
-                      ],
+                  )
+                else
+                  SMStextfieldWidget(
+                    controller: mobileNumberController,
+                  ),
+                if (_phoneErrorMessage != null) _buildError(_phoneErrorMessage!),
+
+                const SizedBox(height: 28),
+
+                // Submit Button
+                SendButtonWidgets(
+                  "Create Account",
+                  isLoading: isLoading,
+                  onPressed: _onSubmitPressed,
+                ),
+
+                const SizedBox(height: 28),
+
+                // Already Have Account Link
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      "Already have an account? ",
+                      style: TextStyle(
+                        color: Colors.white54,
+                        fontSize: 14,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 12.0),
-                  // ! Name TextField
-                  TextfieldWidget(
-                    label: 'Full Name',
-                    controller: userNameController,
-                  ),
-                  if (_nameErrorMessage != null) _buildError(_nameErrorMessage!),
-                  // ! Mobile Number TextField
-                  SizedBox(height: 12.0),
-                  if (character == SingingCharacter.whatsAppOtp)
-                    WhatsApptextfieldWidget(
-                      controller: mobileNumberController,
-                      onChanged: (phone) {
-                        print("AZMAT: ${phone.countryCode}");
-                        getCountryCode.text = phone.countryCode;
+                    GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        AuthNavigator.navigateWithFade(context, const LoginPage());
                       },
-                    ),
-                  if (character == SingingCharacter.smsOtp)
-                    SMStextfieldWidget(
-                      controller: mobileNumberController,
-                    ),
-                  if (_phoneErrorMessage != null) _buildError(_phoneErrorMessage!),
-                  // ! Submit Button
-                  SizedBox(height: 25.0),
-                  SendButtonWidgets(
-                    "Send",
-                    onPressed: () async {
-                      if (!_validateInputs()) return;
-                      if (await CommonWidget().isInternetConnectivity()) {
-                        createAccount(
-                          character,
-                          userNameController.text.trim(),
-                          getCountryCode.text,
-                          mobileNumberController.text.trim(),
-                        );
-                      } else {
-                        CommonWidget().showSnackBar(
-                          context,
-                          ContentType.failure,
-                          "Error",
-                          "No Internet Connection",
-                        );
-                      }
-                    },
-                  ),
-                  if (isLoading)
-                    Center(
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 6.0, left: 4.0),
-                        child: Align(
-                          alignment: Alignment.center,
-                          child: CircularProgressIndicator(
-                            color: AppDefaultColors.thikRed,
-                          ),
+                      child: const Text(
+                        'Log In',
+                        style: TextStyle(
+                          color: AppDefaultColors.primaryRed,
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
-                  SizedBox(height: 20.0),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        "Already have an account?",
-                        style: TextStyle(color: AppDefaultColors.textLightGray, fontSize: 17),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          AuthNavigator.navigateWithFade(context, LoginPage());
-                        },
-                        child: const Text(
-                          'Login In',
-                          style: TextStyle(
-                            color: AppDefaultColors.appRed,
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
+                  ],
+                ),
+
+                const SizedBox(height: 36),
+
+                // Terms disclaimer
+                const Center(
+                  child: Text(
+                    'By continuing, you agree to Bestcast\'s Terms & Privacy Policy',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white30,
+                      fontSize: 11,
+                    ),
                   ),
-                ],
-              ),
+                ),
+
+                const SizedBox(height: 20),
+              ],
             ),
           ),
         ),
@@ -204,76 +206,226 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  /// Error Text Builder (avoids duplication)
-  Widget _buildError(String error) {
-    return Align(
-      alignment: Alignment.topLeft,
-      child: Padding(
-        padding: const EdgeInsets.only(top: 6.0, left: 4.0),
-        child: Text(
-          error,
-          style: const TextStyle(color: Colors.orange, fontSize: 13),
+  Widget _buildDeliverySelector() {
+    return Container(
+      height: 46,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: const Color(0xFF141416),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.08),
+          width: 1.0,
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildSegmentItem(
+              title: "WhatsApp",
+              icon: Icons.chat_bubble_outline_rounded,
+              isSelected: character == SingingCharacter.whatsAppOtp,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() {
+                  character = SingingCharacter.whatsAppOtp;
+                  _phoneErrorMessage = null;
+                });
+              },
+            ),
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: _buildSegmentItem(
+              title: "SMS",
+              icon: Icons.sms_outlined,
+              isSelected: character == SingingCharacter.smsOtp,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() {
+                  character = SingingCharacter.smsOtp;
+                  _phoneErrorMessage = null;
+                });
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSegmentItem({
+    required String title,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF24242A) : Colors.transparent,
+          borderRadius: BorderRadius.circular(9),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected ? Colors.white : Colors.white38,
+            ),
+            const SizedBox(width: 7),
+            Text(
+              title,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.white54,
+                fontSize: 13.5,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  void createAccount(SingingCharacter? character, String userName, String countryCode, String mobileNumber) async {
+  Widget _buildError(String error) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 6.0, left: 4.0),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline_rounded, color: Colors.redAccent, size: 14),
+          const SizedBox(width: 5),
+          Expanded(
+            child: Text(
+              error,
+              style: const TextStyle(
+                color: Colors.redAccent,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _onSubmitPressed() async {
+    HapticFeedback.lightImpact();
+    if (!_validateInputs()) return;
+
+    if (await CommonWidget().isInternetConnectivity()) {
+      createAccount(
+        character,
+        userNameController.text.trim(),
+        getCountryCode.text,
+        mobileNumberController.text.trim(),
+      );
+    } else {
+      if (!mounted) return;
+      CommonWidget().showSnackBar(
+        context,
+        ContentType.failure,
+        "Error",
+        "No Internet Connection",
+      );
+    }
+  }
+
+  void createAccount(
+    SingingCharacter character,
+    String userName,
+    String countryCode,
+    String mobileNumber,
+  ) async {
     setState(() => isLoading = true);
-    context.loaderOverlay.hide();
     final otpMessageType = _getOtpType(character);
-    countryCode = (countryCode.isEmpty || otpMessageType == "sms") ? "+91" : countryCode;
+    final resolvedCountryCode =
+        (countryCode.isEmpty || otpMessageType == "sms") ? "+91" : countryCode;
+
+    final pref = await SharedPreferences.getInstance();
+    final referrerCode = pref.getString(AppPreferences.refferer) ?? '';
 
     final postValues = {
       "phone": mobileNumber,
       "name": userName,
-      "refferer": '',
+      "refferer": referrerCode,
       "device": "mobile",
       "otp_message_type": otpMessageType,
-      "country_code": countryCode,
+      "country_code": resolvedCountryCode,
     };
 
     try {
-      final response = await ApiServices().postRequest(AppConfig.registerUrl, postValues);
+      final response =
+          await ApiServices().postRequest(AppConfig.registerUrl, postValues);
+
+      if (!mounted) return;
       final body = response.body.toString();
 
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(body);
         if (jsonResponse['status'] == "success") {
           AuthNavigator.navigateWithFade(
-              context,
-              OTPactivity(
-                  otpEmailorPhone: mobileNumber, getOtpMessageType: otpMessageType, getCountryCode: countryCode));
+            context,
+            OTPactivity(
+              otpEmailorPhone: mobileNumber,
+              getOtpMessageType: otpMessageType,
+              getCountryCode: resolvedCountryCode,
+            ),
+          );
         } else {
-          CommonWidget()
-              .showSnackBar(context, ContentType.failure, "Failed", jsonResponse['message'] ?? "Something went wrong");
+          CommonWidget().showSnackBar(
+            context,
+            ContentType.failure,
+            "Failed",
+            jsonResponse['message'] ?? "Something went wrong",
+          );
         }
       } else if (response.statusCode == 201) {
         final jsonResponse = jsonDecode(body);
         setState(() {
-          _nameErrorMessage = jsonResponse['errors']['name']?[0];
-          _phoneErrorMessage = jsonResponse['errors']['phone']?[0];
+          _nameErrorMessage = jsonResponse['errors']?['name']?[0];
+          _phoneErrorMessage = jsonResponse['errors']?['phone']?[0];
         });
-        CommonWidget()
-            .showSnackBar(context, ContentType.failure, "Failed", jsonResponse['message'] ?? "Something went wrong");
+        CommonWidget().showSnackBar(
+          context,
+          ContentType.failure,
+          "Failed",
+          jsonResponse['message'] ?? "Something went wrong",
+        );
       } else {
-        CommonWidget().showSnackBar(context, ContentType.failure, "Error", "Server error occurred");
+        CommonWidget().showSnackBar(
+          context,
+          ContentType.failure,
+          "Error",
+          "Server error occurred",
+        );
       }
     } catch (e) {
-      CommonWidget().showSnackBar(context, ContentType.failure, "Error", "The phone has already been taken.");
+      if (!mounted) return;
+      CommonWidget().showSnackBar(
+        context,
+        ContentType.failure,
+        "Error",
+        "The phone has already been taken or network error occurred.",
+      );
     } finally {
-      context.loaderOverlay.hide();
-      setState(() => isLoading = false);
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     }
   }
 
-  /// Helper to get OTP type
-  String _getOtpType(SingingCharacter? character) {
+  String _getOtpType(SingingCharacter character) {
     switch (character) {
       case SingingCharacter.whatsAppOtp:
         return "whatsapp";
       case SingingCharacter.smsOtp:
-      default:
         return "sms";
     }
   }
@@ -297,7 +449,9 @@ class _RegisterPageState extends State<RegisterPage> {
     // Phone validation
     if (phone.isEmpty) {
       phoneError = "Mobile number is required";
-    } else if (phone.length < 7 || phone.length > 15 || !RegExp(r'^[0-9]+$').hasMatch(phone)) {
+    } else if (phone.length < 7 ||
+        phone.length > 15 ||
+        !RegExp(r'^[0-9]+$').hasMatch(phone)) {
       phoneError = "Enter a valid number with 7 to 15 digits";
     }
 
@@ -305,6 +459,7 @@ class _RegisterPageState extends State<RegisterPage> {
       _nameErrorMessage = nameError;
       _phoneErrorMessage = phoneError;
     });
+
     return nameError == null && phoneError == null;
   }
 }

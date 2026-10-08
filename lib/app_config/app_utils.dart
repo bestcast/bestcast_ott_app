@@ -1,6 +1,7 @@
 import 'dart:core';
 
 import 'package:flutter/material.dart';
+import 'package:bestcaststudios/common_files/app_default_colors.dart';
 import 'package:email_validator/email_validator.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
@@ -100,7 +101,7 @@ class LoaderDialog extends StatelessWidget {
       backgroundColor: Colors.transparent,
       elevation: 10,
       child: Center(
-        child: CircularProgressIndicator(strokeWidth: 5, color: Colors.red),
+        child: CircularProgressIndicator(strokeWidth: 5, color: AppDefaultColors.primaryRed),
       ),
     );
   }

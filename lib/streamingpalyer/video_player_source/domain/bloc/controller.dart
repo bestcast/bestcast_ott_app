@@ -37,6 +37,7 @@ class VideoViewerController extends ChangeNotifier with WidgetsBindingObserver {
   late bool looping;
 
   bool _mounted = false;
+  bool enableSkip = true;
 
   VideoViewerAd? _activeAd;
   Timer? _activeAdTimeRemaing;

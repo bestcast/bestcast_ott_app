@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
@@ -14,12 +15,16 @@ import 'package:bestcaststudios/Dashboard/Models/MoviesMainCategoryModel.dart';
 import 'package:bestcaststudios/Dashboard/Models/Usermovies.dart';
 import 'package:bestcaststudios/Dashboard/MovieCategories.dart';
 import 'package:bestcaststudios/Dashboard/MoviesModels.dart';
+import 'package:bestcaststudios/Dashboard/block_movies_screen.dart';
 import 'package:bestcaststudios/common_files/main_card_background.dart';
 import 'package:bestcaststudios/common_files/movie_categories_card_wishlist.dart';
-import 'package:bestcaststudios/common_files/round_border_background.dart';
 import 'package:bestcaststudios/common_files/submit_transparent_button.dart';
 import 'package:bestcaststudios/streamingpalyer/video_player.dart';
+import 'package:bestcaststudios/streamingpalyer/models/subtitle_models.dart';
 import '../app_config/app_preferences.dart';
+import '../Webseries/Models/webseries_models.dart';
+import '../Webseries/webseries_api_service.dart';
+import '../Webseries/webseries_detail_screen.dart';
 import '../app_config/app_utils.dart';
 import '../app_config/appconfig.dart';
 import '../authendication/login_page.dart';
@@ -27,11 +32,30 @@ import '../common_files/api_services.dart';
 import '../common_files/app_default_colors.dart';
 import '../common_files/common_widgets.dart';
 import '../common_files/loading_widget.dart';
-import '../common_files/main_card_transparent_background.dart';
-import '../common_files/movie_categories_card_background.dart';
-import '../common_files/round_border_background_wiht_icon.dart';
 import '../common_files/submit_white_button.dart';
 import '../streamingpalyer/models/main_movie_details_models.dart';
+
+class DashboardBannerItem {
+  final String bannerId;
+  final String movieId;
+  final String title;
+  final String imageUrl;
+  final String thumbnail;
+  final String category;
+  bool isMyList;
+  final MovieData? movieData;
+
+  DashboardBannerItem({
+    required this.bannerId,
+    required this.movieId,
+    required this.title,
+    required this.imageUrl,
+    required this.thumbnail,
+    required this.category,
+    this.isMyList = false,
+    this.movieData,
+  });
+}
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -49,6 +73,12 @@ class _DashboardState extends State<Dashboard> {
   String _mainMoviePicture = "";
   String _mainMovieCategory = "";
 
+  List<DashboardBannerItem> _bannerList = [];
+  List<DashboardBannerItem> _masterBannerList = [];
+  final PageController _bannerPageController = PageController();
+  int _currentBannerIndex = 0;
+  Timer? _bannerTimer;
+
   String _token = "";
 
   String profileName = "";
@@ -61,8 +91,13 @@ class _DashboardState extends State<Dashboard> {
   bool hasMoreScroll = true;
   var _page = 1;
 
+  String _selectedCategoryId = "";
+  String _selectedCategoryTitle = "";
+
   List<MoviesCategoryModel> moviesCategoryModel = [];
   List<MoviesMainCategoryModel> moviesMainCategoryModelList = [];
+  List<MoviesMainCategoryModel> _masterCategoryModelList = [];
+  List<WebseriesBlockModel> webseriesBlockModelList = [];
 
   List<dynamic> moviesMainCategoryModel1List = [];
 
@@ -86,23 +121,16 @@ class _DashboardState extends State<Dashboard> {
         }
 
         if (i == 0) {
-          moviesModel.add(MoviesModel(
-              catogoryID: catID.toString(),
-              movieID: "1",
-              descriptions: "Action"));
+          moviesModel.add(MoviesModel(catogoryID: catID.toString(), movieID: "1", descriptions: "Action"));
         } else {
-          moviesModel.add(MoviesModel(
-              catogoryID: catID.toString(),
-              movieID: "1",
-              descriptions: "Action"));
+          moviesModel.add(MoviesModel(catogoryID: catID.toString(), movieID: "1", descriptions: "Action"));
         }
 
         if (j < 6) {
           j++;
         }
       }
-      moviesCategoryModel.add(MoviesCategoryModel(
-          catogoryID: catID.toString(), moviesModel: moviesModel));
+      moviesCategoryModel.add(MoviesCategoryModel(catogoryID: catID.toString(), moviesModel: moviesModel));
     }
   }
 
@@ -114,29 +142,24 @@ class _DashboardState extends State<Dashboard> {
       DeviceOrientation.portraitDown,
     ]);
     scrollController.addListener(() async {
-      if (scrollController.position.maxScrollExtent ==
-          scrollController.offset) {
-        if (await CommonWidget().isInternetConnectivity()) {
-          if (hasMoreScroll) {
-            print("RefreshEnabled: $_page");
+      if (scrollController.hasClients &&
+          scrollController.position.pixels >= scrollController.position.maxScrollExtent - 200) {
+        if (hasMoreScroll && !isLoading && !scrolleEnabled) {
+          if (await CommonWidget().isInternetConnectivity()) {
             scrolleEnabled = true;
-            getBlockMoviesLits(_token, profileID, "", _page);
+            getBlockMoviesLits(_token, profileID, _selectedCategoryId, _page);
           }
-        } else {
-          appUtils.showToast("Check your internet connection.");
         }
       }
 
-      if (scrollController.position.userScrollDirection ==
-          ScrollDirection.reverse) {
+      if (scrollController.position.userScrollDirection == ScrollDirection.reverse) {
         if (_isAppBarVisible) {
           setState(() {
             _isAppBarVisible = false;
             _appBarOpacity = 0.0;
           });
         }
-      } else if (scrollController.position.userScrollDirection ==
-          ScrollDirection.forward) {
+      } else if (scrollController.position.userScrollDirection == ScrollDirection.forward) {
         if (!_isAppBarVisible) {
           setState(() {
             _isAppBarVisible = true;
@@ -146,6 +169,170 @@ class _DashboardState extends State<Dashboard> {
       }
     });
     super.initState();
+  }
+
+  void _startBannerTimer() {
+    _bannerTimer?.cancel();
+    if (_bannerList.length <= 1) return;
+    _bannerTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (!mounted || _bannerList.isEmpty || !_bannerPageController.hasClients) return;
+      int nextIndex = (_currentBannerIndex + 1) % _bannerList.length;
+      _bannerPageController.animateToPage(
+        nextIndex,
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeInOutCubic,
+      );
+    });
+  }
+
+  void _resetBannerTimer() {
+    _bannerTimer?.cancel();
+    _startBannerTimer();
+  }
+
+  @override
+  void dispose() {
+    _bannerTimer?.cancel();
+    _bannerPageController.dispose();
+    scrollController.dispose();
+    super.dispose();
+  }
+
+  bool _matchesGenre(Movies movie, String genre) {
+    if (genre == "All" || genre.isEmpty) return true;
+    final String g = genre.toLowerCase().trim();
+    final String tags = (movie.tagText ?? '').toLowerCase();
+    final String title = (movie.title ?? '').toLowerCase();
+
+    // Exact or substring match in tags or title
+    if (tags.contains(g) || title.contains(g)) return true;
+
+    // Stem matching for common genre variations
+    if (g.startsWith("roman") && tags.contains("roman")) return true;
+    if (g.startsWith("drama") && tags.contains("drama")) return true;
+    if (g.startsWith("comed") && tags.contains("comed")) return true;
+    if (g.startsWith("action") && tags.contains("action")) return true;
+    if (g.startsWith("thrill") && tags.contains("thrill")) return true;
+    if (g.startsWith("suspens") && (tags.contains("suspens") || tags.contains("thrill"))) return true;
+    if (g.startsWith("horror") && tags.contains("horror")) return true;
+    if (g.startsWith("crime") && tags.contains("crime")) return true;
+    if (g.startsWith("famil") && tags.contains("famil")) return true;
+    if (g.startsWith("short") && (tags.contains("short") || title.contains("short"))) return true;
+    if (g.startsWith("webseries") && (tags.contains("webseries") || title.contains("webseries"))) return true;
+
+    return false;
+  }
+
+  bool _bannerMatchesGenre(DashboardBannerItem banner, String genre) {
+    if (genre == "All" || genre.isEmpty) return true;
+    final String g = genre.toLowerCase().trim();
+    final String cat = banner.category.toLowerCase();
+    final String title = banner.title.toLowerCase();
+
+    if (cat.contains(g) || title.contains(g)) return true;
+
+    if (g.startsWith("roman") && cat.contains("roman")) return true;
+    if (g.startsWith("drama") && cat.contains("drama")) return true;
+    if (g.startsWith("comed") && cat.contains("comed")) return true;
+    if (g.startsWith("action") && cat.contains("action")) return true;
+    if (g.startsWith("thrill") && cat.contains("thrill")) return true;
+    if (g.startsWith("suspens") && (cat.contains("suspens") || cat.contains("thrill"))) return true;
+    if (g.startsWith("horror") && cat.contains("horror")) return true;
+    if (g.startsWith("crime") && cat.contains("crime")) return true;
+    if (g.startsWith("famil") && cat.contains("famil")) return true;
+    if (g.startsWith("short") && (cat.contains("short") || title.contains("short"))) return true;
+    if (g.startsWith("webseries") && (cat.contains("webseries") || title.contains("webseries"))) return true;
+
+    return false;
+  }
+
+  void _applyCategoryFilter(String categoryTitle) {
+    if (categoryTitle.isEmpty || categoryTitle == "All") {
+      setState(() {
+        moviesMainCategoryModelList = List.from(_masterCategoryModelList);
+        if (_masterBannerList.isNotEmpty) {
+          _bannerList = List.from(_masterBannerList);
+          _currentBannerIndex = 0;
+          if (_bannerList.isNotEmpty) {
+            _mainMoviePicture = _bannerList[0].imageUrl;
+            _mainMovieId = _bannerList[0].movieId;
+            _mainMovieCategory = _bannerList[0].category;
+            _isAddedMyList = _bannerList[0].isMyList;
+            movieData = _bannerList[0].movieData;
+          }
+        }
+        isLoading = false;
+      });
+      return;
+    }
+
+    final List<MoviesMainCategoryModel> filteredBlocks = [];
+    for (var block in _masterCategoryModelList) {
+      if (block.movies == null || block.movies!.isEmpty) continue;
+      final matchingMovies = block.movies!.where((m) => _matchesGenre(m, categoryTitle)).toList();
+      if (matchingMovies.isNotEmpty) {
+        filteredBlocks.add(MoviesMainCategoryModel(
+          id: block.id,
+          title: block.title,
+          movies: matchingMovies,
+        ));
+      }
+    }
+
+    // Filter banners matching category if available, else keep master banners
+    List<DashboardBannerItem> filteredBanners = [];
+    if (_masterBannerList.isNotEmpty) {
+      filteredBanners = _masterBannerList.where((b) => _bannerMatchesGenre(b, categoryTitle)).toList();
+    }
+
+    setState(() {
+      moviesMainCategoryModelList = filteredBlocks;
+      if (filteredBanners.isNotEmpty) {
+        _bannerList = filteredBanners;
+        _currentBannerIndex = 0;
+        _mainMoviePicture = _bannerList[0].imageUrl;
+        _mainMovieId = _bannerList[0].movieId;
+        _mainMovieCategory = _bannerList[0].category;
+        _isAddedMyList = _bannerList[0].isMyList;
+        movieData = _bannerList[0].movieData;
+      }
+      isLoading = false;
+    });
+  }
+
+  void _selectAllMovies() {
+    setState(() {
+      _selectedCategoryId = "";
+      _selectedCategoryTitle = "";
+      hasMoreScroll = true;
+      scrolleEnabled = false;
+      _applyCategoryFilter("");
+    });
+    if (scrollController.hasClients) {
+      scrollController.jumpTo(0);
+    }
+  }
+
+  void _selectCategory(String catId, String catTitle) {
+    setState(() {
+      _selectedCategoryId = catId;
+      _selectedCategoryTitle = catTitle;
+      hasMoreScroll = false;
+      scrolleEnabled = false;
+    });
+
+    if (_masterCategoryModelList.isNotEmpty) {
+      _applyCategoryFilter(catTitle);
+    } else {
+      setState(() {
+        isLoading = true;
+      });
+      getBlockMoviesLits(_token, profileID, "", 1);
+    }
+
+    if (scrollController.hasClients) {
+      scrollController.jumpTo(0);
+    }
   }
 
   Future<void> getInitalValue() async {
@@ -165,513 +352,494 @@ class _DashboardState extends State<Dashboard> {
 
     getBannerMoviesDetails(_token, profileID, "", "1");
     getUserDetails(_token);
+    getWebseriesBlocks();
+  }
+
+  void getWebseriesBlocks() async {
+    final blocks = await WebseriesApiService().getWebseriesBlocksList(
+      token: _token,
+      profileId: profileID,
+    );
+    if (mounted) {
+      setState(() {
+        webseriesBlockModelList = blocks;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    //   DeviceOrientation.portraitUp,
-    //   DeviceOrientation.portraitDown,
     SystemChrome.setSystemUIOverlayStyle(
-      SystemUiOverlayStyle(
-        // statusBarColor: Colors.red, // You can use this as well
-        statusBarIconBrightness:
-            Brightness.light, // OR Vice Versa for ThemeMode.dark
-        statusBarBrightness:
-            Brightness.light, // OR Vice Versa for ThemeMode.dark
-        systemNavigationBarColor:
-            Colors.black, // OR Vice Versa for ThemeMode.dark
+      const SystemUiOverlayStyle(
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.light,
+        systemNavigationBarColor: Colors.black,
       ),
     );
 
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primaryColor: Colors.blue, // Set your app's primary color here
-      ),
-      home: Scaffold(
-        backgroundColor: AppDefaultColors.appColor,
-        resizeToAvoidBottomInset: false,
-        body: SizedBox(
-          child: Stack(children: <Widget>[
-            //   colorFilter: ColorFilter.mode(Colors.black12, BlendMode.dstOut), // Set the color filter
-            //     width: double.infinity,
-            //     height: double.infinity,
-            //     'images/sample_home_screen.jpg',
-            //     fit: BoxFit.cover,
-            isLoading == false
-                ? SingleChildScrollView(
-                    controller: scrollController,
-                    child: Container(
-                      margin: EdgeInsets.only(
-                          top: 160, left: 15, right: 15, bottom: 10),
-                      child: Column(
-                        children: [
-                          MainCardBackgroundView(
-                            Container(
-                              child: SizedBox(
-                                height:
-                                    MediaQuery.of(context).size.height - 320,
-                                child: Stack(
-                                  children: <Widget>[
-                                    SizedBox(
-                                        // height: 500,
-                                        height:
-                                            MediaQuery.of(context).size.height,
-                                        width: double.infinity,
-                                        //   width: double.infinity,
-                                        //   height: double.infinity,
-                                        //   'images/sample_home_screen.jpg',
-                                        //   fit: BoxFit.cover,
+    final double bannerHeight = (MediaQuery.of(context).size.height - 320).clamp(420.0, 560.0);
 
-                                        //   imageUrl: _mainMoviePicture,
-                                        //   width: double.infinity,
-                                        //   height: double.infinity,
-                                        //   _mainMoviePicture,
-                                        //   fit: BoxFit.cover,
-
-                                        child: FadeInImage(
-                                          placeholder: AssetImage(
-                                              "images/default_portrate_large.jpg"),
-                                          image:
-                                              NetworkImage(_mainMoviePicture),
-                                          imageErrorBuilder:
-                                              (context, error, stackTrace) {
-                                            // Return the error image widget
-                                            return Image.asset(
-                                                'images/default_portrate_large.jpg');
-                                          },
-                                          // height: 500,
-                                          height: MediaQuery.of(context)
-                                              .size
-                                              .height,
-                                          fit: BoxFit.cover,
-                                        )),
-                                    Align(
-                                      alignment: Alignment.bottomCenter,
-                                      child: MainTransaparentCardBackgroundView(
-                                        Container(
-                                          child: SizedBox(
-                                            width: double.infinity,
-                                            // height: 500,
-                                            height: MediaQuery.of(context)
-                                                .size
-                                                .height,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    Align(
-                                      alignment: Alignment.bottomCenter,
-                                      child: Container(
-                                        // height: 500,
-                                        height:
-                                            MediaQuery.of(context).size.height,
-                                        padding: EdgeInsets.only(bottom: 15),
-                                        child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.end,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.center,
-                                          children: [
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                  bottom: 20.0),
-                                              child: Text(
-                                                _mainMovieCategory,
-                                                style: const TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 15.0,
-                                                    fontWeight:
-                                                        FontWeight.normal),
-                                              ),
-                                            ),
-                                            Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.end,
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.end,
-                                              children: [
-                                                Expanded(
-                                                  child: Padding(
-                                                    padding:
-                                                        const EdgeInsets.only(
-                                                            top: 10.0,
-                                                            right: 10,
-                                                            left: 10),
-                                                    child: Container(
-                                                      padding:
-                                                          const EdgeInsets.only(
-                                                              right: 5.0),
-                                                      child: SubmitWhiteButton(
-                                                        "Play",
-                                                        Icons.play_arrow,
-                                                        onTap: () async {
-                                                          Navigator.push(
-                                                              context,
-                                                              MaterialPageRoute(
-                                                                  builder: (context) =>
-                                                                      VideoApp(
-                                                                          getMovieID:
-                                                                              _mainMovieId)));
-                                                        },
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                                Expanded(
-                                                  child: Padding(
-                                                    padding:
-                                                        const EdgeInsets.only(
-                                                            top: 10.0,
-                                                            right: 10),
-                                                    child: Container(
-                                                      padding:
-                                                          const EdgeInsets.only(
-                                                              right: 5.0),
-                                                      child:
-                                                          SubmitTransparentButton(
-                                                        "My List",
-                                                        _isAddedMyList
-                                                            ? Icons.check
-                                                            : Icons.add,
-                                                        onTap: () async {
-                                                          if (loggedStatus) {
-                                                            setState(() {
-                                                              var isMyList = 0;
-                                                              if (_isAddedMyList) {
-                                                                _isAddedMyList =
-                                                                    false;
-                                                                isMyList = 0;
-                                                              } else {
-                                                                _isAddedMyList =
-                                                                    true;
-                                                                isMyList = 1;
-                                                              }
-
-                                                              final postValues =
-                                                                  {
-                                                                'mylist':
-                                                                    isMyList,
-                                                              };
-                                                              setUserMovies(
-                                                                  _token,
-                                                                  profileID,
-                                                                  _mainMovieId,
-                                                                  postValues);
-                                                            });
-                                                          } else {
-                                                            Navigator.push(
-                                                                context,
-                                                                MaterialPageRoute(
-                                                                    builder:
-                                                                        (context) =>
-                                                                            LoginPage()));
-                                                          }
-                                                        },
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                                //       "Categories",
-                                                //       Icons.keyboard_arrow_down_sharp,
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
+    return Scaffold(
+      backgroundColor: AppDefaultColors.appColor,
+      resizeToAvoidBottomInset: false,
+      body: SizedBox(
+        child: Stack(children: <Widget>[
+          isLoading == false
+              ? SingleChildScrollView(
+                  controller: scrollController,
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 160, left: 15, right: 15, bottom: 10),
+                    child: Column(
+                      children: [
+                        MainCardBackgroundView(
+                          Container(
+                            child: _bannerList.isEmpty
+                                ? _buildSingleBannerFallback(bannerHeight)
+                                : _buildMultiBannerCarousel(bannerHeight),
                           ),
+                        ),
+                        if (moviesMainCategoryModelList.isEmpty && !isLoading)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 40.0, horizontal: 20.0),
+                            child: Column(
+                              children: [
+                                const Icon(Icons.movie_outlined, color: Colors.white38, size: 48),
+                                const SizedBox(height: 12),
+                                Text(
+                                  _selectedCategoryTitle.isNotEmpty
+                                      ? "No movies found in $_selectedCategoryTitle"
+                                      : "No movies found",
+                                  style: const TextStyle(color: Colors.white70, fontSize: 16),
+                                ),
+                                const SizedBox(height: 12),
+                                if (_selectedCategoryId.isNotEmpty)
+                                  ElevatedButton(
+                                    onPressed: _selectAllMovies,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppDefaultColors.primaryRed,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                    child: const Text("View All Movies"),
+                                  ),
+                              ],
+                            ),
+                          )
+                        else
                           ListView.builder(
                               physics: const NeverScrollableScrollPhysics(),
                               shrinkWrap: true,
-                              // controller: scrollController,
                               itemCount: moviesMainCategoryModelList.length + 1,
                               itemBuilder: (BuildContext context, int index) {
-                                if (index <
-                                    moviesMainCategoryModelList.length) {
+                                if (index < moviesMainCategoryModelList.length) {
+                                  if (moviesMainCategoryModelList[index].movies == null ||
+                                      moviesMainCategoryModelList[index].movies!.isEmpty) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  final block = moviesMainCategoryModelList[index];
+                                  final bool isWebseries = block
+                                      .title
+                                      .toString()
+                                      .toLowerCase()
+                                      .contains("webseries");
+                                  final bool hasMoreThan3 = (block.movies?.length ?? 0) > 3;
                                   return Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Padding(
-                                        padding: const EdgeInsets.only(
-                                            left: 8.0, top: 5.0, bottom: 2.0),
-                                        child: Text(
-                                          moviesMainCategoryModelList[index]
-                                              .title
-                                              .toString(),
-                                          style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 15.0,
-                                              fontWeight: FontWeight.w600),
+                                        padding: const EdgeInsets.only(left: 8.0, right: 6.0, top: 16.0, bottom: 8.0),
+                                        child: InkWell(
+                                          borderRadius: BorderRadius.circular(8),
+                                          onTap: hasMoreThan3
+                                              ? () {
+                                                  Navigator.push(
+                                                    context,
+                                                    CupertinoPageRoute(
+                                                      builder: (context) => BlockMoviesScreen(
+                                                        blockTitle: block.title.toString(),
+                                                        blockId: block.id?.toString() ?? "",
+                                                        movies: block.movies ?? [],
+                                                        isWebseries: isWebseries,
+                                                      ),
+                                                    ),
+                                                  );
+                                                }
+                                              : null,
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 4.0),
+                                            child: Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              crossAxisAlignment: CrossAxisAlignment.center,
+                                              children: [
+                                                Expanded(
+                                                  child: Text(
+                                                    block.title.toString(),
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 18.0,
+                                                      fontWeight: FontWeight.bold,
+                                                      letterSpacing: 0.3,
+                                                    ),
+                                                  ),
+                                                ),
+                                                if (hasMoreThan3)
+                                                  const Icon(
+                                                    Icons.arrow_forward_ios_rounded,
+                                                    color: Colors.white,
+                                                    size: 18.0,
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
                                         ),
                                       ),
-                                      //               color: Colors.white, fontSize: 15.0,
-                                      //       //   "View All >>",
                                       SizedBox(
-                                        // height: moviesCategoryModel[index].catogoryID == "1" ? 200 : 280,
-                                        // height: index == "1" ? 200 : 215,
-                                        height: 190,
-
+                                        height: 205,
                                         child: ListView.builder(
-                                            physics: ClampingScrollPhysics(),
-                                            scrollDirection: Axis.horizontal,
-                                            shrinkWrap: true,
-                                            // itemCount: moviesCategoryModel[index].moviesModel?.length,
-                                            itemCount:
-                                                moviesMainCategoryModelList[
-                                                        index]
-                                                    .movies
-                                                    ?.length,
-                                            itemBuilder: (BuildContext context,
-                                                int index2) {
-                                              return GestureDetector(
-                                                onTap: () {
-                                                  // Navigator.push(context,
-                                                },
-                                                // child: moviesCategoryModel[index].catogoryID == "1"
-                                                child: getMovieCategoryWidget(
-                                                    moviesMainCategoryModelList[
-                                                            index]
-                                                        .movies![index2]),
-                                              );
-                                            }),
+                                          physics: const BouncingScrollPhysics(),
+                                          scrollDirection: Axis.horizontal,
+                                          itemCount: block.movies?.length ?? 0,
+                                          itemBuilder: (BuildContext context, int index2) {
+                                            return getMovieCategoryWidget(
+                                              block.movies![index2],
+                                              isWebseries: isWebseries,
+                                            );
+                                          },
+                                        ),
                                       ),
                                     ],
                                   );
                                 } else {
                                   return hasMoreScroll
-                                      ? Padding(
-                                          padding: const EdgeInsets.all(8.0),
-                                          child: const Center(
-                                            child: CircularProgressIndicator(
-                                                strokeWidth: 5,
-                                                color: Colors.red),
+                                      ? const Padding(
+                                          padding: EdgeInsets.symmetric(vertical: 20.0),
+                                          child: Center(
+                                            child: CircularProgressIndicator(strokeWidth: 3, color: AppDefaultColors.primaryRed),
                                           ),
                                         )
-                                      : Text("");
+                                      : const SizedBox(height: 20);
                                 }
                               }),
-                        ],
-                      ),
+                      ],
                     ),
-                  )
-                : LoadingWidget(),
+                  ),
+                )
+              : LoadingWidget(),
 
-            // TOP bar
-            AnimatedOpacity(
-              duration: _duration,
-              opacity: _appBarOpacity,
-              child: _isAppBarVisible
-                  ? Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          margin: EdgeInsets.only(top: 40, left: 20, right: 20),
-                          child: Padding(
-                            padding: const EdgeInsets.all(10.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: Container(
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(top: 10.0),
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Image.asset(
-                                            width: 120,
-                                            'images/logo_bestcast.png',
-                                            fit: BoxFit.cover,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Visibility(
-                                  visible: false,
+          // TOP bar
+          AnimatedOpacity(
+            duration: _duration,
+            opacity: _appBarOpacity,
+            child: _isAppBarVisible
+                ? Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(top: 40, left: 20, right: 20),
+                        child: Padding(
+                          padding: const EdgeInsets.all(10.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Container(
                                   child: Padding(
                                     padding: const EdgeInsets.only(top: 10.0),
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                                builder: (context) =>
-                                                    LoginPage()));
-                                      },
-                                      child: Text("LOGIN",
-                                          style: TextStyle(
-                                              fontSize: 15,
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w600)),
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Image.asset(
+                                          width: 120,
+                                          'images/logo_bestcast.png',
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+                              Visibility(
+                                visible: false,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(top: 10.0),
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(context, MaterialPageRoute(builder: (context) => LoginPage()));
+                                    },
+                                    child: const Text("LOGIN", style: TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.w600)),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
+                      ),
 
-                        //TOP bar
-                        Container(
-                          child: Padding(
-                            padding: const EdgeInsets.all(10.0),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.all(10.0),
-                                  child: Container(
-                                    padding: const EdgeInsets.only(right: 5.0),
-                                    child: RoundBackgroundView(
-                                      "All Movies",
-                                      onTap: () async {
-                                        if (await CommonWidget()
-                                            .isInternetConnectivity()) {
-                                          getBannerMoviesDetails(
-                                              _token, profileID, "", "1");
-                                        } else {
-                                          CommonWidget().showSnackBar(
-                                              context,
-                                              ContentType.warning,
-                                              "Check your internet connection.",
-                                              "");
-                                        }
-                                      },
-                                    ),
+                      // TOP bar Filters (All Movies & Categories)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ElevatedButton(
+                              onPressed: _selectAllMovies,
+                              style: ElevatedButton.styleFrom(
+                                minimumSize: const Size(0, 36),
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                foregroundColor: _selectedCategoryId.isEmpty ? Colors.black : Colors.white,
+                                backgroundColor: _selectedCategoryId.isEmpty ? Colors.white : Colors.transparent,
+                                elevation: _selectedCategoryId.isEmpty ? 2 : 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(50),
+                                  side: BorderSide(
+                                    color: _selectedCategoryId.isEmpty ? Colors.white : Colors.white54,
+                                    width: 1,
                                   ),
                                 ),
-                                Padding(
-                                  padding: const EdgeInsets.all(10.0),
-                                  child: Container(
-                                    padding: const EdgeInsets.only(right: 5.0),
-                                    child: RoundIconBackgroundView(
-                                      "Categories",
-                                      Icons.keyboard_arrow_down_sharp,
-                                      onTap: () async {
-                                        getBottomWidget();
-                                      },
-                                    ),
-                                  ),
+                              ),
+                              child: Text(
+                                "All Movies",
+                                style: TextStyle(
+                                  color: _selectedCategoryId.isEmpty ? Colors.black : Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: _selectedCategoryId.isEmpty ? FontWeight.bold : FontWeight.w500,
                                 ),
-                              ],
+                              ),
                             ),
-                          ),
+                            const SizedBox(width: 10),
+                            ElevatedButton.icon(
+                              onPressed: getBottomWidget,
+                              icon: Icon(
+                                Icons.keyboard_arrow_down_rounded,
+                                color: _selectedCategoryId.isNotEmpty ? Colors.black : Colors.white,
+                                size: 20.0,
+                              ),
+                              label: Text(
+                                _selectedCategoryTitle.isNotEmpty ? _selectedCategoryTitle : "Categories",
+                                style: TextStyle(
+                                  color: _selectedCategoryId.isNotEmpty ? Colors.black : Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: _selectedCategoryId.isNotEmpty ? FontWeight.bold : FontWeight.w500,
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                minimumSize: const Size(0, 36),
+                                padding: const EdgeInsets.symmetric(horizontal: 14),
+                                foregroundColor: _selectedCategoryId.isNotEmpty ? Colors.black : Colors.white,
+                                backgroundColor: _selectedCategoryId.isNotEmpty ? Colors.white : Colors.transparent,
+                                elevation: _selectedCategoryId.isNotEmpty ? 2 : 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(50),
+                                  side: BorderSide(
+                                    color: _selectedCategoryId.isNotEmpty ? Colors.white : Colors.white54,
+                                    width: 1,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    )
-                  : null,
+                      ),
+                    ],
+                  )
+                : const SizedBox.shrink(),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  Widget getWebseriesCategoryWidget(WebseriesItemModel item) {
+    String thumb = item.thumbnail.isNotEmpty ? item.thumbnail : item.image;
+    if (thumb.isNotEmpty && !thumb.startsWith('http://') && !thumb.startsWith('https://')) {
+      thumb = '${AppConfig.BaseUrl}/$thumb';
+    }
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => WebseriesDetailScreen(
+              webseriesId: item.id,
+              initialItem: item,
             ),
-          ]),
+          ),
+        );
+      },
+      child: Container(
+        width: 120,
+        padding: const EdgeInsets.symmetric(horizontal: 1.0, vertical: 1.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: SizedBox(
+                height: 160,
+                width: 120,
+                child: thumb.isNotEmpty
+                    ? Image.network(
+                        thumb,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Image.asset('images/default_portrate_large.jpg', fit: BoxFit.cover),
+                      )
+                    : Image.asset('images/default_portrate_large.jpg', fit: BoxFit.cover),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              item.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Colors.white, fontSize: 12),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget getMovieCategoryWidget(Movies moviesModel) {
-    print("checkTitle: ${moviesModel.title}");
-    print("checkImage: ${moviesModel.portrait}");
+  Widget getMovieCategoryWidget(Movies moviesModel, {bool isWebseries = false}) {
+    String pSmall = moviesModel.portraitsmall ?? '';
+    String pPort = moviesModel.portrait ?? '';
+    String pThumb = moviesModel.thumbnail ?? '';
+
+    String imageUrl = pSmall.isNotEmpty
+        ? pSmall
+        : (pPort.isNotEmpty ? pPort : pThumb);
+
+    if (imageUrl.isNotEmpty && !imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
+      imageUrl = imageUrl.startsWith('/') ? '${AppConfig.BaseUrl}$imageUrl' : '${AppConfig.BaseUrl}/$imageUrl';
+    }
+
     return Container(
-      width: 120,
-      padding: const EdgeInsets.symmetric(horizontal: 1.0, vertical: 1.0),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // moviesModel.usermovies != null ? moviesModel.usermovies?.mylist == "1"
-          //     height: 170,
-          //     width: 230,
-          //       width: double.infinity,
-          //       height: double.infinity,
-          //       // 'images/sample_home_screen.jpg',
-          //       fit: BoxFit.cover,
-          //     :
-          MovieCardBackgroundView(
-            Container(
-              child: SizedBox(
-                height: 150,
-                width: 110,
-                //           image: imageProvider,
-                //           fit: BoxFit.cover,
-                //           colorFilter:
+      width: 124,
+      margin: const EdgeInsets.symmetric(horizontal: 5.0),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () {
+            if (isWebseries) {
+              WebseriesItemModel item = moviesModel.webseriesItem ??
+                  WebseriesItemModel(
+                    id: moviesModel.id.toString(),
+                    title: moviesModel.title ?? '',
+                    content: moviesModel.content ?? '',
+                    trailer: moviesModel.trailer ?? '',
+                    certificate: moviesModel.certificate ?? '',
+                    publishedDate: moviesModel.publishedDate ?? '',
+                    duration: moviesModel.duration ?? '',
+                    thumbnail: moviesModel.thumbnail ?? '',
+                    image: (moviesModel.thumbnail != null && moviesModel.thumbnail!.isNotEmpty)
+                        ? moviesModel.thumbnail!
+                        : (moviesModel.portrait ?? ''),
+                    portrait: moviesModel.portrait ?? '',
+                    portraitsmall: moviesModel.portraitsmall ?? '',
+                    movieAccess: int.tryParse(moviesModel.movie_access ?? '0') ?? 0,
+                    seasons: moviesModel.seasons ?? [],
+                  );
 
-                child: Stack(children: <Widget>[
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                          context,
-                          CupertinoPageRoute(
-                              builder: (context) => VideoApp(
-                                  getMovieID: moviesModel.id.toString())));
-                    },
-                    child: FadeInImage(
-                      placeholder:
-                          AssetImage("images/default_portrate_small.jpg"),
-                      image: NetworkImage(moviesModel.portraitsmall.toString()),
-                      imageErrorBuilder: (context, error, stackTrace) {
-                        // Return the error image widget
-                        return Image.asset('images/default_portrate_small.jpg',
-                            width: 130, fit: BoxFit.cover);
-                      },
-                      width: 130,
-                      height: 170,
-                      fit: BoxFit.cover,
-                    ),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => WebseriesDetailScreen(
+                    webseriesId: moviesModel.id.toString(),
+                    initialItem: item,
                   ),
-
-                  // moviesModel
-                  if (moviesModel.movie_access == "1")
-                    Align(
-                      alignment: Alignment.topRight,
-                      child: SizedBox(
-                        height: 30,
-                        child: const Image(
-                            image: AssetImage("images/free_tag_img.png")),
-                      ),
+                ),
+              );
+            } else {
+              Navigator.push(
+                context,
+                CupertinoPageRoute(
+                  builder: (context) => VideoApp(getMovieID: moviesModel.id.toString()),
+                ),
+              );
+            }
+          },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                height: 165,
+                width: 124,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.white.withOpacity(0.12), width: 0.8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.4),
+                      blurRadius: 6,
+                      offset: const Offset(0, 3),
                     ),
-                ]),
-                //   child: moviesModel.portraitsmall.toString() != null
-                //           width: double.infinity,
-                //           height: double.infinity,
-                //           // 'images/sample_home_screen.jpg',
-                //           fit: BoxFit.cover,
-                //           width: double.infinity,
-                //           height: double.infinity,
-                //           "images/sample_movie_2.jpg",
-                //           // 'images/sample_home_screen.jpg',
-                //           fit: BoxFit.cover,
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(7.2),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      imageUrl.isNotEmpty && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))
+                          ? Image.network(
+                              imageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Image.asset(
+                                'images/default_portrate_small.jpg',
+                                fit: BoxFit.cover,
+                              ),
+                              loadingBuilder: (context, child, progress) {
+                                if (progress == null) return child;
+                                return Container(
+                                  color: AppDefaultColors.hardDarkGray,
+                                  child: const Center(
+                                    child: SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white24),
+                                    ),
+                                  ),
+                                );
+                              },
+                            )
+                          : Image.asset(
+                              'images/default_portrate_small.jpg',
+                              fit: BoxFit.cover,
+                            ),
+                      if (moviesModel.movie_access == "1")
+                        Positioned(
+                          top: 4,
+                          right: 4,
+                          child: SizedBox(
+                            height: 24,
+                            child: const Image(image: AssetImage("images/free_tag_img.png")),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 5.0, horizontal: 5),
-            child: Text(
-              moviesModel.title.toString(),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 2,
-              style: const TextStyle(
-                color: Colors.white,
-                height: 1,
-                fontSize: 10.0,
+              const SizedBox(height: 6),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                child: Text(
+                  moviesModel.title.toString(),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12.0,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -709,14 +877,9 @@ class _DashboardState extends State<Dashboard> {
                 child: Padding(
                   padding: const EdgeInsets.only(left: 4.1),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(0),
-                        topRight: Radius.circular(0),
-                        bottomLeft: Radius.circular(5),
-                        bottomRight: Radius.circular(5)),
+                    borderRadius: BorderRadius.only(topLeft: Radius.circular(0), topRight: Radius.circular(0), bottomLeft: Radius.circular(5), bottomRight: Radius.circular(5)),
                     child: LinearProgressIndicator(
-                      value:
-                          double.parse(moviesModel.lastPlayedTime.toString()),
+                      value: double.parse(moviesModel.lastPlayedTime.toString()),
                       color: AppDefaultColors.thikRed,
                       backgroundColor: AppDefaultColors.textLightGray,
                     ),
@@ -731,10 +894,7 @@ class _DashboardState extends State<Dashboard> {
               moviesModel.title.toString(),
               overflow: TextOverflow.ellipsis,
               maxLines: 2,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 17.0,
-                  fontWeight: FontWeight.w900),
+              style: const TextStyle(color: Colors.white, fontSize: 17.0, fontWeight: FontWeight.w900),
             ),
           ),
         ],
@@ -746,358 +906,762 @@ class _DashboardState extends State<Dashboard> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppDefaultColors.appColor.withOpacity(0.7),
-      transitionAnimationController: AnimationController(
-        vsync: Navigator.of(context),
-        duration: Duration(milliseconds: 700), // Set the animation duration
-      ),
-      enableDrag: true,
-      // backgroundColor: Colors.transparent,
-      builder: (BuildContext context) {
-        return AnimatedOpacity(
-          duration: Duration(milliseconds: 500), // Set the animation duration
-          opacity: 1.0, // Set the initial opacity to 0 for fade-out effect
-          onEnd: () {
-            Navigator.pop(
-                context); // Close the bottom sheet after the animation completes
-          },
-
-          child: SingleChildScrollView(
-            child: SizedBox(
-              // height: 500,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 50.0, bottom: 20),
-                child: Column(
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext sheetContext) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF141414),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          padding: const EdgeInsets.only(top: 12.0, bottom: 24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Drag handle
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white30,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 4.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      "All categories",
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 25.0,
-                          fontWeight: FontWeight.w700),
+                    const Text(
+                      "Categories",
+                      style: TextStyle(color: Colors.white, fontSize: 20.0, fontWeight: FontWeight.bold),
                     ),
-                    Container(
-                      constraints: BoxConstraints(
-                          maxHeight: MediaQuery.of(context).size.height * 0.8),
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: allCategoryItems.length,
-                        itemBuilder: (context, index) {
-                          return ListTile(
-                            title: Align(
-                              alignment: Alignment.center,
-                              child: Text(
-                                allCategoryItems[index].title.toString(),
-                                style: const TextStyle(
-                                    color: AppDefaultColors.textLightGray,
-                                    fontSize: 17.0,
-                                    fontWeight: FontWeight.normal),
-                              ),
-                            ),
-                            onTap: () async {
-                              // Add your onTap logic here
-                              if (await CommonWidget()
-                                  .isInternetConnectivity()) {
-                                getBannerMoviesDetails(_token, profileID,
-                                    allCategoryItems[index].id.toString(), "2");
-                              } else {
-                                CommonWidget().showSnackBar(
-                                    context,
-                                    ContentType.warning,
-                                    "Check your internet connection.",
-                                    "");
-                              }
-                              Navigator.pop(
-                                  context); // Close the bottom sheet when item is tapped
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(10.0),
-                      child: GestureDetector(
-                        onTap: () {
-                          Navigator.pop(context);
-                        },
-                        child: Icon(
-                          Icons.cancel_rounded,
-                          color: Colors.white,
-                          size: 60,
-                        ),
-                      ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white70),
+                      onPressed: () => Navigator.pop(sheetContext),
                     ),
                   ],
                 ),
               ),
-            ),
+              const Divider(color: Colors.white12, thickness: 1),
+              ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: MediaQuery.of(sheetContext).size.height * 0.65),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: allCategoryItems.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      final bool isSelected = _selectedCategoryId.isEmpty;
+                      return ListTile(
+                        leading: Icon(
+                          isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
+                          color: isSelected ? AppDefaultColors.primaryRed : Colors.white38,
+                          size: 22,
+                        ),
+                        title: Text(
+                          "All Movies",
+                          style: TextStyle(
+                            color: isSelected ? Colors.white : AppDefaultColors.textLightGray,
+                            fontSize: 16.0,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                        onTap: () {
+                          Navigator.pop(sheetContext);
+                          _selectAllMovies();
+                        },
+                      );
+                    }
+                    final category = allCategoryItems[index - 1];
+                    final bool isSelected = _selectedCategoryTitle.isNotEmpty &&
+                        _selectedCategoryTitle.toLowerCase() == category.title.toString().trim().toLowerCase();
+                    return ListTile(
+                      leading: Icon(
+                        isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
+                        color: isSelected ? AppDefaultColors.primaryRed : Colors.white38,
+                        size: 22,
+                      ),
+                      title: Text(
+                        category.title.toString(),
+                        style: TextStyle(
+                          color: isSelected ? Colors.white : AppDefaultColors.textLightGray,
+                          fontSize: 16.0,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                      onTap: () {
+                        Navigator.pop(sheetContext);
+                        _selectCategory(category.id.toString(), category.title.toString().trim());
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         );
       },
     );
   }
 
-  void getBlockMoviesLits(
-      String token, String profileId, String categoryId, int pageId) async {
-    isLoading = true;
-    var limit = 0;
-    if (scrolleEnabled == false) {
-      moviesMainCategoryModelList.clear();
+  Widget _buildMultiBannerCarousel(double bannerHeight) {
+    return SizedBox(
+      height: bannerHeight,
+      child: Stack(
+        children: [
+          PageView.builder(
+            controller: _bannerPageController,
+            itemCount: _bannerList.length,
+            onPageChanged: (index) {
+              setState(() {
+                _currentBannerIndex = index;
+              });
+              _resetBannerTimer();
+            },
+            itemBuilder: (context, index) {
+              final banner = _bannerList[index];
+              return Stack(
+                children: [
+                  // Full-bleed Poster Image
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => VideoApp(getMovieID: banner.movieId),
+                        ),
+                      );
+                    },
+                    child: SizedBox(
+                      height: bannerHeight,
+                      width: double.infinity,
+                      child: banner.imageUrl.isNotEmpty &&
+                              (banner.imageUrl.startsWith("http://") || banner.imageUrl.startsWith("https://"))
+                          ? Image.network(
+                              banner.imageUrl,
+                              height: bannerHeight,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Image.asset(
+                                'images/default_portrate_large.jpg',
+                                height: bannerHeight,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                              ),
+                            )
+                          : Image.asset(
+                              'images/default_portrate_large.jpg',
+                              height: bannerHeight,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            ),
+                    ),
+                  ),
+
+                  // Cinematic Multi-stop Gradient Vignette
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            stops: const [0.0, 0.35, 0.65, 0.88, 1.0],
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withOpacity(0.05),
+                              Colors.black.withOpacity(0.45),
+                              Colors.black.withOpacity(0.85),
+                              Colors.black,
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Metadata & Action Buttons
+                  Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 14.0, right: 14.0, bottom: 22.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          if (banner.title.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 6.0),
+                              child: Text(
+                                banner.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 22.0,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.5,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black87,
+                                      offset: Offset(0, 2),
+                                      blurRadius: 4,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          if (banner.category.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 14.0),
+                              child: Text(
+                                banner.category,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.85),
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w500,
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
+                            ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                                  child: SubmitWhiteButton(
+                                    "Play",
+                                    Icons.play_arrow,
+                                    onTap: () async {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => VideoApp(getMovieID: banner.movieId),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                                  child: SubmitTransparentButton(
+                                    "My List",
+                                    banner.isMyList ? Icons.check : Icons.add,
+                                    onTap: () async {
+                                      if (loggedStatus) {
+                                        setState(() {
+                                          banner.isMyList = !banner.isMyList;
+                                          if (index == 0) {
+                                            _isAddedMyList = banner.isMyList;
+                                          }
+                                        });
+                                        final postValues = {
+                                          'mylist': banner.isMyList ? 1 : 0,
+                                        };
+                                        setUserMovies(_token, profileID, banner.movieId, postValues);
+                                      } else {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => LoginPage(),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+
+          // Indicator Dots
+          if (_bannerList.length > 1)
+            Positioned(
+              bottom: 7.0,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(_bannerList.length, (dotIndex) {
+                  final bool isActive = _currentBannerIndex == dotIndex;
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    margin: const EdgeInsets.symmetric(horizontal: 3.0),
+                    width: isActive ? 20.0 : 6.0,
+                    height: 5.0,
+                    decoration: BoxDecoration(
+                      color: isActive ? AppDefaultColors.primaryRed : Colors.white38,
+                      borderRadius: BorderRadius.circular(3.0),
+                    ),
+                  );
+                }),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSingleBannerFallback(double bannerHeight) {
+    return SizedBox(
+      height: bannerHeight,
+      child: Stack(
+        children: <Widget>[
+          SizedBox(
+            height: bannerHeight,
+            width: double.infinity,
+            child: _mainMoviePicture.isNotEmpty &&
+                    (_mainMoviePicture.startsWith("http://") ||
+                        _mainMoviePicture.startsWith("https://"))
+                ? Image.network(
+                    _mainMoviePicture,
+                    height: bannerHeight,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Image.asset(
+                      'images/default_portrate_large.jpg',
+                      height: bannerHeight,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                : Image.asset(
+                    'images/default_portrate_large.jpg',
+                    height: bannerHeight,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
+          ),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: const [0.0, 0.35, 0.65, 0.88, 1.0],
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.05),
+                      Colors.black.withOpacity(0.45),
+                      Colors.black.withOpacity(0.85),
+                      Colors.black,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 14.0, right: 14.0, bottom: 20.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  if (_mainMovieCategory.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16.0),
+                      child: Text(
+                        _mainMovieCategory,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15.0,
+                          fontWeight: FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                          child: SubmitWhiteButton(
+                            "Play",
+                            Icons.play_arrow,
+                            onTap: () async {
+                              if (_mainMovieId.isNotEmpty) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => VideoApp(getMovieID: _mainMovieId),
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                          child: SubmitTransparentButton(
+                            "My List",
+                            _isAddedMyList ? Icons.check : Icons.add,
+                            onTap: () async {
+                              if (loggedStatus) {
+                                setState(() {
+                                  _isAddedMyList = !_isAddedMyList;
+                                  final postValues = {
+                                    'mylist': _isAddedMyList ? 1 : 0,
+                                  };
+                                  setUserMovies(_token, profileID, _mainMovieId, postValues);
+                                });
+                              } else {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => LoginPage(),
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void getBlockMoviesLits(String token, String profileId, String categoryId, int pageId) async {
+    if (!scrolleEnabled) {
+      isLoading = true;
+      if (_selectedCategoryTitle.isEmpty) {
+        moviesMainCategoryModelList.clear();
+      }
     }
 
-    print("PageCount: $_page");
-    print("PageCategoryIdCount: $categoryId");
+    String blocksApi = (loggedStatus && token.isNotEmpty) ? AppConfig.movieblockslistUser : AppConfig.movieblockslist;
 
-    ApiServices()
-        .getRequestData(
-            "${AppConfig.movieblockslist}1&page=$pageId&profile_id=$profileId&genre_id=$categoryId",
-            token)
-        .then((response) async {
-      String jsonsDataString = response.body.toString();
-      print("Movie_Response: $jsonsDataString");
+    ApiServices().getRequestData("${blocksApi}1&page=$pageId&profile_id=$profileId", token).then((response) async {
       if (response.statusCode == 200) {
         try {
-          var jsonReponse = jsonDecode(jsonsDataString);
-          var data = jsonReponse['data'];
-
-          print("DataObject:$data");
-
           var responseData = json.decode(response.body);
+          final List<MoviesMainCategoryModel> fetchedBlocks = [];
 
           for (var mainData in responseData["data"]) {
-            limit++;
-
-            print("movieID:${mainData["id"]}");
-            print("MovieTitle${mainData['title']}");
-
             List<Movies> userMainCategoryModelList = [];
-            for (var movieData in mainData["movies"]) {
-              Usermovies? usermovies;
+            if (mainData["movies"] != null && mainData["movies"] is List) {
+              for (var movieData in mainData["movies"]) {
+                Usermovies? usermovies;
 
-              if (movieData['usermovies'] != "") {
-                usermovies = Usermovies(
-                  id: movieData["usermovies"]["id"].toString(),
-                  movieId: movieData["usermovies"]["movie_id"].toString(),
-                  mylist: movieData["usermovies"]["mylist"].toString(),
-                  likes: movieData["usermovies"]["likes"].toString(),
-                  watchTime: movieData["usermovies"]["watch_time"].toString(),
-                  watching: movieData["usermovies"]["watching"].toString(),
-                  watched: movieData["usermovies"]["watched"].toString(),
-                  watchedPercent:
-                      movieData["usermovies"]["watched_percent"].toString(),
-                  viewed: movieData["usermovies"]["viewed"].toString(),
-                );
+                if (movieData['usermovies'] != null && movieData['usermovies'] is Map && (movieData['usermovies'] as Map).isNotEmpty) {
+                  var um = movieData['usermovies'];
+                  usermovies = Usermovies(
+                    id: um["id"]?.toString() ?? "",
+                    movieId: (um["movie_id"] ?? um["movieId"])?.toString() ?? "",
+                    mylist: um["mylist"]?.toString() ?? "",
+                    likes: um["likes"]?.toString() ?? "",
+                    watchTime: (um["watch_time"] ?? um["watchTime"])?.toString() ?? "",
+                    watching: um["watching"]?.toString() ?? "",
+                    watched: um["watched"]?.toString() ?? "",
+                    watchedPercent: (um["watched_percent"] ?? um["watchedPercent"])?.toString() ?? "",
+                    viewed: um["viewed"]?.toString() ?? "",
+                  );
+                }
+
+                String movieAccess = movieData["movie_access"]?.toString() ?? "";
+
+                String thumbnail = movieData["thumbnail"]?.toString() ?? "";
+                String portraitsmall = movieData["portraitsmall"]?.toString() ?? "";
+                String portrait = movieData["portrait"]?.toString() ?? "";
+
+                String imgFallback = portraitsmall.isNotEmpty ? portraitsmall : (portrait.isNotEmpty ? portrait : thumbnail);
+                String imgFallbackUrl = imgFallback.isNotEmpty ? (imgFallback.startsWith("http") ? imgFallback : "${AppConfig.BaseUrl}/$imgFallback") : "";
+
+                String thumbnailUrl = thumbnail.isNotEmpty ? (thumbnail.startsWith("http") ? thumbnail : "${AppConfig.BaseUrl}/$thumbnail") : imgFallbackUrl;
+                String portraitsmallUrl = portraitsmall.isNotEmpty ? (portraitsmall.startsWith("http") ? portraitsmall : "${AppConfig.BaseUrl}/$portraitsmall") : imgFallbackUrl;
+                String portraitUrl = portrait.isNotEmpty ? (portrait.startsWith("http") ? portrait : "${AppConfig.BaseUrl}/$portrait") : imgFallbackUrl;
+
+                WebseriesItemModel? webseriesItem;
+                List<WebseriesSeasonModel>? seasonsList;
+                if (movieData["seasons"] != null && movieData["seasons"] is List) {
+                  seasonsList = (movieData["seasons"] as List)
+                      .map((x) => WebseriesSeasonModel.fromJson(x))
+                      .toList();
+                }
+                if (movieData["is_webseries"] == true || movieData["is_webseries"] == 1 || seasonsList != null) {
+                  try {
+                    webseriesItem = WebseriesItemModel.fromJson(movieData);
+                  } catch (_) {}
+                }
+
+                userMainCategoryModelList.add(Movies(
+                  id: movieData["id"]?.toString() ?? "",
+                  title: movieData["title"]?.toString() ?? "",
+                  movie_access: movieAccess,
+                  topten: movieData["topten"]?.toString() ?? "",
+                  trailer: movieData["trailer"]?.toString() ?? "",
+                  certificate: movieData["certificate"]?.toString() ?? "",
+                  duration: movieData["duration"]?.toString() ?? "",
+                  tagText: movieData["tag_text"]?.toString() ?? "",
+                  publishedDate: movieData["published_date"]?.toString() ?? "",
+                  userlist: movieData["userlist"]?.toString() ?? "",
+                  userlike: movieData["userlike"]?.toString() ?? "",
+                  thumbnail: thumbnailUrl,
+                  portraitsmall: portraitsmallUrl,
+                  portrait: portraitUrl,
+                  content: (movieData["content_plain"] ?? movieData["content"])?.toString() ?? "",
+                  image: movieData["image"]?.toString() ?? "",
+                  medium: movieData["medium"]?.toString() ?? "",
+                  isWebseries: movieData["is_webseries"] == true || movieData["is_webseries"] == 1 || seasonsList != null,
+                  seasons: seasonsList,
+                  webseriesItem: webseriesItem,
+                  usermovies: usermovies,
+                ));
               }
-
-              String movieAccess = movieData["movie_access"].toString();
-              print("_movie_access$movieAccess");
-
-              String thumbnailUrl =
-                  "${AppConfig.BaseUrl}/${movieData["thumbnail"]}";
-              String portraitsmallUrl =
-                  "${AppConfig.BaseUrl}/${movieData["portraitsmall"]}";
-              String portraitUrl =
-                  "${AppConfig.BaseUrl}/${movieData["portrait"]}";
-
-              print("usermoviesStatus${movieData["usermovies"]}");
-              print("portraitImageUrl: {$portraitUrl}}");
-
-              //
-
-              userMainCategoryModelList.add(Movies(
-                id: movieData["id"].toString(),
-                title: movieData["title"].toString(),
-                movie_access: movieData["movie_access"].toString(),
-                topten: movieData["topten"].toString(),
-                trailer: movieData["trailer"].toString(),
-                certificate: movieData["certificate"].toString(),
-                duration: movieData["duration"].toString(),
-                tagText: movieData["tag_text"].toString(),
-                publishedDate: movieData["published_date"].toString(),
-                userlist: movieData["userlist"].toString(),
-                userlike: movieData["userlike"].toString(),
-                thumbnail: thumbnailUrl,
-                portraitsmall: portraitsmallUrl,
-                portrait: portraitUrl,
-                usermovies: usermovies,
-              ));
             }
 
-            print("checkStatus: catogeryMovie");
-            moviesMainCategoryModelList.add(MoviesMainCategoryModel(
-              id: mainData["id"].toString(),
-              title: mainData["title"].toString(),
-              movies: userMainCategoryModelList,
-            ));
-
-            print("checkStatus: mainMovie");
+            if (userMainCategoryModelList.isNotEmpty) {
+              fetchedBlocks.add(MoviesMainCategoryModel(
+                id: mainData["id"]?.toString() ?? "",
+                title: mainData["title"]?.toString() ?? "",
+                movies: userMainCategoryModelList,
+              ));
+            }
           }
 
-          if (limit < 5) {
+          if (pageId == 1) {
+            _masterCategoryModelList = List.from(fetchedBlocks);
+          } else {
+            _masterCategoryModelList.addAll(fetchedBlocks);
+          }
+
+          if (_selectedCategoryTitle.isNotEmpty) {
+            _applyCategoryFilter(_selectedCategoryTitle);
+          } else {
             setState(() {
-              hasMoreScroll = false;
-              scrolleEnabled = false;
+              moviesMainCategoryModelList = List.from(_masterCategoryModelList);
             });
           }
 
-          if (_page == 1) {
+          bool hasNextPage = false;
+          if (responseData["links"] != null && responseData["links"]["next"] != null) {
+            hasNextPage = true;
+          } else if (responseData["meta"] != null) {
+            int currentPage = int.tryParse(responseData["meta"]["current_page"]?.toString() ?? "") ?? 1;
+            int lastPage = int.tryParse(responseData["meta"]["last_page"]?.toString() ?? "") ?? 1;
+            hasNextPage = currentPage < lastPage;
+          }
+
+          setState(() {
+            hasMoreScroll = _selectedCategoryTitle.isEmpty ? hasNextPage : false;
+            scrolleEnabled = false;
+            isLoading = false;
+          });
+
+          if (_page == 1 && allCategoryItems.isEmpty) {
             getCastegoryDetails(token);
           }
 
-          if (hasMoreScroll) {
-            setState(() {
-              _page++;
-            });
+          if (hasNextPage) {
+            _page++;
           }
         } catch (e) {
           setState(() {
             isLoading = false;
+            hasMoreScroll = false;
+            scrolleEnabled = false;
           });
           print('DashboardMovieListException:$e');
         }
       } else {
-        print("Error: $response");
-        isLoading = false;
-        CommonWidget().showSnackBar(
-            context, ContentType.failure, "Error", response.toString());
+        setState(() {
+          isLoading = false;
+          hasMoreScroll = false;
+          scrolleEnabled = false;
+        });
+        CommonWidget().showSnackBar(context, ContentType.failure, "Error", response.toString());
       }
 
       setState(() {
-        if (_page != 1) {
-          isLoading = false;
-        }
+        isLoading = false;
       });
     });
   }
 
-  void getBannerMoviesDetails(
-      String token, String profileId, String categoryID, String pageId) async {
+  void getBannerMoviesDetails(String token, String profileId, String categoryID, String pageId) async {
     setState(() {
       isLoading = true;
     });
 
-    print("categoryID: $categoryID");
-    ApiServices()
-        .getRequestWithoutToken(
-            "${AppConfig.bannerlist}$pageId&genre_id=$categoryID")
-        .then((response) async {
-      String jsonsDataString = response.body.toString();
-      print("Banner_Response: $jsonsDataString");
-      if (response.statusCode == 200) {
-        try {
-          var jsonReponse = jsonDecode(jsonsDataString);
+    _bannerTimer?.cancel();
 
-          var data = jsonReponse['data'];
+    final String bannerApi = (loggedStatus && token.isNotEmpty) ? AppConfig.bannerlistUser : AppConfig.bannerlist;
 
-          String id = data["movies"]["id"].toString();
-          String urlkey = data["movies"]["urlkey"].toString();
-          String title = data["movies"]["title"].toString();
-          String movieAccess = data["movies"]["movie_access"].toString();
-          String content = data["movies"]["content"].toString();
-          String publishedDate = data["movies"]["published_date"].toString();
-          String releaseDate = data["movies"]["release_date"].toString();
+    // Fetch pages 1 to 5 concurrently to assemble multi-banner list
+    final pagesToFetch = [1, 2, 3, 4, 5];
+    final futures = pagesToFetch.map((p) {
+      final url = "$bannerApi$p&genre_id=$categoryID";
+      return (loggedStatus && token.isNotEmpty)
+          ? ApiServices().getRequestData(url, token)
+          : ApiServices().getRequestWithoutToken(url);
+    }).toList();
 
-          String image = "${AppConfig.BaseUrl}/${data["movies"]["image"]}";
-          String medium = "${AppConfig.BaseUrl}/${data["movies"]["medium"]}";
-          String thumbnail =
-              "${AppConfig.BaseUrl}/${data["movies"]["thumbnail"]}";
-          String portraitsmall =
-              "${AppConfig.BaseUrl}/${data["movies"]["portraitsmall"]}";
-          String portrait =
-              "${AppConfig.BaseUrl}/${data["movies"]["portrait"]}";
+    try {
+      final responses = await Future.wait(futures);
+      final List<DashboardBannerItem> fetchedBanners = [];
 
-          String duration = data["movies"]["duration"].toString();
-          String durationText = data["movies"]["duration_text"].toString();
-          String certificate = data["movies"]["certificate"].toString();
-          String certificateText =
-              data["movies"]["certificate_text"].toString();
-          String tagText = data["movies"]["tag_text"].toString();
-          String topten = data["movies"]["topten"].toString();
-          String trailer = data["movies"]["trailer"].toString();
-          String trailer480p = data["movies"]["trailer_480p"].toString();
-          String videoUrl = data["movies"]["video_url"].toString();
-          String moviesource = data["movies"]["moviesource"].toString();
-          String subtitleStatus = data["movies"]["subtitle_status"].toString();
+      for (var response in responses) {
+        if (response.statusCode == 200) {
+          try {
+            var jsonResponse = jsonDecode(response.body.toString());
+            var data = jsonResponse['data'];
+            if (data != null && data['movies'] != null) {
+              var movie = data['movies'];
+              String id = movie["id"].toString();
+              String title = (movie["title"] ?? data["title"] ?? "").toString();
 
-          print("MainMoiveDetails:$title");
-          print("DataMoiveDetails:${data["movies"]['usermovies']}");
+              String rawPortrait = movie["portrait"]?.toString() ?? "";
+              String rawImage = movie["image"]?.toString() ?? "";
+              String rawThumbnail = movie["thumbnail"]?.toString() ?? "";
+              String rawPortraitsmall = movie["portraitsmall"]?.toString() ?? "";
+              String rawMedium = movie["medium"]?.toString() ?? "";
 
-          var jsonReponse1 = jsonEncode(data["movies"]['usermovies']);
-          var jsonData = jsonDecode(jsonReponse1.toString());
+              String portrait = rawPortrait.isNotEmpty
+                  ? (rawPortrait.startsWith("http") ? rawPortrait : "${AppConfig.BaseUrl}/$rawPortrait")
+                  : "";
+              String image = rawImage.isNotEmpty
+                  ? (rawImage.startsWith("http") ? rawImage : "${AppConfig.BaseUrl}/$rawImage")
+                  : "";
+              String thumbnail = rawThumbnail.isNotEmpty
+                  ? (rawThumbnail.startsWith("http") ? rawThumbnail : "${AppConfig.BaseUrl}/$rawThumbnail")
+                  : "";
+              String portraitsmall = rawPortraitsmall.isNotEmpty
+                  ? (rawPortraitsmall.startsWith("http") ? rawPortraitsmall : "${AppConfig.BaseUrl}/$rawPortraitsmall")
+                  : "";
+              String medium = rawMedium.isNotEmpty
+                  ? (rawMedium.startsWith("http") ? rawMedium : "${AppConfig.BaseUrl}/$rawMedium")
+                  : "";
 
-          if (jsonData.isNotEmpty) {
-            print("MainMoiveDetailsTitle:$title");
+              // Prefer portrait for vertical card, fallback to image or thumbnail
+              String bannerImageUrl = portrait.isNotEmpty ? portrait : (image.isNotEmpty ? image : thumbnail);
 
-            print("myListUserMovies:${data["movies"]["usermovies"]}");
-            var myList = data["movies"]["usermovies"]["mylist"].toInt();
-            print("myListDetails:$myList");
-            if (myList == 0) {
-              _isAddedMyList = false;
-            } else {
-              _isAddedMyList = true;
+              String tagText = (movie["tag_text"] ?? "").toString();
+              RegExp exp = RegExp(r"<[^>]*>", multiLine: true, caseSensitive: true);
+              String resultTagText = tagText.replaceAll(exp, '  ').trim();
+
+              bool isMyList = false;
+              if (movie['usermovies'] != null && movie['usermovies'] is Map) {
+                var myVal = movie['usermovies']['mylist'];
+                if (myVal != null) {
+                  isMyList = (int.tryParse(myVal.toString()) ?? 0) != 0;
+                }
+              }
+
+              List<SubTitleModel>? subtitleList;
+              if (movie["subtitle"] != null && movie["subtitle"] is List) {
+                subtitleList = List<SubTitleModel>.from(movie["subtitle"].map((x) => SubTitleModel.fromJson(x)));
+              }
+
+              MovieData bannerMovieData = MovieData(
+                id: id,
+                urlkey: (movie["urlkey"] ?? "").toString(),
+                title: title,
+                movie_access: (movie["movie_access"] ?? "").toString(),
+                content: (movie["content"] ?? "").toString(),
+                publishedDate: (movie["published_date"] ?? "").toString(),
+                releaseDate: (movie["release_date"] ?? "").toString(),
+                image: image,
+                medium: medium,
+                thumbnail: thumbnail,
+                portraitsmall: portraitsmall,
+                portrait: portrait,
+                duration: (movie["duration"] ?? "").toString(),
+                durationText: (movie["duration_text"] ?? "").toString(),
+                certificate: (movie["certificate"] ?? "").toString(),
+                certificateText: (movie["certificate_text"] ?? "").toString(),
+                tagText: tagText,
+                topten: (movie["topten"] ?? "").toString(),
+                trailer: (movie["trailer"] ?? "").toString(),
+                trailer480P: (movie["trailer_480p"] ?? "").toString(),
+                videoUrl: (movie["video_url"] ?? "").toString(),
+                moviesource: (movie["moviesource"] ?? "").toString(),
+                subtitleStatus: (movie["subtitle_status"] ?? "").toString(),
+                subtitle: subtitleList,
+              );
+
+              if (!fetchedBanners.any((b) => b.movieId == id)) {
+                fetchedBanners.add(DashboardBannerItem(
+                  bannerId: (data["id"] ?? "").toString(),
+                  movieId: id,
+                  title: title,
+                  imageUrl: bannerImageUrl,
+                  thumbnail: thumbnail,
+                  category: resultTagText,
+                  isMyList: isMyList,
+                  movieData: bannerMovieData,
+                ));
+              }
             }
+          } catch (e) {
+            print('BannerItemParseException: $e');
           }
-
-          RegExp exp = RegExp(r"<[^>]*>", multiLine: true, caseSensitive: true);
-          String resultTagText = tagText.replaceAll(exp, '  ');
-
-          setState(() {
-            _mainMoviePicture = portrait;
-            _mainMovieId = id.toString();
-
-            _mainMovieCategory = resultTagText;
-          });
-
-          movieData = MovieData(
-              id: id.toString(),
-              urlkey: urlkey.toString(),
-              title: title.toString(),
-              movie_access: movieAccess.toString(),
-              content: content.toString(),
-              publishedDate: publishedDate.toString(),
-              releaseDate: releaseDate.toString(),
-              image: image.toString(),
-              medium: medium.toString(),
-              thumbnail: thumbnail.toString(),
-              portraitsmall: portraitsmall.toString(),
-              portrait: portrait.toString(),
-              duration: duration.toString(),
-              durationText: durationText.toString(),
-              certificate: certificate.toString(),
-              certificateText: certificateText.toString(),
-              tagText: tagText.toString(),
-              topten: topten.toString(),
-              trailer: trailer.toString(),
-              trailer480P: trailer480p.toString(),
-              videoUrl: videoUrl.toString(),
-              moviesource: moviesource.toString(),
-              subtitleStatus: subtitleStatus.toString());
-
-          getBlockMoviesLits(_token, profileID, categoryID, _page);
-        } catch (e) {
-          setState(() {
-            isLoading = false;
-          });
-          print('BannerException:$e');
         }
-      } else {
-        print("Error: $response");
-        isLoading = false;
-        CommonWidget().showSnackBar(
-            context, ContentType.failure, "Error", response.toString());
       }
 
-      setState(() {
-        isLoading = false;
-      });
-    });
+      if (mounted) {
+        setState(() {
+          if (fetchedBanners.isNotEmpty) {
+            _masterBannerList = List.from(fetchedBanners);
+            if (_selectedCategoryTitle.isNotEmpty) {
+              final filteredBanners = _masterBannerList.where((b) => _bannerMatchesGenre(b, _selectedCategoryTitle)).toList();
+              _bannerList = filteredBanners.isNotEmpty ? filteredBanners : List.from(_masterBannerList);
+            } else {
+              _bannerList = List.from(_masterBannerList);
+            }
+            _currentBannerIndex = 0;
+            if (_bannerList.isNotEmpty) {
+              _mainMoviePicture = _bannerList[0].imageUrl;
+              _mainMovieId = _bannerList[0].movieId;
+              _mainMovieCategory = _bannerList[0].category;
+              _isAddedMyList = _bannerList[0].isMyList;
+              movieData = _bannerList[0].movieData;
+            }
+          }
+          if (_bannerPageController.hasClients) {
+            _bannerPageController.jumpToPage(0);
+          }
+        });
+        _startBannerTimer();
+      }
+    } catch (e) {
+      print('BannerFetchException: $e');
+    }
+
+    _page = 1;
+    scrolleEnabled = false;
+    getBlockMoviesLits(_token, profileID, categoryID, 1);
   }
 
   void printWrapped(String text) {
     final pattern = RegExp('.{1,800}'); // 800 is the size of each chunk
-    pattern
-        .allMatches("LongPrint: $text")
-        .forEach((match) => print(match.group(0)));
+    pattern.allMatches("LongPrint: $text").forEach((match) => print(match.group(0)));
   }
 
   void getCastegoryDetails(String token) async {
@@ -1105,30 +1669,32 @@ class _DashboardState extends State<Dashboard> {
     setState(() {
       isLoading = true;
     });
-    ApiServices()
-        .getRequestData(AppConfig.genrelist, token)
-        .then((response) async {
+    final String genresApi = (loggedStatus && token.isNotEmpty) ? AppConfig.genrelistUser : AppConfig.genrelist;
+    ApiServices().getRequestData(genresApi, token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("gener_Response: $jsonsDataString");
       if (response.statusCode == 200) {
         try {
           var jsonReponse = jsonDecode(jsonsDataString);
 
+          final Set<String> seenTitles = <String>{};
+          final List<Genres> uniqueGenres = [];
+
           for (var data in jsonReponse['data']) {
-            print("GeneriesId${data["id"]}");
-
             String bannerId = data["id"].toString();
-            String bannerTitle = data["title"].toString();
+            String bannerTitle = (data["title"] ?? "").toString().trim();
 
-            Genres genreslists = Genres(
-              id: bannerId,
-              title: bannerTitle,
-            );
-
-            allCategoryItems.add(genreslists);
+            if (bannerTitle.isNotEmpty && !seenTitles.contains(bannerTitle.toLowerCase())) {
+              seenTitles.add(bannerTitle.toLowerCase());
+              uniqueGenres.add(Genres(
+                id: bannerId,
+                title: bannerTitle,
+              ));
+            }
           }
 
           setState(() {
+            allCategoryItems = uniqueGenres;
             isLoading = false;
           });
         } catch (e) {
@@ -1142,8 +1708,7 @@ class _DashboardState extends State<Dashboard> {
         setState(() {
           isLoading = false;
         });
-        CommonWidget().showSnackBar(
-            context, ContentType.failure, "Error", response.toString());
+        CommonWidget().showSnackBar(context, ContentType.failure, "Error", response.toString());
       }
 
       setState(() {
@@ -1152,16 +1717,10 @@ class _DashboardState extends State<Dashboard> {
     });
   }
 
-  void setUserMovies(String token, String profileID, String movieID,
-      Map<String, int> postValues) async {
+  void setUserMovies(String token, String profileID, String movieID, Map<String, int> postValues) async {
     //   'mylist': _mylist,
 
-    ApiServices()
-        .postRequestToken(
-            "${AppConfig.setUserMovie}$movieID?profile_id=$profileID",
-            postValues,
-            token)
-        .then((response) async {
+    ApiServices().postRequestToken("${AppConfig.setUserMovie}$movieID?profile_id=$profileID", postValues, token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("setuserMovie_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -1177,9 +1736,7 @@ class _DashboardState extends State<Dashboard> {
   }
 
   void getUserDetails(String token) async {
-    ApiServices()
-        .postRequestTokenWithoutBody(AppConfig.getUserDetails, token)
-        .then((response) async {
+    ApiServices().postRequestTokenWithoutBody(AppConfig.getUserDetails, token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("getUserDetails_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -1188,17 +1745,13 @@ class _DashboardState extends State<Dashboard> {
           String status = jsonReponse['status'];
 
           if (status == "success") {
-            String? planExpiry =
-                jsonReponse['results']['user']['plan_expiry'].toString();
-            String? planStatus =
-                jsonReponse['results']['user']['plan_status'].toString();
-            String? planDeviceStatus =
-                jsonReponse['results']['user']['plan_device_status'].toString();
+            String? planExpiry = jsonReponse['results']['user']['plan_expiry'].toString();
+            String? planStatus = jsonReponse['results']['user']['plan_status'].toString();
+            String? planDeviceStatus = jsonReponse['results']['user']['plan_device_status'].toString();
 
             final pref = await SharedPreferences.getInstance();
             await pref.setString(AppPreferences.plan_expiry, planExpiry);
-            await pref.setString(
-                AppPreferences.plan_device_status, planDeviceStatus);
+            await pref.setString(AppPreferences.plan_device_status, planDeviceStatus);
             await pref.setString(AppPreferences.plan_status, planStatus);
           } else {
             if (status == "error") {
@@ -1214,33 +1767,76 @@ class _DashboardState extends State<Dashboard> {
     });
   }
 
-  void getTokenValid(String token) async {
+  Future<void> getTokenValid(String token) async {
+    if (token.isEmpty) return;
+    if (!mounted) return;
     setState(() {
       isLoading = true;
     });
-    ApiServices()
-        .postRequestTokenWithoutBody(AppConfig.tokenexist, token)
-        .then((response) async {
+
+    try {
+      final response = await ApiServices()
+          .postRequestTokenWithoutBody(AppConfig.tokenexist, token)
+          .timeout(const Duration(seconds: 10));
+
       String jsonsDataString = response.body.toString();
       print("getTokenExist_Response: $jsonsDataString");
-      if (response.statusCode == 200) {
-        try {
-          var jsonReponse = jsonDecode(jsonsDataString);
-          String status = jsonReponse['status'];
 
-          if (status == "error") {
-            final pref = await SharedPreferences.getInstance();
-            pref.clear();
+      if (response.statusCode == 200) {
+        var jsonReponse = jsonDecode(jsonsDataString);
+        String status = jsonReponse['status'] ?? "";
+
+        if (status == "error") {
+          final pref = await SharedPreferences.getInstance();
+          await AppPreferences.clearUserSession(pref);
+
+          if (mounted) {
+            setState(() {
+              _token = "";
+              loggedStatus = false;
+              profileID = "";
+              profileName = "";
+            });
+
+            CommonWidget().showSnackBar(
+              context,
+              ContentType.warning,
+              "Session Expired",
+              "Your session has expired. Please sign in again.",
+            );
+
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const LoginPage()),
+            );
           }
-        } catch (e) {
-          print('getTokenExistException:$e');
         }
-      } else {
-        print("geTokenResError: $response");
+      } else if (response.statusCode == 401) {
+        final pref = await SharedPreferences.getInstance();
+        await AppPreferences.clearUserSession(pref);
+
+        if (mounted) {
+          setState(() {
+            _token = "";
+            loggedStatus = false;
+            profileID = "";
+            profileName = "";
+          });
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const LoginPage()),
+          );
+        }
       }
-    });
-    setState(() {
-      isLoading = false;
-    });
+    } catch (e) {
+      print('getTokenExistException:$e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
   }
 }

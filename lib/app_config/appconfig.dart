@@ -1,5 +1,6 @@
 class AppConfig {
-  static const String BaseUrl = "http://game.bestcast.co";
+  // static const String BaseUrl = "https://bestcast.co";
+  static const String BaseUrl = "http://staging.bestcast.co";
 
   static const String encryptionKey = '5A4B3C2D1E0DSS';
 
@@ -22,16 +23,24 @@ class AppConfig {
   static const String tokenexist = "${rootUrl}tokenexist";
 
   static const String bannerlist = "${rootUrl}guest/bannerlist?page_id=";
-  static const String bannerlist1 = "${rootUrl}guest/bannerlist?page_id=";
+  static const String bannerlistUser = "${rootUrl}bannerlist?page_id=";
   static const String searchMovieslist = "${rootUrl}guest/movieslist?search=";
+  static const String searchMovieslistUser = "${rootUrl}movieslist?search=";
   static const String genrelist = "${rootUrl}guest/genrelist";
+  static const String genrelistUser = "${rootUrl}genrelist";
   static const String usermovieslist = "${rootUrl}usermovieslist?profile_id=";
   static const String movieblockslist = "${rootUrl}guest/blockslist?page_id=";
-  static const String popularMovieblockslist =
-      "${rootUrl}guest/blockslist?page_id=4";
+  static const String movieblockslistUser = "${rootUrl}blockslist?page_id=";
+  static const String popularMovieblockslist = "${rootUrl}guest/blockslist?page_id=4";
+  static const String popularMovieblockslistUser = "${rootUrl}blockslist?page_id=4";
   static const String userMovieDetails = "${rootUrl}guest/getusermovie/";
   static const String userMainMovieDetails = "${rootUrl}getusermovie/";
   static const String setUserMovie = "${rootUrl}setusermovie/";
+  static const String webseriesblockslist = "${rootUrl}webseriesblockslist?page_id=";
+  static const String seasonepisodebannerlist = "${rootUrl}seasonepisodebannerlist/";
+  static const String webserieswatchdetail = "${rootUrl}webserieswatchdetail/";
+  static const String getwebseriesdetail = "${rootUrl}getwebseriesdetail/";
+  static const String setuserepisode = "${rootUrl}setuserepisode/";
   static const String appnotifylist = "${rootUrl}guest/appnotifylist";
   static const String appnotifylistuser = "${rootUrl}appnotifylist";
 
@@ -48,4 +57,10 @@ class AppConfig {
   static const String myAccountUrl = "$BaseUrl/my-account/";
   static const String myAccountLoginUrl = "$BaseUrl/accountlogin/";
   static const String forgotPassword = "$BaseUrl/password/reset";
+
+  static const String getQuiz = "${rootUrl}moviequiz";
+  static const String submitQuiz = "${rootUrl}mobilesubmitquiz";
+  static const String quizResult = "${rootUrl}mobilequizresult";
+  static const String rewardClaimCreate = "${rootUrl}reward-claim";
+  static const String rewardClaimUpdate = "${rootUrl}reward-claim/";
 }

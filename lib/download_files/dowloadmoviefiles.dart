@@ -145,10 +145,10 @@ class _DownloadMovieFilesState extends State<DownloadMovieFiles> {
                             itemBuilder: (BuildContext context, int index) {
                               return GestureDetector(
                                 onTap: () {
-                                  String movieLocalPath =
-                                      downloadedMovieModel[index]
-                                          .movieName
-                                          .toString();
+                                  final item = downloadedMovieModel[index];
+                                  final String movieLocalPath = (item.moviePath != null && item.moviePath!.isNotEmpty)
+                                      ? item.moviePath!
+                                      : item.movieName.toString();
 
                                   Navigator.push(
                                       context,
@@ -156,17 +156,13 @@ class _DownloadMovieFilesState extends State<DownloadMovieFiles> {
                                           builder: (context) =>
                                               MovieVideoViewer(
                                                 getMainMovieUrl: movieLocalPath,
-                                                getMainMovieID: '',
+                                                getMainMovieID: item.movieID ?? '',
                                                 getWatchTime: '0',
                                                 playType: 2,
                                                 movieTitle:
-                                                    downloadedMovieModel[index]
-                                                        .movieName
-                                                        .toString(),
+                                                    item.movieName.toString(),
                                                 thumbnail:
-                                                    downloadedMovieModel[index]
-                                                        .thumnail
-                                                        .toString(),
+                                                    item.thumnail.toString(),
                                               )));
                                 },
                                 child: getDownloadedWidget(
@@ -222,14 +218,15 @@ class _DownloadMovieFilesState extends State<DownloadMovieFiles> {
                   icon: Icon(Icons.play_arrow,
                       size: 30, color: AppDefaultColors.white),
                   onPressed: () async {
-                    String movieLocalPath =
-                        moviesDownloadedModel.movieName.toString();
+                    final String movieLocalPath = (moviesDownloadedModel.moviePath != null && moviesDownloadedModel.moviePath!.isNotEmpty)
+                        ? moviesDownloadedModel.moviePath!
+                        : moviesDownloadedModel.movieName.toString();
                     Navigator.push(
                         context,
                         MaterialPageRoute(
                             builder: (context) => MovieVideoViewer(
                                   getMainMovieUrl: movieLocalPath,
-                                  getMainMovieID: '',
+                                  getMainMovieID: moviesDownloadedModel.movieID ?? '',
                                   getWatchTime: '0',
                                   playType: 2,
                                   movieTitle: moviesDownloadedModel.movieName
@@ -287,33 +284,32 @@ class _DownloadMovieFilesState extends State<DownloadMovieFiles> {
   Future<void> getDownloadMovieDetails() async {
     downloadedMovieModel.clear();
     setState(() {
-      isLoading == true;
+      isLoading = true;
     });
-    var dbData = await dbHelper.getData();
-    print('dbMovieData: $dbData');
+    try {
+      final data = await dbHelper.getItems();
 
-    final data = await dbHelper.getItems();
-    print('dataMovieDb: ${data[0].movieTitle}');
-
-    for (var element in data) {
-      downloadedMovieModel.add(DownloadedMovieModel(
-        movieID: element.movieID.toString(),
-        title: element.movieTitle.toString(),
-        description: "",
-        movieName: element.movieTitle.toString(),
-        thumnail: element.movieThumnail.toString(),
-        moviePath: element.movieUrl.toString(),
-      ));
-
-      // Access the elements and perform operations
-      int? id = element.id?.toInt();
-      String name = element.movieTitle.toString();
-      print('ID: $id, Name: $name');
+      if (data.isNotEmpty) {
+        for (var element in data) {
+          downloadedMovieModel.add(DownloadedMovieModel(
+            movieID: element.movieID.toString(),
+            title: element.movieTitle.toString(),
+            description: "",
+            movieName: element.movieTitle.toString(),
+            thumnail: element.movieThumnail.toString(),
+            moviePath: element.movieUrl.toString(),
+          ));
+        }
+      }
+    } catch (e) {
+      debugPrint("Error fetching downloads: $e");
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
-
-    setState(() {
-      isLoading == false;
-    });
   }
 
   Widget showDeleteMovieAlertDialog(String movieID) {
@@ -350,32 +346,24 @@ class _DownloadMovieFilesState extends State<DownloadMovieFiles> {
       Directory appDocDir = await getApplicationDocumentsDirectory();
       String videoPath = '${appDocDir.path}/$movieName.mp4';
 
-      if (await File(videoPath).exists()) {
-        //Delete file from directory
-        print('path $videoPath');
-        File videoFile = File(videoPath);
+      final videoFile = File(videoPath);
+      if (await videoFile.exists()) {
         await videoFile.delete();
-        print('File deleted');
-      } else {
-        // File does not exist
-        print('File not found');
       }
 
-      //Delete file from db
-      var movieId = int.parse(movieID);
-      print("Delete_movieId : {$movieId}");
-      var dbData = await dbHelper.deleteData(movieId);
-      print('dbMovieData: $dbData');
+      if (movieID.isNotEmpty) {
+        await dbHelper.deleteData(movieID);
+      }
 
-      getDownloadMovieDetails();
-
-      setState(() {
-        _isDeleting = false;
-      });
+      await getDownloadMovieDetails();
     } catch (e) {
-      setState(() {
-        _isDeleting = false;
-      });
+      debugPrint("deleteFile error: $e");
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isDeleting = false;
+        });
+      }
     }
   }
 }

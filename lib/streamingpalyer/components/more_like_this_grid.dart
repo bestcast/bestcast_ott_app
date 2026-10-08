@@ -43,8 +43,7 @@ class MoreLikeThisGrid extends StatelessWidget {
                 height: 170,
                 child: FadeInImage(
                   placeholder: AssetImage("images/sample_movie_1.jpg"),
-                  image: NetworkImage(
-                      relatedMovieData.movie!.portraitsmall.toString()),
+                  image: NetworkImage(relatedMovieData.movie!.portraitsmall.toString()),
                   imageErrorBuilder: (context, error, stackTrace) {
                     return Image.asset('images/sample_movie_1.jpg');
                   },

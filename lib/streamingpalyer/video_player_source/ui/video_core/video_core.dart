@@ -1,3 +1,5 @@
+// ignore_for_file: unused_element, unused_field
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -114,8 +116,12 @@ class _VideoViewerCoreState extends State<VideoViewerCore> {
   //-------------------------------//
   //FORWARD AND REWIND (DOUBLE TAP)//
   //-------------------------------//
-  void _rewind() => _showRewindAndForward(0, _defaultRewindAmount);
-  void _forward() => _showRewindAndForward(1, _defaultForwardAmount);
+  void _rewind() {
+    if (_query.video(context).enableSkip) _showRewindAndForward(0, _defaultRewindAmount);
+  }
+  void _forward() {
+    if (_query.video(context).enableSkip) _showRewindAndForward(1, _defaultForwardAmount);
+  }
 
   Future<void> _videoSeekToNextSeconds(int seconds) async {
     final controller = _query.video(context);
@@ -152,6 +158,7 @@ class _VideoViewerCoreState extends State<VideoViewerCore> {
   //------------------------------------//
   void _forwardDragStart(Offset globalPosition) async {
     final controller = _query.video(context);
+    if (!controller.enableSkip) return;
     await controller.pause();
     if (!controller.isShowingSettingsMenu) {
       Misc.delayed(50, () {
@@ -187,15 +194,16 @@ class _VideoViewerCoreState extends State<VideoViewerCore> {
   //----------------------------//
   //VIDEO VOLUME (VERTICAL DRAG)//
   //----------------------------//
-  void _setVolume(double volume) async {
+  void _setVolume(double volume) {
     volume = volume.clamp(0.0, _maxVolume);
     _currentVolume.value = volume;
-    switch (_query.videoMetadata(context).volumeManager) {
+    final volumeManager = _query.videoMetadata(context).volumeManager;
+    switch (volumeManager) {
       case VideoViewerVolumeManager.device:
-        await VolumeController.instance.setVolume(volume);
+        VolumeController.instance.setVolume(volume);
         break;
       case VideoViewerVolumeManager.video:
-        await _query.video(context).video!.setVolume(volume);
+        _query.video(context).video?.setVolume(volume);
         break;
     }
   }

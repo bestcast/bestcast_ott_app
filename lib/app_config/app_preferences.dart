@@ -1,3 +1,5 @@
+import 'package:shared_preferences/shared_preferences.dart';
+
 class AppPreferences {
   //Company Infor
   static const String CINFOID = "cInfoID";
@@ -27,6 +29,7 @@ class AppPreferences {
   static const String referal_code = "referal_code";
   static const String credits_used = "credits_used";
   static const String refferer = "refferer";
+  static const String bmpReferralCode = "bmp_referral_code";
   static const String token = "token";
   static const String accountCreatedStatus = "accountCreatedStatus";
   static const String profileID = "profileID";
@@ -41,4 +44,39 @@ class AppPreferences {
   static const String enabelNotification = "enabelNotification";
   static const String downloadQuality = "downloadQuality";
   static const String downloadDataOption = "downloadDataOption";
+
+  /// Clears only user-specific authentication and profile session data,
+  /// preserving app settings (download quality, mobile data usage, notifications,
+  /// referral codes) and offline SQLite download data.
+  static Future<void> clearUserSession(SharedPreferences pref) async {
+    final sessionKeys = [
+      loggedStatus,
+      id,
+      email,
+      phone,
+      name,
+      firstname,
+      lastname,
+      dob,
+      gender,
+      plan,
+      plan_expiry,
+      plan_device_status,
+      plan_status,
+      photo,
+      otp,
+      tvcode,
+      token,
+      accountCreatedStatus,
+      profileID,
+      profileName,
+      profilePictureID,
+      profilePictureTitle,
+      profilePicture,
+      isChild,
+    ];
+    for (final key in sessionKeys) {
+      await pref.remove(key);
+    }
+  }
 }

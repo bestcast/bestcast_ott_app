@@ -13,17 +13,21 @@ class NotificationModel {
   String? movieName;
   String? thumnail;
   String? notificationDate;
+  bool isRead;
 
-  NotificationModel(
-      {this.notificationID,
-      this.movieID,
-      this.title,
-      this.description,
-      this.movieName,
-      this.thumnail,
-      this.notificationDate});
+  NotificationModel({
+    this.notificationID,
+    this.movieID,
+    this.title,
+    this.description,
+    this.movieName,
+    this.thumnail,
+    this.notificationDate,
+    this.isRead = false,
+  });
 
-  NotificationModel.fromJson(Map<String, dynamic> json) {
+  NotificationModel.fromJson(Map<String, dynamic> json)
+      : isRead = json['isRead'] == true || json['is_read'] == 1 || json['is_read'] == '1' {
     notificationID = json['notificationID'];
     movieID = json['movieID'];
     title = json['title'];
@@ -42,6 +46,7 @@ class NotificationModel {
     data['movieName'] = movieName;
     data['thumnail'] = thumnail;
     data['notificationDate'] = notificationDate;
+    data['isRead'] = isRead;
     return data;
   }
 }

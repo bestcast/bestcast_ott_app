@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+// import 'package:bestcaststudios/streamingpalyer/test_component.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -52,16 +53,14 @@ class VideoApp extends StatefulWidget {
 class _VideoAppState extends State<VideoApp> {
   late VideoPlayerController _controller;
 
-  late final SimulatedDownloadController _downloadControllers =
-      SimulatedDownloadController(
-          onOpenDownload: () {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (context) => DownloadMovieFiles()));
-          },
-          downloadUrl: movieData!.moviesource.toString(),
-          downloadMovieID: movieData!.id.toString(),
-          downloadThumnail: movieData!.thumbnail.toString(),
-          downloadMovieTitle: movieData!.title.toString());
+  late final SimulatedDownloadController _downloadControllers = SimulatedDownloadController(
+      onOpenDownload: () {
+        Navigator.push(context, MaterialPageRoute(builder: (context) => DownloadMovieFiles()));
+      },
+      downloadUrl: movieData!.moviesource.toString(),
+      downloadMovieID: movieData!.id.toString(),
+      downloadThumnail: movieData!.thumbnail.toString(),
+      downloadMovieTitle: movieData!.title.toString());
 
   bool _isMuted = false;
   bool _isPlaying = false;
@@ -72,11 +71,15 @@ class _VideoAppState extends State<VideoApp> {
   var watchTime = "0";
   bool _showControls = true;
   Timer? _hideControlsTimer;
+  LifecycleEventHandler? _lifecycleHandler;
 
   late MovieData? movieData;
   List<CastElement> castElementList = [];
   List<RelatedMovieData> relatedMovieData = [];
   String _DirectorName = "";
+  String _directorLabel = "Director";
+  String _producersNames = "";
+  String _producersLabel = "Producer";
 
   bool isLoading = false;
 
@@ -103,14 +106,7 @@ class _VideoAppState extends State<VideoApp> {
   List<MoreLikeMoviesModel> moreLikeMoviesModel = [];
 
   var staringNames = "";
-  var thumnailPic = [
-    "images/sample_home_screen.jpg",
-    "images/sample_movie_2.jpg",
-    "images/sample_movie_3.jpg",
-    "images/sample_movie_4.jpg",
-    "images/sample_movie_5.jpg",
-    "images/sample_movie_1.jpg"
-  ];
+  var thumnailPic = ["images/sample_home_screen.jpg", "images/sample_movie_2.jpg", "images/sample_movie_3.jpg", "images/sample_movie_4.jpg", "images/sample_movie_5.jpg", "images/sample_movie_1.jpg"];
 
   final dbHelper = DatabaseHelper();
 
@@ -124,23 +120,53 @@ class _VideoAppState extends State<VideoApp> {
 
     getInitalValue();
 
-    WidgetsBinding.instance.addObserver(LifecycleEventHandler(
-        resumeCallBack: () async => setState(() {
-              print("Page Resumed");
-            })));
+    _lifecycleHandler = LifecycleEventHandler(
+      resumeCallBack: () async {
+        if (mounted) {
+          setState(() {
+            print("Page Resumed");
+          });
+        }
+      },
+    );
+    WidgetsBinding.instance.addObserver(_lifecycleHandler!);
+  }
+
+  void _onControllerProgress() {
+    if (!mounted) return;
+    try {
+      if (!_controller.value.isInitialized) return;
+      final double duration = _controller.value.duration.inSeconds.toDouble();
+      if (duration > 0) {
+        final double progress = (_controller.value.position.inSeconds.toDouble() / duration).clamp(0.0, 1.0);
+        if ((progress - _progressValue).abs() > 0.005) {
+          if (mounted) {
+            setState(() {
+              _progressValue = progress;
+            });
+          }
+        }
+      }
+    } catch (_) {}
   }
 
   void getPlayerController(String loaderUrl) {
     print("LoaderUrl:$loaderUrl");
+    try {
+      _controller.removeListener(_onControllerProgress);
+      if (_controller.value.isPlaying) {
+        _controller.pause();
+      }
+      _controller.dispose();
+    } catch (_) {}
+
     _controller = VideoPlayerController.networkUrl(Uri.parse(loaderUrl))
       ..initialize().then((_) {
+        if (!mounted) return;
         setState(() {});
-        _controller.addListener(() {
-          setState(() {
-            _progressValue = _controller.value.position.inSeconds.toDouble() /
-                _controller.value.duration.inSeconds.toDouble();
-          });
-        });
+        _controller.addListener(_onControllerProgress);
+      }).catchError((error) {
+        print("VideoPlayerController init error: $error");
       });
 
     _controller.play();
@@ -152,10 +178,12 @@ class _VideoAppState extends State<VideoApp> {
   void _startHideControlsTimer() {
     _hideControlsTimer?.cancel();
     _hideControlsTimer = Timer(Duration(seconds: 5), () {
-      setState(() {
-        print("HideConrolles");
-        _showControls = false;
-      });
+      if (mounted) {
+        setState(() {
+          print("HideConrolles");
+          _showControls = false;
+        });
+      }
     });
   }
 
@@ -171,10 +199,8 @@ class _VideoAppState extends State<VideoApp> {
       profilePictureID = pref.getString(AppPreferences.profilePictureID) ?? '';
 
       mobileDataUsage = pref.getString(AppPreferences.mobileDataUsage) ?? '';
-      enabelNotification =
-          pref.getBool(AppPreferences.enabelNotification) ?? false;
-      downloadDataOption =
-          pref.getBool(AppPreferences.downloadDataOption) ?? false;
+      enabelNotification = pref.getBool(AppPreferences.enabelNotification) ?? false;
+      downloadDataOption = pref.getBool(AppPreferences.downloadDataOption) ?? false;
       downloadQuality = pref.getString(AppPreferences.downloadQuality) ?? '';
       loggedStatus = pref.getBool(AppPreferences.loggedStatus) ?? false;
     });
@@ -194,10 +220,7 @@ class _VideoAppState extends State<VideoApp> {
 
   void getMoreMovieListsTemp() {
     for (int i = 0; i < thumnailPic.length; i++) {
-      moreLikeMoviesModel.add(MoreLikeMoviesModel(
-          movieID: i.toString(),
-          movieName: "Movie Name",
-          thumnailPicture: thumnailPic[i]));
+      moreLikeMoviesModel.add(MoreLikeMoviesModel(movieID: i.toString(), movieName: "Movie Name", thumnailPicture: thumnailPic[i]));
     }
   }
 
@@ -241,30 +264,25 @@ class _VideoAppState extends State<VideoApp> {
                                         onTap: () {
                                           setState(() {
                                             _showControls = !_showControls;
-                                            if (_showControls &&
-                                                _controller.value.isPlaying) {
+                                            if (_showControls && _controller.value.isPlaying) {
                                               _startHideControlsTimer();
                                             }
                                           });
                                         },
                                         child: AspectRatio(
-                                          aspectRatio:
-                                              _controller.value.aspectRatio,
+                                          aspectRatio: _controller.value.aspectRatio,
                                           child: VideoPlayer(_controller),
                                         ),
                                       ),
                                       IconButton(
                                         icon: Icon(
-                                          _isMuted
-                                              ? Icons.volume_off
-                                              : Icons.volume_up,
+                                          _isMuted ? Icons.volume_off : Icons.volume_up,
                                           color: Colors.white,
                                         ),
                                         onPressed: () {
                                           setState(() {
                                             _isMuted = !_isMuted;
-                                            _controller.setVolume(
-                                                _isMuted ? 0.0 : 1.0);
+                                            _controller.setVolume(_isMuted ? 0.0 : 1.0);
                                           });
                                         },
                                       ),
@@ -272,25 +290,15 @@ class _VideoAppState extends State<VideoApp> {
                                         bottom: 0,
                                         left: -10,
                                         right: -10,
-                                        child: LayoutBuilder(
-                                            builder: (context, constraints) {
+                                        child: LayoutBuilder(builder: (context, constraints) {
                                           return Slider(
-                                            value: _progressValue,
-                                            activeColor:
-                                                AppDefaultColors.thikRed,
-                                            inactiveColor:
-                                                AppDefaultColors.white,
+                                            value: _progressValue.clamp(0.0, 1.0),
+                                            activeColor: AppDefaultColors.thikRed,
+                                            inactiveColor: AppDefaultColors.white,
                                             onChanged: (double value) {
                                               setState(() {
-                                                _progressValue = value;
-                                                final Duration newPosition =
-                                                    Duration(
-                                                        seconds: (_controller
-                                                                    .value
-                                                                    .duration
-                                                                    .inSeconds *
-                                                                _progressValue)
-                                                            .toInt());
+                                                _progressValue = value.clamp(0.0, 1.0);
+                                                final Duration newPosition = Duration(seconds: (_controller.value.duration.inSeconds * _progressValue).toInt());
                                                 _controller.seekTo(newPosition);
                                               });
                                             },
@@ -305,42 +313,29 @@ class _VideoAppState extends State<VideoApp> {
                                           right: 0,
                                           child: AnimatedOpacity(
                                             opacity: _showControls ? 1.0 : 0.0,
-                                            duration:
-                                                Duration(milliseconds: 1000),
+                                            duration: Duration(milliseconds: 1000),
                                             child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.center,
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              crossAxisAlignment: CrossAxisAlignment.center,
                                               children: [
                                                 IconButton(
                                                   icon: Image(
-                                                    image: AssetImage(
-                                                        "images/rotate_left.png"),
+                                                    image: AssetImage("images/rotate_left.png"),
                                                     height: 30,
                                                   ),
                                                   onPressed: () {
-                                                    _controller.seekTo(Duration(
-                                                        seconds: _controller
-                                                                .value
-                                                                .position
-                                                                .inSeconds -
-                                                            10));
+                                                    _controller.seekTo(Duration(seconds: _controller.value.position.inSeconds - 10));
                                                   },
                                                 ),
                                                 IconButton(
                                                   icon: Icon(
-                                                    _isPlaying
-                                                        ? Icons.pause
-                                                        : Icons.play_arrow,
+                                                    _isPlaying ? Icons.pause : Icons.play_arrow,
                                                     color: Colors.white,
                                                     size: 40,
                                                   ),
                                                   onPressed: () {
                                                     setState(() {
-                                                      _isPlaying
-                                                          ? _controller.pause()
-                                                          : _controller.play();
+                                                      _isPlaying ? _controller.pause() : _controller.play();
                                                       _isPlaying = !_isPlaying;
                                                       _startHideControlsTimer();
                                                     });
@@ -348,17 +343,11 @@ class _VideoAppState extends State<VideoApp> {
                                                 ),
                                                 IconButton(
                                                   icon: Image(
-                                                    image: AssetImage(
-                                                        "images/rotate_right.png"),
+                                                    image: AssetImage("images/rotate_right.png"),
                                                     height: 30,
                                                   ),
                                                   onPressed: () {
-                                                    _controller.seekTo(Duration(
-                                                        seconds: _controller
-                                                                .value
-                                                                .position
-                                                                .inSeconds +
-                                                            10));
+                                                    _controller.seekTo(Duration(seconds: _controller.value.position.inSeconds + 10));
                                                   },
                                                 ),
                                               ],
@@ -397,10 +386,7 @@ class _VideoAppState extends State<VideoApp> {
                             // "Movie Time Name",
                             overflow: TextOverflow.ellipsis,
                             maxLines: 2,
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 25.0,
-                                fontWeight: FontWeight.w900),
+                            style: const TextStyle(color: Colors.white, fontSize: 25.0, fontWeight: FontWeight.w900),
                           ),
                         ),
                         Row(
@@ -408,22 +394,18 @@ class _VideoAppState extends State<VideoApp> {
                             Padding(
                               padding: EdgeInsets.only(left: 10),
                               child: Text(
-                                appUtils.getDateTimeToYear(
-                                    movieData!.releaseDate.toString()),
+                                appUtils.getDateTimeToYear(movieData!.releaseDate.toString()),
                                 // '2024 2h 22m',
-                                style: TextStyle(
-                                    color: AppDefaultColors.textLightGray),
+                                style: TextStyle(color: AppDefaultColors.textLightGray),
                               ),
                             ),
                             Padding(
-                              padding: const EdgeInsets.only(
-                                  left: 8.0, top: 8.0, bottom: 8.0, right: 3.0),
+                              padding: const EdgeInsets.only(left: 8.0, top: 8.0, bottom: 8.0, right: 3.0),
                               child: Container(
                                 height: 25,
                                 decoration: BoxDecoration(
                                   border: Border.all(
-                                    color: AppDefaultColors
-                                        .textLightGray, // Border color
+                                    color: AppDefaultColors.textLightGray, // Border color
                                     width: 1.0, // Border width
                                   ),
                                 ),
@@ -433,9 +415,7 @@ class _VideoAppState extends State<VideoApp> {
                                     child: Text(
                                       movieData!.certificate.toString(),
                                       // '2024 2h 22m',
-                                      style: TextStyle(
-                                          color: AppDefaultColors.textLightGray,
-                                          fontSize: 12),
+                                      style: TextStyle(color: AppDefaultColors.textLightGray, fontSize: 12),
                                     ),
                                   ),
                                 ), // Your content inside the container
@@ -445,8 +425,7 @@ class _VideoAppState extends State<VideoApp> {
                               padding: EdgeInsets.only(left: 5),
                               child: Text(
                                 movieData!.durationText.toString(),
-                                style: TextStyle(
-                                    color: AppDefaultColors.textLightGray),
+                                style: TextStyle(color: AppDefaultColors.textLightGray),
                               ),
                             ),
                           ],
@@ -462,46 +441,102 @@ class _VideoAppState extends State<VideoApp> {
                             style: TextStyle(color: AppDefaultColors.white),
                           ),
                         ),
-                        Padding(
-                          padding: EdgeInsets.only(top: 10, left: 10),
-                          child: Row(
-                            children: [
-                              SizedBox(
-                                width: 230,
-                                child: Text(
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                  // 'Starring: Tovino Thomas, Siddique, Vineeth Thattil David.',
-                                  'Starring: $staringNames',
-                                  style:
-                                      TextStyle(color: AppDefaultColors.white),
+                        if (staringNames.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8, left: 12, right: 12),
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () {
+                                getStartingBottomWidget();
+                              },
+                              child: RichText(
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                text: TextSpan(
+                                  children: [
+                                    const TextSpan(
+                                      text: 'Starring: ',
+                                      style: TextStyle(
+                                        color: Colors.white60,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text: staringNames,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    if (castElementList.isNotEmpty || staringNames.length > 25)
+                                      const TextSpan(
+                                        text: '  more...',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                  ],
                                 ),
                               ),
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () {
-                                    getStartingBottomWidget();
-                                  },
-                                  child: Text(
-                                    maxLines: 1,
-                                    'more.',
-                                    style: TextStyle(
-                                        color: AppDefaultColors.white,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500),
+                            ),
+                          ),
+                        if (_DirectorName.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4, left: 12, right: 12),
+                            child: RichText(
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              text: TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: '$_directorLabel: ',
+                                    style: const TextStyle(
+                                      color: Colors.white60,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
-                                ),
+                                  TextSpan(
+                                    text: _DirectorName,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
-                        ),
-                        Padding(
-                          padding: EdgeInsets.only(left: 10),
-                          child: Text(
-                            'Director: $_DirectorName',
-                            style: TextStyle(color: AppDefaultColors.white),
+                        if (_producersNames.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4, left: 12, right: 12),
+                            child: RichText(
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              text: TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: '$_producersLabel: ',
+                                    style: const TextStyle(
+                                      color: Colors.white60,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: _producersNames,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
-                        ),
 
                         Padding(
                           padding: const EdgeInsets.only(
@@ -516,10 +551,7 @@ class _VideoAppState extends State<VideoApp> {
                             margin: EdgeInsets.only(top: 20),
                             padding: const EdgeInsets.only(right: 5.0),
                             child: SubmitWhiteButton(
-                              _plan_status == "1" ||
-                                      movieData!.movie_access == "1"
-                                  ? "Play"
-                                  : "Subscribe to Watch",
+                              _plan_status == "1" || movieData!.movie_access == "1" ? "Play" : "Subscribe to Watch",
                               Icons.play_arrow,
                               onTap: () async {
                                 //     context,
@@ -528,72 +560,49 @@ class _VideoAppState extends State<VideoApp> {
 
                                 if (loggedStatus) {
                                   if (mobileDataUsage == "Wi-FiOnly") {
-                                    if (await CommonWidget()
-                                        .isWifiConnectivity()) {
+                                    if (await CommonWidget().isWifiConnectivity()) {
                                       if (_plan_status == "0") {
                                         if (movieData!.movie_access == "1") {
                                           Navigator.push(
                                               context,
                                               MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      MovieVideoViewer(
-                                                        getMainMovieUrl:
-                                                            movieData!.videoUrl
-                                                                .toString(),
-                                                        getMainMovieID:
-                                                            movieData!.id
-                                                                .toString(),
+                                                  builder: (context) => MovieVideoViewer(
+                                                        getMainMovieUrl: movieData!.videoUrl.toString(),
+                                                        getMainMovieID: movieData!.id.toString(),
                                                         getWatchTime: watchTime,
                                                         playType: 1,
-                                                        movieTitle:
-                                                            movieData!.title,
-                                                        thumbnail: movieData!
-                                                            .thumbnail,
+                                                        movieTitle: movieData!.title,
+                                                        thumbnail: movieData!.thumbnail,
+                                                        subtitles: movieData!.subtitle,
                                                       ))).then((value) {
                                             setState(() {
-                                              getUserWatchingMoviesDetails(
-                                                  _token,
-                                                  profileID,
-                                                  widget.getMovieID);
+                                              getUserWatchingMoviesDetails(_token, profileID, widget.getMovieID);
                                             });
                                           });
                                         } else {
-                                          Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      PlanDetailsPage()));
+                                          Navigator.push(context, MaterialPageRoute(builder: (context) => PlanDetailsPage()));
                                         }
                                       } else {
                                         Navigator.push(
                                             context,
                                             MaterialPageRoute(
-                                                builder: (context) =>
-                                                    MovieVideoViewer(
-                                                      getMainMovieUrl:
-                                                          movieData!.videoUrl
-                                                              .toString(),
-                                                      getMainMovieID: movieData!
-                                                          .id
-                                                          .toString(),
+                                                builder: (context) => MovieVideoViewer(
+                                                      getMainMovieUrl: movieData!.videoUrl.toString(),
+                                                      getMainMovieID: movieData!.id.toString(),
                                                       getWatchTime: watchTime,
                                                       playType: 1,
-                                                      movieTitle:
-                                                          movieData!.title,
-                                                      thumbnail:
-                                                          movieData!.thumbnail,
+                                                      movieTitle: movieData!.title,
+                                                      thumbnail: movieData!.thumbnail,
+                                                      subtitles: movieData!.subtitle,
                                                     ))).then((value) {
                                           setState(() {
-                                            getUserWatchingMoviesDetails(_token,
-                                                profileID, widget.getMovieID);
+                                            getUserWatchingMoviesDetails(_token, profileID, widget.getMovieID);
                                           });
                                         });
                                       }
                                     } else {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(SnackBar(
-                                        content: Text(
-                                            'Enable Wi-fi on your device.\nYour settings enabled wifi video playback option'),
+                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                        content: Text('Enable Wi-fi on your device.\nYour settings enabled wifi video playback option'),
                                         duration: Duration(seconds: 2),
                                       ));
                                     }
@@ -612,62 +621,45 @@ class _VideoAppState extends State<VideoApp> {
                                         Navigator.push(
                                             context,
                                             MaterialPageRoute(
-                                                builder: (context) =>
-                                                    MovieVideoViewer(
-                                                      getMainMovieUrl:
-                                                          movieData!.videoUrl
-                                                              .toString(),
-                                                      getMainMovieID: movieData!
-                                                          .id
-                                                          .toString(),
+                                                builder: (context) => MovieVideoViewer(
+                                                      getMainMovieUrl: movieData!.videoUrl.toString(),
+                                                      getMainMovieID: movieData!.id.toString(),
                                                       getWatchTime: watchTime,
                                                       playType: 1,
-                                                      movieTitle:
-                                                          movieData!.title,
-                                                      thumbnail:
-                                                          movieData!.thumbnail,
+                                                      movieTitle: movieData!.title,
+                                                      thumbnail: movieData!.thumbnail,
+                                                      subtitles: movieData!.subtitle,
                                                     ))).then((value) {
                                           setState(() {
-                                            getUserWatchingMoviesDetails(_token,
-                                                profileID, widget.getMovieID);
+                                            getUserWatchingMoviesDetails(_token, profileID, widget.getMovieID);
                                           });
                                         });
                                       } else {
-                                        Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                                builder: (context) =>
-                                                    PlanDetailsPage()));
+                                        Navigator.push(context, MaterialPageRoute(builder: (context) => PlanDetailsPage()));
                                       }
                                     } else {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (context) =>
-                                              MovieVideoViewer(
-                                            getMainMovieUrl:
-                                                movieData!.videoUrl.toString(),
-                                            getMainMovieID:
-                                                movieData!.id.toString(),
+                                          builder: (context) => MovieVideoViewer(
+                                            getMainMovieUrl: movieData!.videoUrl.toString(),
+                                            getMainMovieID: movieData!.id.toString(),
                                             getWatchTime: watchTime,
                                             playType: 1,
                                             movieTitle: movieData!.title,
                                             thumbnail: movieData!.thumbnail,
+                                            subtitles: movieData!.subtitle,
                                           ),
                                         ),
                                       ).then((value) {
                                         setState(() {
-                                          getUserWatchingMoviesDetails(_token,
-                                              profileID, widget.getMovieID);
+                                          getUserWatchingMoviesDetails(_token, profileID, widget.getMovieID);
                                         });
                                       });
                                     }
                                   }
                                 } else {
-                                  Navigator.pushReplacement(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (context) => LoginPage()));
+                                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginPage()));
                                 }
                               },
                             ),
@@ -687,30 +679,23 @@ class _VideoAppState extends State<VideoApp> {
                                     child: Container(
                                       width: double.infinity,
                                       height: 50,
-                                      padding:
-                                          const EdgeInsets.only(right: 5.0),
+                                      padding: const EdgeInsets.only(right: 5.0),
                                       child: SubmitTransparentButton(
                                         "Play Downloaded movie",
                                         Icons.play_circle,
                                         onTap: () async {
-                                          var movieId =
-                                              widget.getMovieID.toString();
-                                          var movieLocalTitle = await dbHelper
-                                              .getMovieTitle(movieId);
+                                          var movieId = widget.getMovieID.toString();
+                                          var movieLocalTitle = await dbHelper.getMovieTitle(movieId);
                                           Navigator.push(
                                               context,
                                               MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      MovieVideoViewer(
-                                                        getMainMovieUrl:
-                                                            movieLocalTitle,
+                                                  builder: (context) => MovieVideoViewer(
+                                                        getMainMovieUrl: movieLocalTitle,
                                                         getMainMovieID: '',
                                                         getWatchTime: '0',
                                                         playType: 2,
-                                                        movieTitle:
-                                                            movieData!.title,
-                                                        thumbnail: movieData!
-                                                            .thumbnail,
+                                                        movieTitle: movieData!.title,
+                                                        thumbnail: movieData!.thumbnail,
                                                       )));
                                         },
                                       ),
@@ -725,16 +710,11 @@ class _VideoAppState extends State<VideoApp> {
                                         animation: _downloadControllers,
                                         builder: (context, child) {
                                           return DownloadButton(
-                                            status: _downloadControllers
-                                                .downloadStatus,
-                                            downloadProgress:
-                                                _downloadControllers.progress,
-                                            onDownload: _downloadControllers
-                                                .startDownload,
-                                            onCancel: _downloadControllers
-                                                .stopDownload,
-                                            onOpen: _downloadControllers
-                                                .openDownload,
+                                            status: _downloadControllers.downloadStatus,
+                                            downloadProgress: _downloadControllers.progress,
+                                            onDownload: _downloadControllers.startDownload,
+                                            onCancel: _downloadControllers.stopDownload,
+                                            onOpen: _downloadControllers.openDownload,
                                           );
                                         },
                                       ),
@@ -764,8 +744,7 @@ class _VideoAppState extends State<VideoApp> {
                               final postValues = {
                                 'mylist': isMyList,
                               };
-                              setUserMovies(_token, profileID,
-                                  movieData!.id.toString(), postValues);
+                              setUserMovies(_token, profileID, movieData!.id.toString(), postValues);
                             },
                             onLike: () {
                               var isLikeValue = 0;
@@ -783,8 +762,7 @@ class _VideoAppState extends State<VideoApp> {
                               final postValues = {
                                 'likes': isLikeValue,
                               };
-                              setUserMovies(_token, profileID,
-                                  movieData!.id.toString(), postValues);
+                              setUserMovies(_token, profileID, movieData!.id.toString(), postValues);
                             },
                             onDislike: () {
                               var isDisLikeValue = 0;
@@ -802,14 +780,11 @@ class _VideoAppState extends State<VideoApp> {
                               final postValues = {
                                 'likes': isDisLikeValue,
                               };
-                              setUserMovies(_token, profileID,
-                                  movieData!.id.toString(), postValues);
+                              setUserMovies(_token, profileID, movieData!.id.toString(), postValues);
                             },
                             onShare: () {
-                              final encodedTitle = Uri.encodeComponent(
-                                  movieData!.title.toString());
-                              Share.share(
-                                  'Watch ${movieData!.title} on Bestcast OTT, \n\nCheck it out here: ${AppConfig.BaseUrl}/search?search=$encodedTitle');
+                              final encodedTitle = Uri.encodeComponent(movieData!.title.toString());
+                              Share.share('Watch ${movieData!.title} on Bestcast OTT, \n\nCheck it out here: ${AppConfig.BaseUrl}/search?search=$encodedTitle');
                             },
                           ),
 
@@ -821,18 +796,22 @@ class _VideoAppState extends State<VideoApp> {
                           padding: const EdgeInsets.all(8.0),
                           child: Text(
                             "More Like This",
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 20.0,
-                                fontWeight: FontWeight.w700),
+                            style: const TextStyle(color: Colors.white, fontSize: 20.0, fontWeight: FontWeight.w700),
                           ),
                         ),
-
-                        //   itemCount: thumnailPic.length,
-                        //     crossAxisCount: 3, // Number of columns
-                        //     crossAxisSpacing: 0, // Spacing between columns
-                        //     mainAxisSpacing: 0, // Spacing between rows
-
+                        // TEST BUTTON START ------------------------------------------
+                        // ElevatedButton(
+                        //   onPressed: () {
+                        //     Navigator.push(
+                        //       context,
+                        //       MaterialPageRoute(
+                        //         builder: (context) => TestComponent(),
+                        //       ),
+                        //     );
+                        //   },
+                        //   child: Text("TEST"),
+                        // ),
+                        // TEST BUTTON END --------------------------------------------
                         MoreLikeThisGrid(
                           relatedMovieData: relatedMovieData,
                           onMovieTap: (movieId) {
@@ -843,17 +822,6 @@ class _VideoAppState extends State<VideoApp> {
                             );
                           },
                         ),
-
-                        //       itemCount: relatedMovieData.length,
-                        //         crossAxisCount: 3, // Number of columns
-                        //         crossAxisSpacing: 0, // Spacing between columns
-                        //         mainAxisSpacing: 0, // Spacing between rows
-                        //
-
-                        //       itemCount: moreLikeMoviesModel.length,
-                        //         crossAxisCount: 2, // Number of columns
-                        //         crossAxisSpacing: 0, // Spacing between columns
-                        //         mainAxisSpacing: 0, // Spacing between rows
                       ],
                     ),
                   ),
@@ -864,83 +832,370 @@ class _VideoAppState extends State<VideoApp> {
   }
 
   void getStartingBottomWidget() {
+    // 1. Deduplicate members by name and combine multiple roles
+    final Map<String, CastElement> uniqueMap = {};
+    for (var item in castElementList) {
+      final name = item.cast?.name?.toString().trim() ?? "";
+      if (name.isEmpty) continue;
+      final key = name.toLowerCase();
+      if (uniqueMap.containsKey(key)) {
+        final existingRole = uniqueMap[key]!.groupLabel?.toString().trim() ?? "";
+        final newRole = item.groupLabel?.toString().trim() ?? "";
+        if (newRole.isNotEmpty && !existingRole.toLowerCase().contains(newRole.toLowerCase())) {
+          uniqueMap[key]!.groupLabel = "$existingRole, $newRole";
+        }
+      } else {
+        uniqueMap[key] = item;
+      }
+    }
+
+    final uniqueList = uniqueMap.values.toList();
+
+    // 2. Organize into categorized sections
+    String getCategory(String rawRole) {
+      final r = rawRole.toLowerCase().trim();
+      if (r.contains('director') && !r.contains('music') && !r.contains('art')) {
+        return 'Director';
+      }
+      if (r.contains('actor') || r.contains('actress') || r.contains('cast') || r.contains('starring') || r.contains('lead') || r.contains('hero')) {
+        return 'Cast & Starring';
+      }
+      if (r.contains('producer') || r.contains('production')) {
+        return 'Producers';
+      }
+      if (r.contains('music') || r.contains('composer') || r.contains('singer') || r.contains('audio') || r.contains('sound')) {
+        return 'Music & Audio';
+      }
+      return 'Crew & Technical';
+    }
+
+    final Map<String, List<CastElement>> grouped = {
+      'Director': [],
+      'Cast & Starring': [],
+      'Producers': [],
+      'Music & Audio': [],
+      'Crew & Technical': [],
+    };
+
+    for (var item in uniqueList) {
+      final role = item.groupLabel?.toString().trim() ?? "";
+      final cat = getCategory(role);
+      grouped[cat]!.add(item);
+    }
+
+    final List<MapEntry<String, List<CastElement>>> activeSections = [];
+    for (var entry in grouped.entries) {
+      if (entry.value.isNotEmpty) {
+        String title = entry.key;
+        if (title == 'Director' && entry.value.length > 1) {
+          title = 'Directors';
+        } else if (title == 'Producers' && entry.value.length == 1) {
+          title = 'Producer';
+        }
+        activeSections.add(MapEntry(title, entry.value));
+      }
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppDefaultColors.darkGray.withOpacity(0.7),
-      transitionAnimationController: AnimationController(
-        vsync: Navigator.of(context),
-        duration: Duration(milliseconds: 700), // Set the animation duration
-      ),
+      backgroundColor: Colors.transparent,
       enableDrag: true,
-      // backgroundColor: Colors.transparent,
-      builder: (BuildContext context) {
-        return AnimatedOpacity(
-          duration: Duration(milliseconds: 500), // Set the animation duration
-          opacity: 1.0, // Set the initial opacity to 0 for fade-out effect
-          onEnd: () {
-            Navigator.pop(
-                context); // Close the bottom sheet after the animation completes
-          },
+      builder: (BuildContext sheetContext) {
+        Widget buildMonogram(String name) {
+          String initials = "•";
+          final trimmed = name.trim();
+          if (trimmed.isNotEmpty) {
+            final parts = trimmed.split(RegExp(r'\s+'));
+            if (parts.length == 1) {
+              initials = parts[0].substring(0, parts[0].length >= 2 ? 2 : 1).toUpperCase();
+            } else if (parts.length >= 2) {
+              initials = "${parts[0][0]}${parts[1][0]}".toUpperCase();
+            }
+          }
+          return Container(
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF2C2C3A),
+                  Color(0xFF1C1C26),
+                ],
+              ),
+            ),
+            child: Text(
+              initials,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
+            ),
+          );
+        }
 
-          child: SingleChildScrollView(
-            child: SizedBox(
-              // height: 500,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 50.0, bottom: 20),
-                child: Column(
-                  children: [
-                    Text(
-                      "Staring",
-                      style: const TextStyle(
+        Widget buildCastAvatar(String name, String photoUrl) {
+          final hasPhoto = photoUrl.isNotEmpty && photoUrl != "null" && photoUrl != "false";
+          return Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF22222E),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.08),
+                width: 1,
+              ),
+            ),
+            child: ClipOval(
+              child: hasPhoto
+                  ? Image.network(
+                      photoUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => buildMonogram(name),
+                    )
+                  : buildMonogram(name),
+            ),
+          );
+        }
+
+        Widget buildMemberTile(String personName, String role, String photoUrl) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFF171720),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.04),
+              ),
+            ),
+            child: Row(
+              children: [
+                buildCastAvatar(personName, photoUrl),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        personName.isNotEmpty ? personName : "Unknown",
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 25.0,
-                          fontWeight: FontWeight.w700),
-                    ),
-                    Container(
-                      constraints: BoxConstraints(
-                          maxHeight: MediaQuery.of(context).size.height * 0.8),
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        // itemCount: staringNames.length,
-                        itemCount: castElementList.length,
-                        itemBuilder: (context, index) {
-                          return ListTile(
-                            title: Align(
-                              alignment: Alignment.center,
-                              child: Text(
-                                castElementList[index].cast!.name.toString(),
-                                style: const TextStyle(
-                                    color: AppDefaultColors.textLightGray,
-                                    fontSize: 17.0,
-                                    fontWeight: FontWeight.normal),
-                              ),
-                            ),
-                            onTap: () {
-                              // Add your onTap logic here
-                              Navigator.pop(
-                                  context); // Close the bottom sheet when item is tapped
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(10.0),
-                      child: GestureDetector(
-                        onTap: () {
-                          Navigator.pop(context);
-                        },
-                        child: Icon(
-                          Icons.cancel_rounded,
-                          color: Colors.white,
-                          size: 60,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          height: 1.15,
                         ),
                       ),
-                    ),
-                  ],
+                      if (role.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          role,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.45),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w400,
+                            height: 1.15,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
+              ],
+            ),
+          );
+        }
+
+        return Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF121217),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black87,
+                blurRadius: 20,
+                spreadRadius: 2,
               ),
+            ],
+          ),
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Minimal drag handle
+                Center(
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 10, bottom: 6),
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                // Header with title, counter pill, and close icon
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+                  child: Row(
+                    children: [
+                      const Text(
+                        "Starring & Crew",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                      if (uniqueList.isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            "${uniqueList.length} members",
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.6),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                      const Spacer(),
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.white.withValues(alpha: 0.08),
+                          shape: const CircleBorder(),
+                        ),
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          color: Colors.white70,
+                          size: 18,
+                        ),
+                        onPressed: () => Navigator.pop(sheetContext),
+                      ),
+                    ],
+                  ),
+                ),
+                Divider(color: Colors.white.withValues(alpha: 0.06), height: 1, thickness: 1),
+                // Categorized list
+                Flexible(
+                  child: uniqueList.isEmpty
+                      ? const Padding(
+                          padding: EdgeInsets.all(32.0),
+                          child: Text(
+                            "No cast details available",
+                            style: TextStyle(color: Colors.white70, fontSize: 14),
+                            textAlign: TextAlign.center,
+                          ),
+                        )
+                      : ListView.builder(
+                          shrinkWrap: true,
+                          padding: const EdgeInsets.only(bottom: 24, top: 4),
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: activeSections.length,
+                          itemBuilder: (context, sectionIndex) {
+                            final section = activeSections[sectionIndex];
+                            final sectionTitle = section.key;
+                            final members = section.value;
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Subtle Minimalist Section Header
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 3.5,
+                                        height: 12,
+                                        decoration: BoxDecoration(
+                                          color: AppDefaultColors.primaryRed,
+                                          borderRadius: BorderRadius.circular(2),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        sectionTitle.toUpperCase(),
+                                        style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 0.8,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        "(${members.length})",
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(alpha: 0.35),
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Responsive 2-column or 1-column grid
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  child: GridView.builder(
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    itemCount: members.length,
+                                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: members.length == 1 ? 1 : 2,
+                                      crossAxisSpacing: 8,
+                                      mainAxisSpacing: 8,
+                                      mainAxisExtent: 60,
+                                    ),
+                                    itemBuilder: (context, idx) {
+                                      final castItem = members[idx];
+                                      final personName = castItem.cast?.name?.toString().trim() ?? "";
+                                      final role = castItem.groupLabel?.toString().trim() ?? "";
+                                      final rawPhoto = castItem.cast?.photo?.toString().trim() ?? "";
+
+                                      String photoUrl = "";
+                                      if (rawPhoto.isNotEmpty &&
+                                          rawPhoto != "null" &&
+                                          rawPhoto != "false") {
+                                        if (rawPhoto.startsWith("http")) {
+                                          photoUrl = rawPhoto;
+                                        } else {
+                                          photoUrl = "${AppConfig.BaseUrl}/$rawPhoto";
+                                        }
+                                      }
+
+                                      return buildMemberTile(personName, role, photoUrl);
+                                    },
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                ),
+              ],
             ),
           ),
         );
@@ -950,8 +1205,17 @@ class _VideoAppState extends State<VideoApp> {
 
   @override
   void dispose() {
-    _controller.dispose();
-    _controller.pause();
+    if (_lifecycleHandler != null) {
+      WidgetsBinding.instance.removeObserver(_lifecycleHandler!);
+    }
+    _hideControlsTimer?.cancel();
+    try {
+      _controller.removeListener(_onControllerProgress);
+      if (_controller.value.isPlaying) {
+        _controller.pause();
+      }
+      _controller.dispose();
+    } catch (_) {}
     _isPlaying = false;
     super.dispose();
   }
@@ -962,8 +1226,7 @@ class _VideoAppState extends State<VideoApp> {
         builder: (BuildContext context) {
           return AlertDialog(
             backgroundColor: AppDefaultColors.appColor..withOpacity(0.2),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(Radius.circular(50.0))),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(50.0))),
             contentPadding: EdgeInsets.only(top: 10.0),
             content: SizedBox(
               height: 90.0,
@@ -988,9 +1251,7 @@ class _VideoAppState extends State<VideoApp> {
                           padding: EdgeInsets.all(5),
                           child: Text(
                             'Not for me',
-                            style: TextStyle(
-                                fontSize: 12,
-                                color: AppDefaultColors.textLightGray),
+                            style: TextStyle(fontSize: 12, color: AppDefaultColors.textLightGray),
                           ),
                         ),
                       ],
@@ -1008,9 +1269,7 @@ class _VideoAppState extends State<VideoApp> {
                           padding: EdgeInsets.all(5),
                           child: Text(
                             'I like this',
-                            style: TextStyle(
-                                fontSize: 12,
-                                color: AppDefaultColors.textLightGray),
+                            style: TextStyle(fontSize: 12, color: AppDefaultColors.textLightGray),
                           ),
                         ),
                       ],
@@ -1029,9 +1288,7 @@ class _VideoAppState extends State<VideoApp> {
                           padding: EdgeInsets.all(5),
                           child: Text(
                             'I love this',
-                            style: TextStyle(
-                                fontSize: 12,
-                                color: AppDefaultColors.textLightGray),
+                            style: TextStyle(fontSize: 12, color: AppDefaultColors.textLightGray),
                           ),
                         ),
                       ],
@@ -1048,8 +1305,7 @@ class _VideoAppState extends State<VideoApp> {
     Dio dio = Dio();
     try {
       var dir = await getApplicationDocumentsDirectory();
-      await dio.download(url, "${dir.path}/$moveTitle.mp4",
-          onReceiveProgress: (rec, total) {
+      await dio.download(url, "${dir.path}/$moveTitle.mp4", onReceiveProgress: (rec, total) {
         print("Rec: $rec , Total: $total");
       });
     } catch (e) {
@@ -1058,8 +1314,7 @@ class _VideoAppState extends State<VideoApp> {
     print("Download completed");
   }
 
-  void getUserMoviesDetails(
-      String token, String profileId, String movieID) async {
+  void getUserMoviesDetails(String token, String profileId, String movieID) async {
     setState(() {
       isLoading = true;
     });
@@ -1075,9 +1330,7 @@ class _VideoAppState extends State<VideoApp> {
     }
     print("TOKen$token\n$profileId\n$url");
 
-    ApiServices()
-        .getRequestData("$url$movieID?profile_id=$profileId", token)
-        .then((response) async {
+    ApiServices().getRequestData("$url$movieID?profile_id=$profileId", token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("MovieDetailes_Response: $jsonsDataString");
 
@@ -1103,8 +1356,7 @@ class _VideoAppState extends State<VideoApp> {
           String image = "${AppConfig.BaseUrl}/${data["image"]}";
           String medium = "${AppConfig.BaseUrl}/${data["medium"]}";
           String thumbnail = "${AppConfig.BaseUrl}/${data["thumbnail"]}";
-          String portraitsmall =
-              "${AppConfig.BaseUrl}/${data["portraitsmall"]}";
+          String portraitsmall = "${AppConfig.BaseUrl}/${data["portraitsmall"]}";
           String portrait = "${AppConfig.BaseUrl}/${data["portrait"]}";
 
           String duration = data["duration"].toString();
@@ -1122,6 +1374,12 @@ class _VideoAppState extends State<VideoApp> {
 
           print("MainMoiveDetails:$title");
           print("moviesource:$moviesource");
+
+          List<SubTitleModel>? subtitleList;
+          if (data["subtitle"] != null && data["subtitle"] is List) {
+            subtitleList = List<SubTitleModel>.from(
+                data["subtitle"].map((x) => SubTitleModel.fromJson(x)));
+          }
 
           movieData = MovieData(
               id: id.toString(),
@@ -1146,7 +1404,8 @@ class _VideoAppState extends State<VideoApp> {
               trailer480P: trailer480p.toString(),
               videoUrl: videoUrl.toString(),
               moviesource: moviesource.toString(),
-              subtitleStatus: subtitleStatus.toString());
+              subtitleStatus: subtitleStatus.toString(),
+              subtitle: subtitleList);
 
           var jsonValues = Usermovies.fromJson(data['usermovies']);
 
@@ -1174,71 +1433,93 @@ class _VideoAppState extends State<VideoApp> {
             }
           }
 
-          var staringNamesArray = [];
-          for (var castsData in data["casts"]) {
-            print("castsDataCasts${castsData["cast"]}");
-            CastCast? castCast;
-            if (castsData['cast'] != "") {
-              print("castsDataCastName:${castsData["cast"]["name"]}");
-              castCast = CastCast(
-                id: castsData["cast"]["id"].toString(),
-                name: castsData["cast"]["name"].toString(),
-                firstname: castsData["cast"]["firstname"].toString(),
-                lastname: castsData["cast"]["lastname"].toString(),
-                dob: castsData["cast"]["dob"].toString(),
-                gender: castsData["cast"]["gender"].toString(),
-                photo: castsData["cast"]["photo"].toString(),
+          castElementList.clear();
+          _DirectorName = "";
+          _directorLabel = "Director";
+          _producersNames = "";
+          _producersLabel = "Producer";
+          staringNames = "";
+
+          List<String> starringArray = [];
+          List<String> directorsArray = [];
+          List<String> producersArray = [];
+
+          if (data["casts"] != null && data["casts"] is Iterable) {
+            for (var castsData in data["casts"]) {
+              print("castsDataCasts${castsData["cast"]}");
+              CastCast? castCast;
+              if (castsData['cast'] != null && castsData['cast'] != "") {
+                print("castsDataCastName:${castsData["cast"]["name"]}");
+                castCast = CastCast(
+                  id: castsData["cast"]["id"]?.toString() ?? "",
+                  name: castsData["cast"]["name"]?.toString() ?? "",
+                  firstname: castsData["cast"]["firstname"]?.toString() ?? "",
+                  lastname: castsData["cast"]["lastname"]?.toString() ?? "",
+                  dob: castsData["cast"]["dob"]?.toString() ?? "",
+                  gender: castsData["cast"]["gender"]?.toString() ?? "",
+                  photo: castsData["cast"]["photo"]?.toString() ?? "",
+                );
+
+                String groupLabel = castsData["group_label"]?.toString().trim() ?? "";
+                String castPersonName = castsData["cast"]["name"]?.toString().trim() ?? "";
+
+                if (castPersonName.isNotEmpty) {
+                  final grp = groupLabel.toLowerCase();
+                  if (grp.contains("director") && !grp.contains("music") && !grp.contains("art")) {
+                    if (!directorsArray.contains(castPersonName)) {
+                      directorsArray.add(castPersonName);
+                    }
+                  } else if (grp.contains("producer")) {
+                    if (!producersArray.contains(castPersonName)) {
+                      producersArray.add(castPersonName);
+                    }
+                  } else if (grp.contains("actor") || grp.contains("actress") || grp.contains("cast") || grp.contains("starring") || grp.contains("lead")) {
+                    if (!starringArray.contains(castPersonName)) {
+                      starringArray.add(castPersonName);
+                    }
+                  } else {
+                    if (!grp.contains("music") && !grp.contains("crew")) {
+                      if (!starringArray.contains(castPersonName)) {
+                        starringArray.add(castPersonName);
+                      }
+                    }
+                  }
+                }
+              }
+
+              CastElement castElement = CastElement(
+                group: castsData["group"]?.toString(),
+                groupLabel: castsData["group_label"]?.toString(),
+                groupSlug: castsData["group_slug"]?.toString(),
+                cast: castCast,
               );
 
-              if (castsData["group_label"] == "Producer") {
-                setState(() {
-                  _DirectorName = castsData["group_label"].toString();
-                });
-              }
-              staringNamesArray.add(castsData["cast"]["name"].toString());
+              castElementList.add(castElement);
             }
-
-            CastElement castElement = CastElement(
-                group: castsData["group"].toString(),
-                groupLabel: castsData["group_label"].toString(),
-                groupSlug: castsData["group_slug"].toString(),
-                cast: castCast);
-
-            castElementList.add(castElement);
           }
 
-          if (data["related"] != "" && data["related"] != null) {
+          if (data["related"] != null && data["related"] is Iterable) {
             for (var castsData in data["related"]) {
               Usermovies? usermovies;
 
               if (castsData["movie"]['usermovies'] != "") {
-                print(
-                    "usermoviesDetailsPage: ${castsData["movie"]["usermovies"]["id"]}");
+                print("usermoviesDetailsPage: ${castsData["movie"]["usermovies"]["id"]}");
                 usermovies = Usermovies(
                   id: castsData["movie"]["usermovies"]["id"].toString(),
-                  movieId:
-                      castsData["movie"]["usermovies"]["movieId"].toString(),
+                  movieId: castsData["movie"]["usermovies"]["movieId"].toString(),
                   mylist: castsData["movie"]["usermovies"]["mylist"].toString(),
                   likes: castsData["movie"]["usermovies"]["likes"].toString(),
-                  watchTime:
-                      castsData["movie"]["usermovies"]["watchTime"].toString(),
-                  watching:
-                      castsData["movie"]["usermovies"]["watching"].toString(),
-                  watched:
-                      castsData["movie"]["usermovies"]["watched"].toString(),
-                  watchedPercent: castsData["movie"]["usermovies"]
-                          ["watchedPercent"]
-                      .toString(),
+                  watchTime: castsData["movie"]["usermovies"]["watchTime"].toString(),
+                  watching: castsData["movie"]["usermovies"]["watching"].toString(),
+                  watched: castsData["movie"]["usermovies"]["watched"].toString(),
+                  watchedPercent: castsData["movie"]["usermovies"]["watchedPercent"].toString(),
                   viewed: castsData["movie"]["usermovies"]["viewed"].toString(),
                 );
               }
 
-              String thumbnailUrl =
-                  "${AppConfig.BaseUrl}/${castsData["movie"]["thumbnail"]}";
-              String portraitsmallUrl =
-                  "${AppConfig.BaseUrl}/${castsData["movie"]["portraitsmall"]}";
-              String portraitUrl =
-                  "${AppConfig.BaseUrl}/${castsData["movie"]["portrait"]}";
+              String thumbnailUrl = "${AppConfig.BaseUrl}/${castsData["movie"]["thumbnail"]}";
+              String portraitsmallUrl = "${AppConfig.BaseUrl}/${castsData["movie"]["portraitsmall"]}";
+              String portraitUrl = "${AppConfig.BaseUrl}/${castsData["movie"]["portrait"]}";
 
               relatedMovieData.add(RelatedMovieData(
                   movie: Movies(
@@ -1262,7 +1543,24 @@ class _VideoAppState extends State<VideoApp> {
               print("RelatedMovieDataID${castsData["movie"]["id"]}");
             }
           }
-          staringNames = staringNamesArray.join(', ');
+
+          if (directorsArray.isNotEmpty) {
+            _directorLabel = directorsArray.length > 1 ? "Directors" : "Director";
+            _DirectorName = directorsArray.join(', ');
+          }
+          if (producersArray.isNotEmpty) {
+            _producersLabel = producersArray.length > 1 ? "Producers" : "Producer";
+            _producersNames = producersArray.join(', ');
+          }
+          if (starringArray.isNotEmpty) {
+            staringNames = starringArray.join(', ');
+          } else {
+            staringNames = castElementList
+                .map((e) => e.cast?.name?.toString().trim() ?? "")
+                .where((n) => n.isNotEmpty && !directorsArray.contains(n) && !producersArray.contains(n))
+                .toSet()
+                .join(', ');
+          }
           setState(() {
             readyToPlay = true;
 
@@ -1286,8 +1584,7 @@ class _VideoAppState extends State<VideoApp> {
     });
   }
 
-  void getUserWatchingMoviesDetails(
-      String token, String profileId, String movieID) async {
+  void getUserWatchingMoviesDetails(String token, String profileId, String movieID) async {
     setState(() {
       isLoading = true;
     });
@@ -1298,9 +1595,7 @@ class _VideoAppState extends State<VideoApp> {
       url = AppConfig.userMovieDetails;
     }
 
-    ApiServices()
-        .getRequestData("$url$movieID?profile_id=$profileId", token)
-        .then((response) async {
+    ApiServices().getRequestData("$url$movieID?profile_id=$profileId", token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("MovieWatched_Response: $jsonsDataString");
 
@@ -1346,51 +1641,72 @@ class _VideoAppState extends State<VideoApp> {
     });
   }
 
-  void getTokenValid(String token) async {
+  Future<void> getTokenValid(String token) async {
+    if (token.isEmpty) return;
+    if (!mounted) return;
     setState(() {
       isLoading = true;
     });
-    ApiServices()
-        .postRequestTokenWithoutBody(AppConfig.tokenexist, token)
-        .then((response) async {
+
+    try {
+      final response = await ApiServices()
+          .postRequestTokenWithoutBody(AppConfig.tokenexist, token)
+          .timeout(const Duration(seconds: 10));
+
       String jsonsDataString = response.body.toString();
       print("getTokenExist_Response: $jsonsDataString");
       print("getTokenExist_Token: $token");
+
       if (response.statusCode == 200) {
-        try {
-          var jsonReponse = jsonDecode(jsonsDataString);
-          String status = jsonReponse['status'];
+        var jsonReponse = jsonDecode(jsonsDataString);
+        String status = jsonReponse['status'] ?? "";
 
-          if (status == "error") {
-            final pref = await SharedPreferences.getInstance();
-            pref.clear();
+        if (status == "error") {
+          final pref = await SharedPreferences.getInstance();
+          await AppPreferences.clearUserSession(pref);
 
+          if (mounted) {
             setState(() {
+              _token = "";
+              profileID = "";
               loggedStatus = false;
             });
 
-            getUserMoviesDetails(_token, profileID, widget.getMovieID);
+            getUserMoviesDetails("", "", widget.getMovieID);
           }
-        } catch (e) {
-          print('getTokenExistException:$e');
         }
-      } else {
-        print("geTokenResError: $response");
+      } else if (response.statusCode == 401) {
+        final pref = await SharedPreferences.getInstance();
+        await AppPreferences.clearUserSession(pref);
+
+        if (mounted) {
+          setState(() {
+            _token = "";
+            profileID = "";
+            loggedStatus = false;
+          });
+
+          getUserMoviesDetails("", "", widget.getMovieID);
+        }
       }
-    });
-    setState(() {
-      isLoading = false;
-    });
+    } catch (e) {
+      print('getTokenExistException:$e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
   }
 
-  void setUserMovies(String token, String profileID, String movieID,
-      Map<String, int> postValues) async {
-    ApiServices()
-        .postRequestToken(
-            "${AppConfig.setUserMovie}$movieID?profile_id=$profileID",
-            postValues,
-            token)
-        .then((response) async {
+  void setUserMovies(String token, String profileID, String movieID, Map<String, int> postValues) async {
+    String resolvedProfileId = profileID;
+    if (resolvedProfileId.isEmpty) {
+      final pref = await SharedPreferences.getInstance();
+      resolvedProfileId = pref.getString(AppPreferences.profileID) ?? pref.getString(AppPreferences.id) ?? '';
+    }
+    ApiServices().postRequestToken("${AppConfig.setUserMovie}$movieID?profile_id=$resolvedProfileId", postValues, token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("setuserMovie_Response: $jsonsDataString");
       if (response.statusCode == 200) {
@@ -1433,8 +1749,7 @@ Dialog rateDialog = Dialog(
               ),
               Text(
                 'Not for me',
-                style: TextStyle(
-                    fontSize: 12, color: AppDefaultColors.textLightGray),
+                style: TextStyle(fontSize: 12, color: AppDefaultColors.textLightGray),
               ),
             ],
           ),
@@ -1449,8 +1764,7 @@ Dialog rateDialog = Dialog(
               ),
               Text(
                 'I like this',
-                style: TextStyle(
-                    fontSize: 12, color: AppDefaultColors.textLightGray),
+                style: TextStyle(fontSize: 12, color: AppDefaultColors.textLightGray),
               ),
             ],
           ),
@@ -1466,8 +1780,7 @@ Dialog rateDialog = Dialog(
               ),
               Text(
                 'I love this',
-                style: TextStyle(
-                    fontSize: 12, color: AppDefaultColors.textLightGray),
+                style: TextStyle(fontSize: 12, color: AppDefaultColors.textLightGray),
               ),
             ],
           ),
@@ -1569,11 +1882,9 @@ class ButtonShapeWidget extends StatelessWidget {
       child: ElevatedButton(
         onPressed: onTap,
         style: ButtonStyle(
-          backgroundColor: WidgetStateProperty.all(
-              AppDefaultColors.boxDarkGray.withOpacity(0.5)),
+          backgroundColor: WidgetStateProperty.all(AppDefaultColors.boxDarkGray.withOpacity(0.5)),
           foregroundColor: WidgetStateProperty.all(Colors.transparent),
-          padding: WidgetStateProperty.all(
-              EdgeInsets.symmetric(vertical: 0, horizontal: 0)),
+          padding: WidgetStateProperty.all(EdgeInsets.symmetric(vertical: 0, horizontal: 0)),
           textStyle: WidgetStateProperty.all(TextStyle(fontSize: 16)),
           shape: WidgetStateProperty.all<RoundedRectangleBorder>(
             RoundedRectangleBorder(
@@ -1619,10 +1930,7 @@ class ButtonShapeWidget extends StatelessWidget {
             ),
             Text(
               isDownloaded ? 'Download Completed' : 'Download',
-              style: TextStyle(
-                  color: AppDefaultColors.white,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w500),
+              style: TextStyle(color: AppDefaultColors.white, fontSize: 17, fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -1653,12 +1961,8 @@ class ProgressIndicatorWidget extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         builder: (context, progress, child) {
           return CircularProgressIndicator(
-            backgroundColor: isDownloading
-                ? CupertinoColors.lightBackgroundGray
-                : Colors.white.withOpacity(0),
-            valueColor: AlwaysStoppedAnimation(isFetching
-                ? CupertinoColors.lightBackgroundGray
-                : AppDefaultColors.thikRed),
+            backgroundColor: isDownloading ? CupertinoColors.lightBackgroundGray : Colors.white.withOpacity(0),
+            valueColor: AlwaysStoppedAnimation(isFetching ? CupertinoColors.lightBackgroundGray : AppDefaultColors.thikRed),
             strokeWidth: 2,
             value: isFetching ? null : progress,
           );
@@ -1687,8 +1991,7 @@ abstract class DownloadController implements ChangeNotifier {
   void openDownload();
 }
 
-class SimulatedDownloadController extends DownloadController
-    with ChangeNotifier {
+class SimulatedDownloadController extends DownloadController with ChangeNotifier {
   SimulatedDownloadController({
     DownloadStatus downloadStatus = DownloadStatus.notDownloaded,
     double progress = 0.0,
@@ -1792,22 +2095,24 @@ class SimulatedDownloadController extends DownloadController
         _downloadStatus = DownloadStatus.downloading;
         notifyListeners();
 
+        bool downloadSuccess = false;
         try {
           Dio dio = Dio();
           double downloadProgress = 0;
           var dir = await getApplicationDocumentsDirectory();
+          final sanitizedTitle = _downloadMovieTitle.replaceAll(RegExp(r'[\/\\:?*"<>|]'), '_');
+          movieDirPath = "${dir.path}/$sanitizedTitle.mp4";
           print("DownloadDirectory: ${dir.path}");
           print("_downloadUrl: $_downloadUrl");
-          movieDirPath = "${dir.path}/$_downloadMovieTitle.mp4";
-          await dio.download(
-              _downloadUrl, "${dir.path}/$_downloadMovieTitle.mp4",
-              cancelToken: cancelToken, onReceiveProgress: (rec, total) {
-            _onReceiveProgress(rec, total);
-            downloadProgress = ((rec / total) * 100.toInt()) / 100;
-            print(
-                "Rec: $rec , Total: $total, Progress percent: $downloadProgress");
 
-            if (rec == total) {
+          await dio.download(_downloadUrl, movieDirPath, cancelToken: cancelToken, onReceiveProgress: (rec, total) {
+            _onReceiveProgress(rec, total);
+            if (total > 0) {
+              downloadProgress = ((rec / total) * 100.toInt()) / 100;
+            }
+            print("Rec: $rec , Total: $total, Progress percent: $downloadProgress");
+
+            if (rec == total && total > 0) {
               downloadProgress = 1;
             }
 
@@ -1818,21 +2123,26 @@ class SimulatedDownloadController extends DownloadController
             _progress = downloadProgress;
             notifyListeners();
           });
+          downloadSuccess = true;
         } catch (e) {
-          print(e);
           print("Download_Error: $e");
+          if (!cancelToken.isCancelled) {
+            Fluttertoast.showToast(msg: "Download failed. Please check your connection.");
+          }
+        }
+
+        if (!downloadSuccess || !_isDownloading || cancelToken.isCancelled) {
+          _isDownloading = false;
+          _downloadStatus = DownloadStatus.notDownloaded;
+          _progress = 0.0;
+          notifyListeners();
+          return;
         }
 
         print("Download completed");
 
-        //
-        //   // If the user chose to cancel the download, stop the simulation.
-        //
-        //   // Update the download progress.
-
         await Future<void>.delayed(const Duration(seconds: 1));
 
-        // If the user chose to cancel the download, stop the simulation.
         if (!_isDownloading) {
           return;
         }
@@ -1851,20 +2161,16 @@ class SimulatedDownloadController extends DownloadController
 
         notifyListeners();
       } else {
-        Fluttertoast.showToast(
-            msg: "Download option not enabled for this movie");
+        Fluttertoast.showToast(msg: "Download option not enabled for this movie");
       }
     } else {
-      Fluttertoast.showToast(
-          msg:
-              "Enable Wi-fi on your device.\nYour settings enabled wifi dowload option");
+      Fluttertoast.showToast(msg: "Enable Wi-fi on your device.\nYour settings enabled wifi dowload option");
     }
   }
 
   Future<bool> verifyDataOption() async {
     final pref = await SharedPreferences.getInstance();
-    var downloadDataOption =
-        pref.getBool(AppPreferences.downloadDataOption) ?? false;
+    var downloadDataOption = pref.getBool(AppPreferences.downloadDataOption) ?? false;
 
     if (downloadDataOption) {
       if (await CommonWidget().isWifiConnectivity()) {
@@ -1880,8 +2186,7 @@ class SimulatedDownloadController extends DownloadController
     }
   }
 
-  Future<File> encryptFile(
-      File inputFile, String key, String outputFileName) async {
+  Future<File> encryptFile(File inputFile, String key, String outputFileName) async {
     final directory = await getApplicationDocumentsDirectory();
     final filePath = '${directory.path}/$outputFileName';
     final outputFile = File(filePath);
@@ -1889,8 +2194,7 @@ class SimulatedDownloadController extends DownloadController
     final keyBytes = encrypt.Key.fromUtf8(key.padRight(32, '0'));
     final iv = encrypt.IV.fromLength(16);
 
-    final encrypter =
-        encrypt.Encrypter(encrypt.AES(keyBytes, mode: encrypt.AESMode.cbc));
+    final encrypter = encrypt.Encrypter(encrypt.AES(keyBytes, mode: encrypt.AESMode.cbc));
 
     final inputBytes = await inputFile.readAsBytes();
     final encryptedBytes = encrypter.encryptBytes(inputBytes, iv: iv).bytes;

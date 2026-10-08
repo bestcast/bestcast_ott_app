@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 class AppDefaultColors {
-  /// help
+  /// Brand Colors
+  static const Color primaryRed = Color(0xffF80000);
   static const Color appColor = Color(0xff000000);
   static const Color black = Color(0xff000000);
   static const Color white = Color(0xffffffff);
@@ -16,7 +17,7 @@ class AppDefaultColors {
   static const Color lightRed = Color(0xffffdde2);
   static const Color lightYellow = Color(0xfffde0c4);
   static const Color iconBlue = Color(0xff000c31);
-  static const Color buttonColor = Color(0xff700c0c);
+  static const Color buttonColor = Color(0xffF80000);
 
   static const Color helpBlue = Color(0xff3282B8);
   static const Color darkBlue = Color(0xff091b59);
@@ -24,8 +25,8 @@ class AppDefaultColors {
   /// failure
   static const Color carBgRed = Color(0xff6e0037);
   static const Color carBgBlue = Color(0xff150060);
-  static const Color appRed = Color(0xffe0344b);
-  static const Color thikRed = Color(0xffef001f);
+  static const Color appRed = Color(0xffF80000);
+  static const Color thikRed = Color(0xffF80000);
 
   /// success
   static const Color successGreen = Color(0xff009c34);

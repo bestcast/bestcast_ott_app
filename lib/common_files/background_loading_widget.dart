@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:bestcaststudios/common_files/app_default_colors.dart';
 
 class BackgroundLoadingWidget extends StatelessWidget {
   const BackgroundLoadingWidget({super.key});
@@ -8,7 +9,7 @@ class BackgroundLoadingWidget extends StatelessWidget {
     return Container(
       color: Colors.black,
       child: const Center(
-        child: CircularProgressIndicator(strokeWidth: 5, color: Colors.red),
+        child: CircularProgressIndicator(strokeWidth: 5, color: AppDefaultColors.primaryRed),
       ),
     );
   }

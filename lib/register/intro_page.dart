@@ -10,10 +10,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 
 import 'package:bestcaststudios/app_config/appconfig.dart';
+import 'package:bestcaststudios/app_config/app_preferences.dart';
 import 'package:bestcaststudios/common_files/api_services.dart';
 import 'package:bestcaststudios/common_files/common_widgets.dart';
 import 'package:bestcaststudios/common_files/submitRedButton.dart';
 import 'package:bestcaststudios/webview_pages/bestcast_webviewpages.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../authendication/otp_page.dart';
 import '../common_files/app_default_colors.dart';
 
@@ -540,7 +542,10 @@ class _IntroPageState extends State<IntroPage> {
       isLoading = true;
     });
     context.loaderOverlay.show();
-    final postValues = {'phone': mobileNumber, 'name': userName, 'refferer': '', 'device': "mobile"};
+    final pref = await SharedPreferences.getInstance();
+    final referrerCode = pref.getString(AppPreferences.refferer) ?? '';
+    
+    final postValues = {'phone': mobileNumber, 'name': userName, 'refferer': referrerCode, 'device': "mobile"};
     ApiServices().postRequest(AppConfig.registerUrl, postValues).then((response) async {
       String jsonsDataString = response.body.toString();
       if (response.statusCode == 200) {

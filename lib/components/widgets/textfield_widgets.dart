@@ -7,30 +7,38 @@ import '/common_files/app_default_colors.dart';
 class TextfieldWidget extends StatelessWidget {
   final String label;
   final TextEditingController controller;
+  final Widget? prefixIcon;
 
   const TextfieldWidget({
     super.key,
     required this.label,
     required this.controller,
+    this.prefixIcon,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppDefaultColors.boxDarkGray,
-        borderRadius: BorderRadius.circular(10.0),
+        color: const Color(0xFF141416),
+        borderRadius: BorderRadius.circular(12.0),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.12),
+          width: 1.0,
+        ),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
       child: TextFormField(
         controller: controller,
         keyboardType: TextInputType.text,
-        cursorColor: AppDefaultColors.white,
-        style: TextStyle(color: AppDefaultColors.white, fontSize: 16),
+        cursorColor: AppDefaultColors.primaryRed,
+        style: const TextStyle(color: Colors.white, fontSize: 15),
         decoration: InputDecoration(
           border: InputBorder.none,
+          prefixIcon: prefixIcon,
+          prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 0),
           hintText: label,
-          hintStyle: TextStyle(color: Colors.grey.shade400),
+          hintStyle: const TextStyle(color: Colors.white38, fontSize: 14.5),
         ),
       ),
     );
@@ -50,41 +58,52 @@ class SMStextfieldWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppDefaultColors.boxDarkGray,
-        borderRadius: BorderRadius.circular(10),
+        color: const Color(0xFF141416),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.12),
+          width: 1.0,
+        ),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
       child: Row(
         children: [
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(width: 10),
               const Text('🇮🇳', style: TextStyle(fontSize: 18)),
               const SizedBox(width: 8),
-              Text(
+              const Text(
                 '+91',
                 style: TextStyle(
-                  color: AppDefaultColors.white,
+                  color: Colors.white,
                   fontSize: 15,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
+              Container(
+                width: 1,
+                height: 20,
+                color: Colors.white24,
+              ),
+              const SizedBox(width: 10),
             ],
           ),
-          const SizedBox(width: 8),
           Expanded(
             child: TextFormField(
               controller: controller,
               keyboardType: TextInputType.phone,
-              cursorColor: AppDefaultColors.white,
-              style: TextStyle(
-                color: AppDefaultColors.white,
-                fontSize: 16,
+              cursorColor: AppDefaultColors.primaryRed,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                letterSpacing: 0.5,
               ),
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 border: InputBorder.none,
                 hintText: 'Mobile number',
-                hintStyle: TextStyle(color: Colors.grey.shade400),
+                hintStyle: TextStyle(color: Colors.white38, fontSize: 14.5),
               ),
             ),
           ),
@@ -109,22 +128,26 @@ class WhatsApptextfieldWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppDefaultColors.boxDarkGray,
-        borderRadius: BorderRadius.circular(10.0),
+        color: const Color(0xFF141416),
+        borderRadius: BorderRadius.circular(12.0),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.12),
+          width: 1.0,
+        ),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
       child: IntlPhoneField(
         controller: controller,
         keyboardType: TextInputType.phone,
-        cursorColor: AppDefaultColors.white,
-        style: TextStyle(color: AppDefaultColors.white),
-        decoration: InputDecoration(
+        cursorColor: AppDefaultColors.primaryRed,
+        style: const TextStyle(color: Colors.white, fontSize: 15, letterSpacing: 0.5),
+        decoration: const InputDecoration(
           border: InputBorder.none,
           hintText: "Mobile number",
-          hintStyle: TextStyle(color: Colors.grey.shade400),
+          hintStyle: TextStyle(color: Colors.white38, fontSize: 14.5),
         ),
-        dropdownIcon: Icon(Icons.arrow_drop_down, color: AppDefaultColors.white),
-        dropdownTextStyle: TextStyle(color: AppDefaultColors.white),
+        dropdownIcon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white54, size: 20),
+        dropdownTextStyle: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
         disableLengthCheck: true,
         initialCountryCode: 'IN',
         languageCode: "en",

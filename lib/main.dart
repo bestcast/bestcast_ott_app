@@ -15,6 +15,7 @@ import 'app_config/app_preferences.dart';
 import 'common_files/app_default_colors.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 
@@ -34,30 +35,22 @@ class MyApp extends StatelessWidget {
           floatingLabelStyle: TextStyle(color: AppDefaultColors.white),
           focusColor: AppDefaultColors.white,
         ),
-        textSelectionTheme: TextSelectionThemeData(
-            selectionColor: Colors.grey, selectionHandleColor: Colors.white),
+        textSelectionTheme: TextSelectionThemeData(selectionColor: Colors.grey, selectionHandleColor: Colors.white),
 
         switchTheme: SwitchThemeData(
-            trackOutlineWidth: WidgetStateProperty.resolveWith<double?>(
-                (Set<WidgetState> states) {
+            trackOutlineWidth: WidgetStateProperty.resolveWith<double?>((Set<WidgetState> states) {
               if (states.contains(WidgetState.disabled)) {
                 return 1.0;
               }
               return 0; // Use the default width.
             }),
-            trackColor: WidgetStateProperty.resolveWith((states) =>
-                states.contains(WidgetState.selected)
-                    ? AppDefaultColors.helpBlue
-                    : AppDefaultColors.boxDarkGray),
-            thumbColor: WidgetStateProperty.resolveWith((states) =>
-                states.contains(WidgetState.selected)
-                    ? AppDefaultColors.textLightGray
-                    : AppDefaultColors.textLightGray)),
+            trackColor: WidgetStateProperty.resolveWith((states) => states.contains(WidgetState.selected) ? AppDefaultColors.helpBlue : AppDefaultColors.boxDarkGray),
+            thumbColor: WidgetStateProperty.resolveWith((states) => states.contains(WidgetState.selected) ? AppDefaultColors.textLightGray : AppDefaultColors.textLightGray)),
 
         //Player Theme
-        scaffoldBackgroundColor: Color(0xFFf9fbfe),
-        cardColor: Color(0xFFfbfafe),
-        primaryColor: Color(0xFFd81e27),
+        scaffoldBackgroundColor: AppDefaultColors.appColor,
+        cardColor: AppDefaultColors.darkGray,
+        primaryColor: AppDefaultColors.primaryRed,
         shadowColor: Color(0xFF324754).withOpacity(0.24),
         textTheme: TextTheme(
           headlineMedium: GoogleFonts.montserrat(
@@ -122,15 +115,9 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> getInitialValue() async {
     final pref = await SharedPreferences.getInstance();
     loggedStatus = pref.getBool(AppPreferences.loggedStatus) ?? false;
+    print("loggedStatus: $loggedStatus");
 
-    print("loggedStatus$loggedStatus");
-
-    if (loggedStatus) {
-      await Future.delayed(Duration(seconds: 3));
-      setState(() {
-        loadStatus = true;
-      });
-    } else {
+    if (mounted) {
       setState(() {
         loadStatus = true;
       });
@@ -148,12 +135,9 @@ class _MyHomePageState extends State<MyHomePage> {
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
         // statusBarColor: Colors.red, // You can use this as well
-        statusBarIconBrightness:
-            Brightness.light, // OR Vice Versa for ThemeMode.dark
-        statusBarBrightness:
-            Brightness.light, // OR Vice Versa for ThemeMode.dark
-        systemNavigationBarColor:
-            Colors.black, // OR Vice Versa for ThemeMode.dark
+        statusBarIconBrightness: Brightness.light, // OR Vice Versa for ThemeMode.dark
+        statusBarBrightness: Brightness.light, // OR Vice Versa for ThemeMode.dark
+        systemNavigationBarColor: Colors.black, // OR Vice Versa for ThemeMode.dark
       ),
     );
 

@@ -69,12 +69,12 @@ class DatabaseHelper {
     );
   }
 
-  Future<int?> deleteData(int id) async {
+  Future<int?> deleteData(dynamic id) async {
     await _initDatabase();
     return await _database?.delete(
       'moviesTable',
       where: 'movieID = ?',
-      whereArgs: [id],
+      whereArgs: [id.toString()],
     );
   }
 

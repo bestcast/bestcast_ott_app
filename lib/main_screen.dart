@@ -1,16 +1,20 @@
+import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:app_links/app_links.dart';
 import 'package:back_button_interceptor/back_button_interceptor.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:bestcaststudios/Dashboard/dashboard.dart';
 import 'package:bestcaststudios/notification_activity/notification_screen.dart';
 import 'package:bestcaststudios/profile_screen/profile_mainpage.dart';
 import 'package:bestcaststudios/search_activity/search_screen.dart';
+import 'package:bestcaststudios/plan_details/plan_details.dart';
+import 'package:bestcaststudios/Webseries/webseries_detail_screen.dart';
 import 'app_config/app_preferences.dart';
 import 'app_config/appconfig.dart';
 import 'authendication/login_page.dart';
@@ -18,7 +22,8 @@ import 'common_files/api_services.dart';
 import 'common_files/app_default_colors.dart';
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+  final int initialIndex;
+  const MainScreen({super.key, this.initialIndex = 0});
 
   @override
   _MainScreenState createState() => _MainScreenState();
@@ -29,19 +34,24 @@ class _MainScreenState extends State<MainScreen> {
   int _pageIndex = 0;
 
   bool loggedStatus = false;
+  String profilePicture = "";
   bool isLoading = false;
 
-  // Define your pages/screens here
-  final List<Widget> _pages = [
+  late AppLinks _appLinks;
+  StreamSubscription<Uri>? _linkSubscription;
+
+  // Define persistent pages for IndexedStack to preserve scroll state
+  late final List<Widget> _pages = const [
     Dashboard(),
     SearchScreen(),
     NotificationScreen(),
     ProfileMainPage(),
-    LoginPage()
   ];
 
   @override
   void initState() {
+    _currentIndex = widget.initialIndex;
+    _pageIndex = widget.initialIndex;
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
@@ -49,16 +59,66 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
     BackButtonInterceptor.add(myInterceptor);
 
-    //   DeviceOrientation.portraitUp,
-    //   DeviceOrientation.portraitDown,
-
     getInitalValue();
+    _initDeepLinks();
   }
 
   @override
   void dispose() {
+    _linkSubscription?.cancel();
     BackButtonInterceptor.remove(myInterceptor);
     super.dispose();
+  }
+
+  void _initDeepLinks() async {
+    _appLinks = AppLinks();
+
+    _linkSubscription = _appLinks.uriLinkStream.listen((uri) {
+      _handleDeepLink(uri);
+    }, onError: (err) {
+      print('Deep Link Error: $err');
+    });
+
+    try {
+      final initialUri = await _appLinks.getInitialLink();
+      if (initialUri != null) {
+        Future.delayed(const Duration(milliseconds: 500), () {
+          _handleDeepLink(initialUri);
+        });
+      }
+    } catch (e) {
+      print('Failed to get initial link: $e');
+    }
+  }
+
+  void _handleDeepLink(Uri uri) async {
+    print('Handling deep link: $uri');
+    final ref = uri.queryParameters['ref'];
+    if (ref != null && ref.isNotEmpty) {
+      final pref = await SharedPreferences.getInstance();
+      await pref.setString(AppPreferences.bmpReferralCode, ref);
+      await pref.setString(AppPreferences.refferer, ref);
+    }
+    if (uri.path == '/pricing') {
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PlanDetailsPage(refCode: ref),
+          ),
+        );
+      }
+    } else if (uri.path.startsWith('/webseries/')) {
+      final webseriesId = uri.pathSegments.last;
+      if (webseriesId.isNotEmpty && mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => WebseriesDetailScreen(webseriesId: webseriesId),
+          ),
+        );
+      }
+    }
   }
 
   bool myInterceptor(bool stopDefaultButtonEvent, RouteInfo info) {
@@ -68,112 +128,224 @@ class _MainScreenState extends State<MainScreen> {
 
   Future<void> getInitalValue() async {
     final pref = await SharedPreferences.getInstance();
-    loggedStatus = pref.getBool(AppPreferences.loggedStatus) ?? false;
+    setState(() {
+      loggedStatus = pref.getBool(AppPreferences.loggedStatus) ?? false;
+      profilePicture = pref.getString(AppPreferences.profilePicture) ?? '';
+    });
   }
 
-  DateTime oldTime = DateTime.now();
-  DateTime newTime = DateTime.now();
+  void _onTabTapped(int index) async {
+    HapticFeedback.selectionClick();
+    if (index == _currentIndex) return;
 
-  void showSnackBar() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        behavior: SnackBarBehavior.floating,
-        duration: Duration(milliseconds: 600),
-        margin: EdgeInsets.only(bottom: 0, right: 32, left: 32),
-        content: Text('Tap back button again to exit'),
-      ),
-    );
-  }
-
-  void hideSnackBar() {
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-  }
-
-  DateTime? currentBackPressTime;
-
-  Future<bool> onWillPop() {
-    DateTime now = DateTime.now();
-    if (currentBackPressTime == null ||
-        now.difference(currentBackPressTime!) > Duration(seconds: 2)) {
-      currentBackPressTime = now;
-      Fluttertoast.showToast(msg: "Tap back button again to exit");
-      return Future.value(false);
+    if (index == 3) {
+      if (!loggedStatus) {
+        await Navigator.push(
+          context,
+          CupertinoPageRoute(builder: (context) => const LoginPage()),
+        );
+        final pref = await SharedPreferences.getInstance();
+        final bool nowLogged = pref.getBool(AppPreferences.loggedStatus) ?? false;
+        final String newPic = pref.getString(AppPreferences.profilePicture) ?? '';
+        if (mounted) {
+          setState(() {
+            loggedStatus = nowLogged;
+            profilePicture = newPic;
+            if (nowLogged) {
+              _currentIndex = 3;
+              _pageIndex = 3;
+            }
+          });
+        }
+        return;
+      }
     }
-    return Future.value(true);
+
+    setState(() {
+      _currentIndex = index;
+      _pageIndex = index;
+    });
   }
 
-  bool isExit = false;
   DateTime? _lastPressedAt;
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: isExit,
-      onPopInvoked: (didPop) async {
-        DateTime currentTime = DateTime.now();
-        if (_lastPressedAt == null ||
-            currentTime.difference(_lastPressedAt!) > Duration(seconds: 2)) {
-          _lastPressedAt = currentTime;
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Press back again to exit'),
-            duration: Duration(seconds: 2),
-          ));
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, dynamic result) async {
+        if (didPop) return;
 
+        // If not on Home tab, smoothly navigate back to Home first
+        if (_currentIndex != 0) {
           setState(() {
-            isExit = false;
+            _currentIndex = 0;
+            _pageIndex = 0;
           });
+          return;
         }
 
-        setState(() {
-          isExit = true;
-        });
+        // On Home tab: double back press to exit
+        final DateTime currentTime = DateTime.now();
+        if (_lastPressedAt == null ||
+            currentTime.difference(_lastPressedAt!) > const Duration(seconds: 2)) {
+          _lastPressedAt = currentTime;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Press back again to exit'),
+              duration: Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.only(bottom: 16, right: 32, left: 32),
+            ),
+          );
+        } else {
+          SystemNavigator.pop();
+        }
       },
       child: Scaffold(
-        // body: _pages[_pageIndex], // Show the current page
-        body: _pages[_pageIndex], // Show the current page
-        bottomNavigationBar: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) {
-            // Update the current index when an item is tapped
-            setState(() {
-              print("object_index:$index");
-              if (index != 3) {
-                _currentIndex = index;
-                _pageIndex = index;
-              } else {
-                if (loggedStatus == false) {
-                  if (index == 3) {
-                    Navigator.push(context,
-                        MaterialPageRoute(builder: (context) => LoginPage()));
-                  }
-                } else {
-                  _pageIndex = index;
-                }
-              }
-            });
-          },
-          backgroundColor: AppDefaultColors.appColor,
-          selectedItemColor: AppDefaultColors.white,
-          unselectedItemColor: AppDefaultColors.white,
-          type: BottomNavigationBarType.fixed,
-          items: [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              label: 'Home',
+        backgroundColor: Colors.black,
+        // IndexedStack preserves state and scroll positions of all tabs
+        body: IndexedStack(
+          index: _pageIndex,
+          children: _pages,
+        ),
+        bottomNavigationBar: _buildBottomNavBar(),
+      ),
+    );
+  }
+
+  Widget _buildBottomNavBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF121212),
+        border: const Border(
+          top: BorderSide(color: Colors.white10, width: 0.8),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.6),
+            blurRadius: 14,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 60,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildNavItem(
+                index: 0,
+                label: 'Home',
+                selectedIcon: Icons.home_rounded,
+                unselectedIcon: Icons.home_outlined,
+              ),
+              _buildNavItem(
+                index: 1,
+                label: 'Search',
+                selectedIcon: Icons.search_rounded,
+                unselectedIcon: Icons.search_rounded,
+              ),
+              _buildNavItem(
+                index: 2,
+                label: 'Notifications',
+                selectedIcon: Icons.notifications_rounded,
+                unselectedIcon: Icons.notifications_none_rounded,
+              ),
+              _buildNavItem(
+                index: 3,
+                label: 'Profile',
+                selectedIcon: Icons.person_rounded,
+                unselectedIcon: Icons.person_outline_rounded,
+                isProfile: true,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem({
+    required int index,
+    required String label,
+    required IconData selectedIcon,
+    required IconData unselectedIcon,
+    bool isProfile = false,
+  }) {
+    final bool isSelected = _currentIndex == index;
+    const Color activeColor = AppDefaultColors.primaryRed;
+    const Color inactiveColor = Colors.white54;
+
+    Widget iconWidget;
+    if (isProfile && loggedStatus && profilePicture.isNotEmpty) {
+      final String imgUrl = profilePicture.startsWith('http')
+          ? profilePicture
+          : "${AppConfig.BaseUrl}/$profilePicture";
+      iconWidget = Container(
+        width: 24,
+        height: 24,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: isSelected ? activeColor : Colors.white24,
+            width: isSelected ? 1.8 : 1.0,
+          ),
+        ),
+        child: ClipOval(
+          child: Image.network(
+            imgUrl,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Icon(
+              isSelected ? selectedIcon : unselectedIcon,
+              size: 22,
+              color: isSelected ? activeColor : inactiveColor,
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.search),
-              label: 'Search',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.notifications),
-              label: 'Notification',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person),
-              label: 'Profile',
-            ),
-          ],
+          ),
+        ),
+      );
+    } else {
+      iconWidget = Icon(
+        isSelected ? selectedIcon : unselectedIcon,
+        size: 23,
+        color: isSelected ? activeColor : inactiveColor,
+      );
+    }
+
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _onTabTapped(index),
+          splashColor: activeColor.withValues(alpha: 0.12),
+          highlightColor: Colors.transparent,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Animated icon scale
+              AnimatedScale(
+                scale: isSelected ? 1.08 : 1.0,
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOutCubic,
+                child: iconWidget,
+              ),
+              const SizedBox(height: 4),
+              // Navigation label
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: isSelected ? activeColor : inactiveColor,
+                  fontSize: 10.5,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
