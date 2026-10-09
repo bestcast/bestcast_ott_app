@@ -40,18 +40,14 @@ class _MainScreenState extends State<MainScreen> {
   late AppLinks _appLinks;
   StreamSubscription<Uri>? _linkSubscription;
 
-  // Define persistent pages for IndexedStack to preserve scroll state
-  late final List<Widget> _pages = const [
-    Dashboard(),
-    SearchScreen(),
-    NotificationScreen(),
-    ProfileMainPage(),
-  ];
+  // Track loaded tabs so that Search, Notifications, and Profile only initialize when visited
+  late final Set<int> _loadedTabs = {widget.initialIndex};
 
   @override
   void initState() {
     _currentIndex = widget.initialIndex;
     _pageIndex = widget.initialIndex;
+    _loadedTabs.add(widget.initialIndex);
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
@@ -152,6 +148,7 @@ class _MainScreenState extends State<MainScreen> {
             loggedStatus = nowLogged;
             profilePicture = newPic;
             if (nowLogged) {
+              _loadedTabs.add(3);
               _currentIndex = 3;
               _pageIndex = 3;
             }
@@ -162,6 +159,7 @@ class _MainScreenState extends State<MainScreen> {
     }
 
     setState(() {
+      _loadedTabs.add(index);
       _currentIndex = index;
       _pageIndex = index;
     });
@@ -204,10 +202,15 @@ class _MainScreenState extends State<MainScreen> {
       },
       child: Scaffold(
         backgroundColor: Colors.black,
-        // IndexedStack preserves state and scroll positions of all tabs
+        // IndexedStack preserves state and scroll positions of all loaded tabs
         body: IndexedStack(
           index: _pageIndex,
-          children: _pages,
+          children: [
+            _loadedTabs.contains(0) ? const Dashboard() : const SizedBox.shrink(),
+            _loadedTabs.contains(1) ? const SearchScreen() : const SizedBox.shrink(),
+            _loadedTabs.contains(2) ? const NotificationScreen() : const SizedBox.shrink(),
+            _loadedTabs.contains(3) ? const ProfileMainPage() : const SizedBox.shrink(),
+          ],
         ),
         bottomNavigationBar: _buildBottomNavBar(),
       ),

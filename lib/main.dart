@@ -1,21 +1,27 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:animated_splash_screen/animated_splash_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:page_transition/page_transition.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:bestcaststudios/common_files/loading_widget.dart';
 import 'package:bestcaststudios/main_screen.dart';
 import 'package:bestcaststudios/register/profile_image_grid.dart';
-import 'app_config/app_preferences.dart';
 import 'common_files/app_default_colors.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
+      systemNavigationBarColor: Colors.black,
+      systemNavigationBarIconBrightness: Brightness.light,
+    ),
+  );
   runApp(const MyApp());
 }
 
@@ -90,74 +96,11 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const MyHomePage(title: 'Bestcast OTT'),
+      home: const MainScreen(),
       routes: {
-        "profile_image_grid": (context) => ProfileImageGrid(),
-        'mainscreen': (context) => MainScreen(),
+        "profile_image_grid": (context) => const ProfileImageGrid(),
+        'mainscreen': (context) => const MainScreen(),
       },
     );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  bool loggedStatus = false;
-  bool loadStatus = false;
-
-  Future<void> getInitialValue() async {
-    final pref = await SharedPreferences.getInstance();
-    loggedStatus = pref.getBool(AppPreferences.loggedStatus) ?? false;
-    print("loggedStatus: $loggedStatus");
-
-    if (mounted) {
-      setState(() {
-        loadStatus = true;
-      });
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    getInitialValue();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    SystemChrome.setSystemUIOverlayStyle(
-      SystemUiOverlayStyle(
-        // statusBarColor: Colors.red, // You can use this as well
-        statusBarIconBrightness: Brightness.light, // OR Vice Versa for ThemeMode.dark
-        statusBarBrightness: Brightness.light, // OR Vice Versa for ThemeMode.dark
-        systemNavigationBarColor: Colors.black, // OR Vice Versa for ThemeMode.dark
-      ),
-    );
-
-    return loadStatus
-        ? AnimatedSplashScreen(
-            duration: 1000,
-            // splash: Icons.home,
-            splash: Container(
-              alignment: Alignment.center,
-              padding: const EdgeInsets.all(10),
-              height: 250,
-              child: const Image(
-                image: AssetImage("images/logo_bestcast.png"),
-                height: 150,
-              ),
-            ),
-            nextScreen: MainScreen(),
-            splashTransition: SplashTransition.fadeTransition,
-            pageTransitionType: PageTransitionType.fade,
-            backgroundColor: Colors.black)
-        : LoadingWidget();
   }
 }

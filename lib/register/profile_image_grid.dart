@@ -13,7 +13,7 @@ import '../app_config/appconfig.dart';
 import '../common_files/api_services.dart';
 import '../common_files/app_default_colors.dart';
 import '../common_files/common_widgets.dart';
-import '../common_files/loading_widget.dart';
+import '../common_files/shimmer/shimmer_skeletons.dart';
 
 class ProfileImageGrid extends StatefulWidget {
   const ProfileImageGrid({super.key});
@@ -106,7 +106,7 @@ class _ProfileImageGridState extends State<ProfileImageGrid> {
                 ),
               ),
             )
-          : LoadingWidget(),
+          : const WhoWatchingSkeleton(count: 6),
     );
   }
 

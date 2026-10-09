@@ -23,7 +23,8 @@ import '../authendication/login_page.dart';
 import '../common_files/api_services.dart';
 import '../common_files/app_default_colors.dart';
 import '../common_files/common_widgets.dart';
-import '../common_files/loading_widget.dart';
+import '../common_files/shimmer/shimmer_skeletons.dart';
+import '../common_files/shimmer/app_shimmer_image.dart';
 import '../main_screen.dart';
 import '../streamingpalyer/video_player.dart';
 
@@ -142,7 +143,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
           ],
         ),
         body: isLoading && moviesMyListModel.isEmpty && moviesWatchingModel.isEmpty
-            ? const Center(child: LoadingWidget())
+            ? const ProfileSkeleton()
             : RefreshIndicator(
                 color: AppDefaultColors.primaryRed,
                 backgroundColor: const Color(0xFF1E1E26),
@@ -150,7 +151,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                   await getInitalValue();
                 },
                 child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                  physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
                   padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -313,10 +314,13 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
             ),
             child: ClipOval(
               child: profilePicture.isNotEmpty
-                  ? Image.network(
-                      profilePicture,
+                  ? AppShimmerImage(
+                      imageUrl: profilePicture,
+                      width: 64,
+                      height: 64,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => _avatarFallback(displayName),
+                      borderRadius: 32,
+                      errorAsset: 'images/profile.png',
                     )
                   : _avatarFallback(displayName),
             ),
@@ -573,123 +577,118 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
   // CONTINUE WATCHING CAROUSEL
   // -------------------------------------------------------------
   Widget _buildContinueWatchingList() {
-    return SizedBox(
-      height: 195,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        itemCount: moviesWatchingModel.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          final movie = moviesWatchingModel[index];
-          double progress = 0.0;
-          if (movie.usermovies != null && movie.usermovies!.watchedPercent != null) {
-            double? parsed = double.tryParse(movie.usermovies!.watchedPercent.toString());
-            if (parsed != null) {
-              progress = (parsed / 100.0).clamp(0.0, 1.0);
+    return RepaintBoundary(
+      child: SizedBox(
+        height: 195,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          cacheExtent: 350.0,
+          itemCount: moviesWatchingModel.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 12),
+          itemBuilder: (context, index) {
+            final movie = moviesWatchingModel[index];
+            double progress = 0.0;
+            if (movie.usermovies != null && movie.usermovies!.watchedPercent != null) {
+              double? parsed = double.tryParse(movie.usermovies!.watchedPercent.toString());
+              if (parsed != null) {
+                progress = (parsed / 100.0).clamp(0.0, 1.0);
+              }
             }
-          }
 
-          return SizedBox(
-            width: 130,
-            child: GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => VideoApp(getMovieID: movie.id.toString()),
-                  ),
-                );
-              },
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Poster with Play Overlay & Progress
-                  Stack(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: SizedBox(
-                          height: 145,
+            return SizedBox(
+              width: 130,
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => VideoApp(getMovieID: movie.id.toString()),
+                    ),
+                  );
+                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Poster with Play Overlay & Progress
+                    Stack(
+                      children: [
+                        AppShimmerImage(
+                          imageUrl: movie.portraitsmall.toString(),
                           width: 130,
-                          child: FadeInImage(
-                            placeholder: const AssetImage("images/default_portrate_small.jpg"),
-                            image: NetworkImage(movie.portraitsmall.toString()),
-                            imageErrorBuilder: (_, __, ___) => Image.asset(
-                              'images/default_portrate_small.jpg',
-                              fit: BoxFit.cover,
+                          height: 145,
+                          fit: BoxFit.cover,
+                          borderRadius: 10,
+                          errorAsset: 'images/default_portrate_small.jpg',
+                        ),
+                        // Play icon centered
+                        Positioned.fill(
+                          child: Center(
+                            child: Container(
+                              width: 38,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.55),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 1.5),
+                              ),
+                              child: const Icon(
+                                Icons.play_arrow_rounded,
+                                color: Colors.white,
+                                size: 24,
+                              ),
                             ),
-                            fit: BoxFit.cover,
                           ),
                         ),
-                      ),
-                      // Play icon centered
-                      Positioned.fill(
-                        child: Center(
-                          child: Container(
-                            width: 38,
-                            height: 38,
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.55),
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 1.5),
+                        // Bottom Progress bar
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          child: ClipRRect(
+                            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(10)),
+                            child: LinearProgressIndicator(
+                              value: progress > 0 ? progress : 0.35,
+                              minHeight: 3.5,
+                              color: AppDefaultColors.primaryRed,
+                              backgroundColor: Colors.black45,
                             ),
-                            child: const Icon(
-                              Icons.play_arrow_rounded,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    // Title & More options
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            movie.title.toString(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
                               color: Colors.white,
-                              size: 24,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
-                      ),
-                      // Bottom Progress bar
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        child: ClipRRect(
-                          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(10)),
-                          child: LinearProgressIndicator(
-                            value: progress > 0 ? progress : 0.35,
-                            minHeight: 3.5,
-                            color: AppDefaultColors.primaryRed,
-                            backgroundColor: Colors.black45,
+                        GestureDetector(
+                          onTap: () => getMovieDetailsBottomWidget(movie, 1),
+                          child: Icon(
+                            Icons.more_vert_rounded,
+                            size: 16,
+                            color: Colors.white.withOpacity(0.6),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  // Title & More options
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          movie.title.toString(),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () => getMovieDetailsBottomWidget(movie, 1),
-                        child: Icon(
-                          Icons.more_vert_rounded,
-                          size: 16,
-                          color: Colors.white.withOpacity(0.6),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -698,42 +697,37 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
   // MY LIST CAROUSEL
   // -------------------------------------------------------------
   Widget _buildMyListCarousel() {
-    return SizedBox(
-      height: 165,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        itemCount: moviesMyListModel.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          final movie = moviesMyListModel[index];
-          return GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => VideoApp(getMovieID: movie.id.toString()),
-                ),
-              );
-            },
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: SizedBox(
+    return RepaintBoundary(
+      child: SizedBox(
+        height: 165,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          cacheExtent: 350.0,
+          itemCount: moviesMyListModel.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 12),
+          itemBuilder: (context, index) {
+            final movie = moviesMyListModel[index];
+            return GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => VideoApp(getMovieID: movie.id.toString()),
+                  ),
+                );
+              },
+              child: AppShimmerImage(
+                imageUrl: movie.portraitsmall.toString(),
                 width: 110,
                 height: 165,
-                child: FadeInImage(
-                  placeholder: const AssetImage("images/default_portrate_small.jpg"),
-                  image: NetworkImage(movie.portraitsmall.toString()),
-                  imageErrorBuilder: (_, __, ___) => Image.asset(
-                    'images/default_portrate_small.jpg',
-                    fit: BoxFit.cover,
-                  ),
-                  fit: BoxFit.cover,
-                ),
+                fit: BoxFit.cover,
+                borderRadius: 10,
+                errorAsset: 'images/default_portrate_small.jpg',
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -742,89 +736,84 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
   // RECENTLY WATCHED CAROUSEL
   // -------------------------------------------------------------
   Widget _buildRecentlyWatchedList() {
-    return SizedBox(
-      height: 155,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        itemCount: moviesRecentlyModel.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          final movie = moviesRecentlyModel[index];
-          return GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => VideoApp(getMovieID: movie.id.toString()),
-                ),
-              );
-            },
-            child: SizedBox(
-              width: 180,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: SizedBox(
+    return RepaintBoundary(
+      child: SizedBox(
+        height: 155,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          cacheExtent: 350.0,
+          itemCount: moviesRecentlyModel.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 12),
+          itemBuilder: (context, index) {
+            final movie = moviesRecentlyModel[index];
+            return GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => VideoApp(getMovieID: movie.id.toString()),
+                  ),
+                );
+              },
+              child: SizedBox(
+                width: 180,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppShimmerImage(
+                      imageUrl: movie.thumbnail.toString(),
                       width: 180,
                       height: 105,
-                      child: FadeInImage(
-                        placeholder: const AssetImage("images/default_landscape.jpg"),
-                        image: NetworkImage(movie.thumbnail.toString()),
-                        imageErrorBuilder: (_, __, ___) => Image.asset(
-                          'images/default_landscape.jpg',
-                          fit: BoxFit.cover,
-                        ),
-                        fit: BoxFit.cover,
-                      ),
+                      fit: BoxFit.cover,
+                      borderRadius: 10,
+                      errorAsset: 'images/default_landscape.jpg',
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          movie.title.toString(),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            movie.title.toString(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          final encodedTitle = Uri.encodeComponent(movie.title.toString());
-                          Share.share(
-                            'Watch ${movie.title} on Bestcast OTT:\n${AppConfig.BaseUrl}/search?search=$encodedTitle',
-                          );
-                        },
-                        child: Icon(
-                          Icons.share_outlined,
-                          size: 16,
-                          color: Colors.white.withOpacity(0.6),
+                        GestureDetector(
+                          onTap: () {
+                            final encodedTitle = Uri.encodeComponent(movie.title.toString());
+                            Share.share(
+                              'Watch ${movie.title} on Bestcast OTT:\n${AppConfig.BaseUrl}/search?search=$encodedTitle',
+                            );
+                          },
+                          child: Icon(
+                            Icons.share_outlined,
+                            size: 16,
+                            color: Colors.white.withOpacity(0.6),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      GestureDetector(
-                        onTap: () => getMovieDetailsBottomWidget(movie, 2),
-                        child: Icon(
-                          Icons.more_vert_rounded,
-                          size: 16,
-                          color: Colors.white.withOpacity(0.6),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () => getMovieDetailsBottomWidget(movie, 2),
+                          child: Icon(
+                            Icons.more_vert_rounded,
+                            size: 16,
+                            color: Colors.white.withOpacity(0.6),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

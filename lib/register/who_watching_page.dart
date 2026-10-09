@@ -16,7 +16,7 @@ import '../authendication/device_signout_alert_screen.dart';
 import '../common_files/api_services.dart';
 import '../common_files/app_default_colors.dart';
 import '../common_files/common_widgets.dart';
-import '../common_files/loading_widget.dart';
+import '../common_files/shimmer/shimmer_skeletons.dart';
 
 class WhosWatchingPage extends StatefulWidget {
   final String activityType;
@@ -130,7 +130,7 @@ class _WhosWatchingPageState extends State<WhosWatchingPage> {
         ],
       ),
       body: isLoading && whoWatchingModel.isEmpty
-          ? const Center(child: LoadingWidget())
+          ? const WhoWatchingSkeleton()
           : SafeArea(
               child: Column(
                 children: [

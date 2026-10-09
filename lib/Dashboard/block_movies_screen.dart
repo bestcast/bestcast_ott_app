@@ -7,6 +7,7 @@ import 'package:bestcaststudios/Webseries/webseries_detail_screen.dart';
 import 'package:bestcaststudios/app_config/appconfig.dart';
 import 'package:bestcaststudios/common_files/app_default_colors.dart';
 import 'package:bestcaststudios/streamingpalyer/video_player.dart';
+import 'package:bestcaststudios/common_files/shimmer/app_shimmer_image.dart';
 
 class BlockMoviesScreen extends StatefulWidget {
   final String blockTitle;
@@ -247,35 +248,12 @@ class _BlockMoviesScreenState extends State<BlockMoviesScreen> {
                             child: Stack(
                               fit: StackFit.expand,
                               children: [
-                                fullImageUrl.isNotEmpty
-                                    ? Image.network(
-                                        fullImageUrl,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) => Image.asset(
-                                          'images/default_portrate_small.jpg',
-                                          fit: BoxFit.cover,
-                                        ),
-                                        loadingBuilder: (context, child, progress) {
-                                          if (progress == null) return child;
-                                          return Container(
-                                            color: AppDefaultColors.hardDarkGray,
-                                            child: const Center(
-                                              child: SizedBox(
-                                                width: 18,
-                                                height: 18,
-                                                child: CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                  color: Colors.white24,
-                                                ),
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      )
-                                    : Image.asset(
-                                        'images/default_portrate_small.jpg',
-                                        fit: BoxFit.cover,
-                                      ),
+                                AppShimmerImage(
+                                  imageUrl: fullImageUrl,
+                                  fit: BoxFit.cover,
+                                  borderRadius: 7.2,
+                                  errorAsset: 'images/default_portrate_small.jpg',
+                                ),
                                 if (movie.movie_access == "1")
                                   Positioned(
                                     top: 4,

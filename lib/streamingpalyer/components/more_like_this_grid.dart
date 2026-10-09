@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/related_movie_modelss.dart'; // Check import path
 import '../../common_files/movie_vertical_card_background.dart';
+import '../../common_files/shimmer/app_shimmer_image.dart';
 
 class MoreLikeThisGrid extends StatelessWidget {
   final List<RelatedMovieData> relatedMovieData;
@@ -41,15 +42,13 @@ class MoreLikeThisGrid extends StatelessWidget {
               child: SizedBox(
                 width: 130,
                 height: 170,
-                child: FadeInImage(
-                  placeholder: AssetImage("images/sample_movie_1.jpg"),
-                  image: NetworkImage(relatedMovieData.movie!.portraitsmall.toString()),
-                  imageErrorBuilder: (context, error, stackTrace) {
-                    return Image.asset('images/sample_movie_1.jpg');
-                  },
+                child: AppShimmerImage(
+                  imageUrl: relatedMovieData.movie?.portraitsmall ?? '',
                   width: 130,
                   height: 170,
                   fit: BoxFit.cover,
+                  borderRadius: 6,
+                  errorAsset: 'images/sample_movie_1.jpg',
                 ),
               ),
             ),

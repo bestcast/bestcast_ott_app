@@ -13,6 +13,8 @@ import 'package:bestcaststudios/app_config/appconfig.dart';
 import 'package:bestcaststudios/common_files/api_services.dart';
 import 'package:bestcaststudios/common_files/app_default_colors.dart';
 import 'package:bestcaststudios/streamingpalyer/video_player.dart';
+import 'package:bestcaststudios/common_files/shimmer/shimmer_skeletons.dart';
+import 'package:bestcaststudios/common_files/shimmer/app_shimmer_image.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -559,9 +561,7 @@ class _SearchScreenState extends State<SearchScreen> {
   // Active Search & Genre Results Grid
   Widget _buildSearchResults() {
     if (_isSearchLoading && _searchResults.isEmpty && _allMovies.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppDefaultColors.primaryRed, strokeWidth: 3),
-      );
+      return const SearchGridSkeleton();
     }
 
     if (_searchResults.isEmpty) {
@@ -674,35 +674,12 @@ class _SearchScreenState extends State<SearchScreen> {
                           child: Stack(
                             fit: StackFit.expand,
                             children: [
-                              poster.isNotEmpty
-                                  ? Image.network(
-                                      poster,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) => Image.asset(
-                                        'images/default_portrate_small.jpg',
-                                        fit: BoxFit.cover,
-                                      ),
-                                      loadingBuilder: (context, child, progress) {
-                                        if (progress == null) return child;
-                                        return Container(
-                                          color: AppDefaultColors.hardDarkGray,
-                                          child: const Center(
-                                            child: SizedBox(
-                                              width: 18,
-                                              height: 18,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                color: Colors.white24,
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    )
-                                  : Image.asset(
-                                      'images/default_portrate_small.jpg',
-                                      fit: BoxFit.cover,
-                                    ),
+                              AppShimmerImage(
+                                imageUrl: poster,
+                                fit: BoxFit.cover,
+                                borderRadius: 7.2,
+                                errorAsset: 'images/default_portrate_small.jpg',
+                              ),
                               if (movie.movie_access == "1")
                                 Positioned(
                                   top: 4,
@@ -744,9 +721,7 @@ class _SearchScreenState extends State<SearchScreen> {
   // Idle State: Popular Movies List
   Widget _buildPopularSearches() {
     if (_isLoadingCatalog && _popularMovies.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppDefaultColors.primaryRed, strokeWidth: 3),
-      );
+      return const SearchListSkeleton();
     }
 
     if (_popularMovies.isEmpty) {
@@ -816,19 +791,12 @@ class _SearchScreenState extends State<SearchScreen> {
                           child: Stack(
                             fit: StackFit.expand,
                             children: [
-                              landscapeUrl.isNotEmpty
-                                  ? Image.network(
-                                      landscapeUrl,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) => Image.asset(
-                                        'images/default_landscape.jpg',
-                                        fit: BoxFit.cover,
-                                      ),
-                                    )
-                                  : Image.asset(
-                                      'images/default_landscape.jpg',
-                                      fit: BoxFit.cover,
-                                    ),
+                              AppShimmerImage(
+                                imageUrl: landscapeUrl,
+                                fit: BoxFit.cover,
+                                borderRadius: 7.2,
+                                errorAsset: 'images/default_landscape.jpg',
+                              ),
                               if (movie.movie_access == "1")
                                 Positioned(
                                   top: 3,

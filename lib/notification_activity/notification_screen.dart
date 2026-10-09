@@ -7,7 +7,8 @@ import 'package:flutter/services.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:bestcaststudios/common_files/loading_widget.dart';
+import 'package:bestcaststudios/common_files/shimmer/shimmer_skeletons.dart';
+import 'package:bestcaststudios/common_files/shimmer/app_shimmer_image.dart';
 import '../app_config/app_preferences.dart';
 import '../app_config/appconfig.dart';
 import '../common_files/api_services.dart';
@@ -309,7 +310,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(child: LoadingWidget());
+      return const NotificationSkeleton();
     }
 
     if (_hasError) {
@@ -377,19 +378,16 @@ class _NotificationScreenState extends State<NotificationScreen> {
             // Clean 16:9 thumbnail
             ClipRRect(
               borderRadius: BorderRadius.circular(6),
-              child: Container(
+              child: SizedBox(
                 width: 104,
                 height: 60,
-                color: const Color(0xFF1E1E22),
                 child: item.thumnail != null && item.thumnail!.trim().isNotEmpty
-                    ? Image.network(
-                        item.thumnail!,
+                    ? AppShimmerImage(
+                        imageUrl: item.thumnail!,
+                        width: 104,
+                        height: 60,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _buildFallbackThumbnail(),
-                        loadingBuilder: (context, child, progress) {
-                          if (progress == null) return child;
-                          return Container(color: const Color(0xFF1E1E22));
-                        },
+                        errorAsset: 'images/default_landscape.jpg',
                       )
                     : _buildFallbackThumbnail(),
               ),

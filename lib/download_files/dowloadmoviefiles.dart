@@ -11,6 +11,7 @@ import '../app_config/app_preferences.dart';
 import '../app_config/app_utils.dart';
 import '../common_files/app_default_colors.dart';
 import '../common_files/loading_widget.dart';
+import '../common_files/shimmer/shimmer_skeletons.dart';
 import '../common_files/movie_categories_card_wishlist.dart';
 import '../database_helper/DatabaseHelper.dart';
 import '../main_screen.dart';
@@ -171,7 +172,7 @@ class _DownloadMovieFilesState extends State<DownloadMovieFiles> {
                             }),
                       ],
                     ))
-              : LoadingWidget()),
+              : const SearchListSkeleton(itemCount: 4)),
     );
   }
 

@@ -31,9 +31,10 @@ import '../authendication/login_page.dart';
 import '../common_files/api_services.dart';
 import '../common_files/app_default_colors.dart';
 import '../common_files/common_widgets.dart';
-import '../common_files/loading_widget.dart';
 import '../common_files/submit_white_button.dart';
 import '../streamingpalyer/models/main_movie_details_models.dart';
+import '../common_files/shimmer/shimmer_skeletons.dart';
+import '../common_files/shimmer/app_shimmer_image.dart';
 
 class DashboardBannerItem {
   final String bannerId;
@@ -76,7 +77,6 @@ class _DashboardState extends State<Dashboard> {
   List<DashboardBannerItem> _bannerList = [];
   List<DashboardBannerItem> _masterBannerList = [];
   final PageController _bannerPageController = PageController();
-  int _currentBannerIndex = 0;
   Timer? _bannerTimer;
 
   String _token = "";
@@ -103,8 +103,9 @@ class _DashboardState extends State<Dashboard> {
 
   var scrollController = ScrollController();
   bool _isAppBarVisible = true;
-  double _appBarOpacity = 1.0;
-  final Duration _duration = Duration(milliseconds: 500);
+  final ValueNotifier<double> _appBarOpacityNotifier = ValueNotifier<double>(1.0);
+  final ValueNotifier<int> _currentBannerIndexNotifier = ValueNotifier<int>(0);
+  final Duration _duration = const Duration(milliseconds: 250);
 
   bool _isAddedMyList = false;
 
@@ -154,17 +155,13 @@ class _DashboardState extends State<Dashboard> {
 
       if (scrollController.position.userScrollDirection == ScrollDirection.reverse) {
         if (_isAppBarVisible) {
-          setState(() {
-            _isAppBarVisible = false;
-            _appBarOpacity = 0.0;
-          });
+          _isAppBarVisible = false;
+          _appBarOpacityNotifier.value = 0.0;
         }
       } else if (scrollController.position.userScrollDirection == ScrollDirection.forward) {
         if (!_isAppBarVisible) {
-          setState(() {
-            _isAppBarVisible = true;
-            _appBarOpacity = 1.0;
-          });
+          _isAppBarVisible = true;
+          _appBarOpacityNotifier.value = 1.0;
         }
       }
     });
@@ -176,10 +173,10 @@ class _DashboardState extends State<Dashboard> {
     if (_bannerList.length <= 1) return;
     _bannerTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (!mounted || _bannerList.isEmpty || !_bannerPageController.hasClients) return;
-      int nextIndex = (_currentBannerIndex + 1) % _bannerList.length;
+      int nextIndex = (_currentBannerIndexNotifier.value + 1) % _bannerList.length;
       _bannerPageController.animateToPage(
         nextIndex,
-        duration: const Duration(milliseconds: 600),
+        duration: const Duration(milliseconds: 500),
         curve: Curves.easeInOutCubic,
       );
     });
@@ -195,6 +192,8 @@ class _DashboardState extends State<Dashboard> {
     _bannerTimer?.cancel();
     _bannerPageController.dispose();
     scrollController.dispose();
+    _appBarOpacityNotifier.dispose();
+    _currentBannerIndexNotifier.dispose();
     super.dispose();
   }
 
@@ -252,7 +251,7 @@ class _DashboardState extends State<Dashboard> {
         moviesMainCategoryModelList = List.from(_masterCategoryModelList);
         if (_masterBannerList.isNotEmpty) {
           _bannerList = List.from(_masterBannerList);
-          _currentBannerIndex = 0;
+          _currentBannerIndexNotifier.value = 0;
           if (_bannerList.isNotEmpty) {
             _mainMoviePicture = _bannerList[0].imageUrl;
             _mainMovieId = _bannerList[0].movieId;
@@ -289,7 +288,7 @@ class _DashboardState extends State<Dashboard> {
       moviesMainCategoryModelList = filteredBlocks;
       if (filteredBanners.isNotEmpty) {
         _bannerList = filteredBanners;
-        _currentBannerIndex = 0;
+        _currentBannerIndexNotifier.value = 0;
         _mainMoviePicture = _bannerList[0].imageUrl;
         _mainMovieId = _bannerList[0].movieId;
         _mainMovieCategory = _bannerList[0].category;
@@ -387,6 +386,7 @@ class _DashboardState extends State<Dashboard> {
           isLoading == false
               ? SingleChildScrollView(
                   controller: scrollController,
+                  physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
                   child: Container(
                     margin: const EdgeInsets.only(top: 160, left: 15, right: 15, bottom: 10),
                     child: Column(
@@ -492,18 +492,22 @@ class _DashboardState extends State<Dashboard> {
                                           ),
                                         ),
                                       ),
-                                      SizedBox(
-                                        height: 205,
-                                        child: ListView.builder(
-                                          physics: const BouncingScrollPhysics(),
-                                          scrollDirection: Axis.horizontal,
-                                          itemCount: block.movies?.length ?? 0,
-                                          itemBuilder: (BuildContext context, int index2) {
-                                            return getMovieCategoryWidget(
-                                              block.movies![index2],
-                                              isWebseries: isWebseries,
-                                            );
-                                          },
+                                      RepaintBoundary(
+                                        child: SizedBox(
+                                          height: 205,
+                                          child: ListView.builder(
+                                            physics: const BouncingScrollPhysics(),
+                                            scrollDirection: Axis.horizontal,
+                                            itemExtent: 134.0,
+                                            cacheExtent: 350.0,
+                                            itemCount: block.movies?.length ?? 0,
+                                            itemBuilder: (BuildContext context, int index2) {
+                                              return getMovieCategoryWidget(
+                                                block.movies![index2],
+                                                isWebseries: isWebseries,
+                                              );
+                                            },
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -523,18 +527,26 @@ class _DashboardState extends State<Dashboard> {
                     ),
                   ),
                 )
-              : LoadingWidget(),
+              : const DashboardSkeleton(),
 
-          // TOP bar
-          AnimatedOpacity(
-            duration: _duration,
-            opacity: _appBarOpacity,
-            child: _isAppBarVisible
-                ? Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
+          // TOP bar with isolated opacity animation
+          ValueListenableBuilder<double>(
+            valueListenable: _appBarOpacityNotifier,
+            builder: (context, opacity, child) {
+              return IgnorePointer(
+                ignoring: opacity == 0.0,
+                child: AnimatedOpacity(
+                  duration: _duration,
+                  opacity: opacity,
+                  child: child,
+                ),
+              );
+            },
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
                         margin: const EdgeInsets.only(top: 40, left: 20, right: 20),
                         child: Padding(
                           padding: const EdgeInsets.all(10.0),
@@ -643,8 +655,7 @@ class _DashboardState extends State<Dashboard> {
                         ),
                       ),
                     ],
-                  )
-                : const SizedBox.shrink(),
+                  ),
           ),
         ]),
       ),
@@ -680,13 +691,12 @@ class _DashboardState extends State<Dashboard> {
               child: SizedBox(
                 height: 160,
                 width: 120,
-                child: thumb.isNotEmpty
-                    ? Image.network(
-                        thumb,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Image.asset('images/default_portrate_large.jpg', fit: BoxFit.cover),
-                      )
-                    : Image.asset('images/default_portrate_large.jpg', fit: BoxFit.cover),
+                child: AppShimmerImage(
+                  imageUrl: thumb,
+                  fit: BoxFit.cover,
+                  borderRadius: 6,
+                  errorAsset: 'images/default_portrate_large.jpg',
+                ),
               ),
             ),
             const SizedBox(height: 4),
@@ -784,32 +794,14 @@ class _DashboardState extends State<Dashboard> {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      imageUrl.isNotEmpty && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))
-                          ? Image.network(
-                              imageUrl,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => Image.asset(
-                                'images/default_portrate_small.jpg',
-                                fit: BoxFit.cover,
-                              ),
-                              loadingBuilder: (context, child, progress) {
-                                if (progress == null) return child;
-                                return Container(
-                                  color: AppDefaultColors.hardDarkGray,
-                                  child: const Center(
-                                    child: SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white24),
-                                    ),
-                                  ),
-                                );
-                              },
-                            )
-                          : Image.asset(
-                              'images/default_portrate_small.jpg',
-                              fit: BoxFit.cover,
-                            ),
+                      AppShimmerImage(
+                        imageUrl: imageUrl,
+                        width: 124,
+                        height: 165,
+                        fit: BoxFit.cover,
+                        borderRadius: 7.2,
+                        errorAsset: 'images/default_portrate_small.jpg',
+                      ),
                       if (moviesModel.movie_access == "1")
                         Positioned(
                           top: 4,
@@ -1013,9 +1005,7 @@ class _DashboardState extends State<Dashboard> {
             controller: _bannerPageController,
             itemCount: _bannerList.length,
             onPageChanged: (index) {
-              setState(() {
-                _currentBannerIndex = index;
-              });
+              _currentBannerIndexNotifier.value = index;
               _resetBannerTimer();
             },
             itemBuilder: (context, index) {
@@ -1035,26 +1025,13 @@ class _DashboardState extends State<Dashboard> {
                     child: SizedBox(
                       height: bannerHeight,
                       width: double.infinity,
-                      child: banner.imageUrl.isNotEmpty &&
-                              (banner.imageUrl.startsWith("http://") || banner.imageUrl.startsWith("https://"))
-                          ? Image.network(
-                              banner.imageUrl,
-                              height: bannerHeight,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => Image.asset(
-                                'images/default_portrate_large.jpg',
-                                height: bannerHeight,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                              ),
-                            )
-                          : Image.asset(
-                              'images/default_portrate_large.jpg',
-                              height: bannerHeight,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                            ),
+                      child: AppShimmerImage(
+                        imageUrl: banner.imageUrl,
+                        height: bannerHeight,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorAsset: 'images/default_portrate_large.jpg',
+                      ),
                     ),
                   ),
 
@@ -1189,28 +1166,33 @@ class _DashboardState extends State<Dashboard> {
             },
           ),
 
-          // Indicator Dots
+          // Indicator Dots with isolated listener
           if (_bannerList.length > 1)
             Positioned(
               bottom: 7.0,
               left: 0,
               right: 0,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(_bannerList.length, (dotIndex) {
-                  final bool isActive = _currentBannerIndex == dotIndex;
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                    margin: const EdgeInsets.symmetric(horizontal: 3.0),
-                    width: isActive ? 20.0 : 6.0,
-                    height: 5.0,
-                    decoration: BoxDecoration(
-                      color: isActive ? AppDefaultColors.primaryRed : Colors.white38,
-                      borderRadius: BorderRadius.circular(3.0),
-                    ),
+              child: ValueListenableBuilder<int>(
+                valueListenable: _currentBannerIndexNotifier,
+                builder: (context, activeIndex, _) {
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(_bannerList.length, (dotIndex) {
+                      final bool isActive = activeIndex == dotIndex;
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeInOut,
+                        margin: const EdgeInsets.symmetric(horizontal: 3.0),
+                        width: isActive ? 20.0 : 6.0,
+                        height: 5.0,
+                        decoration: BoxDecoration(
+                          color: isActive ? AppDefaultColors.primaryRed : Colors.white38,
+                          borderRadius: BorderRadius.circular(3.0),
+                        ),
+                      );
+                    }),
                   );
-                }),
+                },
               ),
             ),
         ],
@@ -1226,27 +1208,13 @@ class _DashboardState extends State<Dashboard> {
           SizedBox(
             height: bannerHeight,
             width: double.infinity,
-            child: _mainMoviePicture.isNotEmpty &&
-                    (_mainMoviePicture.startsWith("http://") ||
-                        _mainMoviePicture.startsWith("https://"))
-                ? Image.network(
-                    _mainMoviePicture,
-                    height: bannerHeight,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Image.asset(
-                      'images/default_portrate_large.jpg',
-                      height: bannerHeight,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
-                  )
-                : Image.asset(
-                    'images/default_portrate_large.jpg',
-                    height: bannerHeight,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
+            child: AppShimmerImage(
+              imageUrl: _mainMoviePicture,
+              height: bannerHeight,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorAsset: 'images/default_portrate_large.jpg',
+            ),
           ),
           Positioned.fill(
             child: IgnorePointer(
@@ -1635,7 +1603,7 @@ class _DashboardState extends State<Dashboard> {
             } else {
               _bannerList = List.from(_masterBannerList);
             }
-            _currentBannerIndex = 0;
+            _currentBannerIndexNotifier.value = 0;
             if (_bannerList.isNotEmpty) {
               _mainMoviePicture = _bannerList[0].imageUrl;
               _mainMovieId = _bannerList[0].movieId;

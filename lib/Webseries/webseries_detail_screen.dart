@@ -9,8 +9,9 @@ import 'package:bestcaststudios/app_config/app_utils.dart';
 import 'package:bestcaststudios/app_config/appconfig.dart';
 import 'package:bestcaststudios/authendication/login_page.dart';
 import 'package:bestcaststudios/common_files/app_default_colors.dart';
-import 'package:bestcaststudios/common_files/loading_widget.dart';
 import 'package:bestcaststudios/common_files/submit_white_button.dart';
+import 'package:bestcaststudios/common_files/shimmer/shimmer_skeletons.dart';
+import 'package:bestcaststudios/common_files/shimmer/app_shimmer_image.dart';
 import 'package:bestcaststudios/streamingpalyer/components/video_action_buttons.dart';
 import 'package:bestcaststudios/plan_details/plan_details.dart';
 import 'package:bestcaststudios/Webseries/Models/webseries_models.dart';
@@ -218,42 +219,22 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
               thumbnail = widget.initialItem!.thumbnail;
             }
 
-            String medium = base.medium.isNotEmpty && base.medium != 'null'
-                ? base.medium
-                : (fullDetail?.medium ?? guestDetail?.medium ?? widget.initialItem?.medium ?? '');
-            String portrait = base.portrait.isNotEmpty && base.portrait != 'null'
-                ? base.portrait
-                : (fullDetail?.portrait ?? guestDetail?.portrait ?? widget.initialItem?.portrait ?? '');
-            String portraitsmall = base.portraitsmall.isNotEmpty && base.portraitsmall != 'null'
-                ? base.portraitsmall
-                : (fullDetail?.portraitsmall ?? guestDetail?.portraitsmall ?? widget.initialItem?.portraitsmall ?? '');
-            String content = base.content.isNotEmpty
-                ? base.content
-                : (fullDetail?.content ?? guestDetail?.content ?? widget.initialItem?.content ?? '');
+            String medium = base.medium.isNotEmpty && base.medium != 'null' ? base.medium : (fullDetail?.medium ?? guestDetail?.medium ?? widget.initialItem?.medium ?? '');
+            String portrait = base.portrait.isNotEmpty && base.portrait != 'null' ? base.portrait : (fullDetail?.portrait ?? guestDetail?.portrait ?? widget.initialItem?.portrait ?? '');
+            String portraitsmall = base.portraitsmall.isNotEmpty && base.portraitsmall != 'null' ? base.portraitsmall : (fullDetail?.portraitsmall ?? guestDetail?.portraitsmall ?? widget.initialItem?.portraitsmall ?? '');
+            String content = base.content.isNotEmpty ? base.content : (fullDetail?.content ?? guestDetail?.content ?? widget.initialItem?.content ?? '');
 
-            List<WebseriesCastModel> casts = fullDetail != null && fullDetail.casts.isNotEmpty
-                ? fullDetail.casts
-                : (guestDetail?.casts.isNotEmpty == true ? guestDetail!.casts : base.casts);
+            List<WebseriesCastModel> casts = fullDetail != null && fullDetail.casts.isNotEmpty ? fullDetail.casts : (guestDetail?.casts.isNotEmpty == true ? guestDetail!.casts : base.casts);
 
-            List<WebseriesSeasonModel> seasons = base.seasons.isNotEmpty
-                ? base.seasons
-                : (fullDetail?.seasons ?? guestDetail?.seasons ?? widget.initialItem?.seasons ?? []);
+            List<WebseriesSeasonModel> seasons = base.seasons.isNotEmpty ? base.seasons : (fullDetail?.seasons ?? guestDetail?.seasons ?? widget.initialItem?.seasons ?? []);
 
-            String trailer = base.trailer.isNotEmpty
-                ? base.trailer
-                : (fullDetail?.trailer ?? guestDetail?.trailer ?? widget.initialItem?.trailer ?? '');
+            String trailer = base.trailer.isNotEmpty ? base.trailer : (fullDetail?.trailer ?? guestDetail?.trailer ?? widget.initialItem?.trailer ?? '');
 
-            String publishedDate = base.publishedDate.isNotEmpty
-                ? base.publishedDate
-                : (fullDetail?.publishedDate ?? guestDetail?.publishedDate ?? widget.initialItem?.publishedDate ?? '');
+            String publishedDate = base.publishedDate.isNotEmpty ? base.publishedDate : (fullDetail?.publishedDate ?? guestDetail?.publishedDate ?? widget.initialItem?.publishedDate ?? '');
 
-            String certificate = base.certificate.isNotEmpty
-                ? base.certificate
-                : (fullDetail?.certificate ?? guestDetail?.certificate ?? widget.initialItem?.certificate ?? '');
+            String certificate = base.certificate.isNotEmpty ? base.certificate : (fullDetail?.certificate ?? guestDetail?.certificate ?? widget.initialItem?.certificate ?? '');
 
-            String tagText = base.tagText.isNotEmpty
-                ? base.tagText
-                : (fullDetail?.tagText ?? guestDetail?.tagText ?? widget.initialItem?.tagText ?? '');
+            String tagText = base.tagText.isNotEmpty ? base.tagText : (fullDetail?.tagText ?? guestDetail?.tagText ?? widget.initialItem?.tagText ?? '');
 
             _webseriesDetail = WebseriesItemModel(
               id: base.id,
@@ -380,8 +361,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
       return null;
     }
 
-    if (_webseriesDetail!.resumeEpisodeId != null &&
-        _webseriesDetail!.resumeEpisodeId!.isNotEmpty) {
+    if (_webseriesDetail!.resumeEpisodeId != null && _webseriesDetail!.resumeEpisodeId!.isNotEmpty) {
       for (var season in _webseriesDetail!.seasons) {
         for (var ep in season.episodes) {
           if (ep.id == _webseriesDetail!.resumeEpisodeId) {
@@ -440,7 +420,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
         leading: const BackButton(color: Colors.white),
       ),
       body: _isLoading
-          ? const LoadingWidget()
+          ? const DetailScreenSkeleton()
           : _webseriesDetail == null
               ? const Center(
                   child: Text(
@@ -472,9 +452,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
 
     if (hasTrailer) {
       return AspectRatio(
-        aspectRatio: _trailerController!.value.aspectRatio > 0
-            ? _trailerController!.value.aspectRatio
-            : 16 / 9,
+        aspectRatio: _trailerController!.value.aspectRatio > 0 ? _trailerController!.value.aspectRatio : 16 / 9,
         child: Stack(
           children: [
             GestureDetector(
@@ -600,14 +578,11 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
           SizedBox(
             height: 230,
             width: double.infinity,
-            child: bgUrl.isNotEmpty
-                ? Image.network(
-                    bgUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
-                        Image.asset('images/default_portrate_large.jpg', fit: BoxFit.cover),
-                  )
-                : Image.asset('images/default_portrate_large.jpg', fit: BoxFit.cover),
+            child: AppShimmerImage(
+              imageUrl: bgUrl,
+              fit: BoxFit.cover,
+              errorAsset: 'images/default_portrate_large.jpg',
+            ),
           ),
           Container(
             height: 230,
@@ -743,15 +718,10 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
                     ).then((_) => _loadInitialData());
                   } else {
                     if (targetEp != null) {
-                      List<WebseriesEpisodeModel> currentSeasonEps =
-                          _webseriesDetail!.seasons.isNotEmpty
-                              ? _webseriesDetail!.seasons.first.episodes
-                              : [targetEp];
+                      List<WebseriesEpisodeModel> currentSeasonEps = _webseriesDetail!.seasons.isNotEmpty ? _webseriesDetail!.seasons.first.episodes : [targetEp];
                       _playEpisode(targetEp, currentSeasonEps);
-                    } else if (_webseriesDetail!.seasons.isNotEmpty &&
-                        _webseriesDetail!.seasons.first.episodes.isNotEmpty) {
-                      _playEpisode(_webseriesDetail!.seasons.first.episodes.first,
-                          _webseriesDetail!.seasons.first.episodes);
+                    } else if (_webseriesDetail!.seasons.isNotEmpty && _webseriesDetail!.seasons.first.episodes.isNotEmpty) {
+                      _playEpisode(_webseriesDetail!.seasons.first.episodes.first, _webseriesDetail!.seasons.first.episodes);
                     }
                   }
                 },
@@ -871,8 +841,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
   }
 
   Widget _buildEpisodeList() {
-    if (_webseriesDetail!.seasons.isEmpty ||
-        _selectedSeasonIndex >= _webseriesDetail!.seasons.length) {
+    if (_webseriesDetail!.seasons.isEmpty || _selectedSeasonIndex >= _webseriesDetail!.seasons.length) {
       return const SizedBox.shrink();
     }
 
@@ -921,14 +890,12 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
                         child: SizedBox(
                           width: 110,
                           height: 70,
-                          child: epThumb.isNotEmpty
-                              ? Image.network(
-                                  epThumb,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      Image.asset('images/default_portrate_large.jpg', fit: BoxFit.cover),
-                                )
-                              : Image.asset('images/default_portrate_large.jpg', fit: BoxFit.cover),
+                          child: AppShimmerImage(
+                            imageUrl: epThumb,
+                            fit: BoxFit.cover,
+                            borderRadius: 6,
+                            errorAsset: 'images/default_portrate_large.jpg',
+                          ),
                         ),
                       ),
                       Container(
@@ -999,10 +966,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
   }
 
   Widget _buildCastInlineSection() {
-    final validCasts = _webseriesDetail?.casts
-            .where((cast) => cast.name.trim().isNotEmpty)
-            .toList() ??
-        [];
+    final validCasts = _webseriesDetail?.casts.where((cast) => cast.name.trim().isNotEmpty).toList() ?? [];
 
     if (validCasts.isEmpty) return const SizedBox.shrink();
 
@@ -1015,9 +979,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
       final grp = cast.groupName.trim().toLowerCase();
       if (castName.isEmpty) continue;
 
-      if ((grp.contains("director") || grp.contains("creator")) &&
-          !grp.contains("music") &&
-          !grp.contains("art")) {
+      if ((grp.contains("director") || grp.contains("creator")) && !grp.contains("music") && !grp.contains("art")) {
         if (!directorsArray.contains(castName)) {
           directorsArray.add(castName);
         }
@@ -1025,11 +987,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
         if (!producersArray.contains(castName)) {
           producersArray.add(castName);
         }
-      } else if (grp.contains("actor") ||
-          grp.contains("actress") ||
-          grp.contains("cast") ||
-          grp.contains("starring") ||
-          grp.contains("lead")) {
+      } else if (grp.contains("actor") || grp.contains("actress") || grp.contains("cast") || grp.contains("starring") || grp.contains("lead")) {
         if (!starringArray.contains(castName)) {
           starringArray.add(castName);
         }
@@ -1042,13 +1000,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
       }
     }
 
-    final String starringText = starringArray.isNotEmpty
-        ? starringArray.join(', ')
-        : validCasts
-            .map((c) => c.name.trim())
-            .where((n) => !directorsArray.contains(n) && !producersArray.contains(n))
-            .toSet()
-            .join(', ');
+    final String starringText = starringArray.isNotEmpty ? starringArray.join(', ') : validCasts.map((c) => c.name.trim()).where((n) => !directorsArray.contains(n) && !producersArray.contains(n)).toSet().join(', ');
 
     final String directorLabel = directorsArray.length > 1 ? "Directors" : "Director";
     final String directorText = directorsArray.join(', ');

@@ -17,7 +17,7 @@ import '../authendication/login_page.dart';
 import '../common_files/api_services.dart';
 import '../common_files/app_default_colors.dart';
 import '../common_files/common_widgets.dart';
-import '../common_files/loading_widget.dart';
+import '../common_files/shimmer/shimmer_skeletons.dart';
 import '../main_screen.dart';
 
 class PlanDetailsPage extends StatefulWidget {
@@ -64,7 +64,7 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
                       );
                     }),
               )
-            : LoadingWidget(),
+            : const PlanDetailsSkeleton(),
       ),
     );
   }

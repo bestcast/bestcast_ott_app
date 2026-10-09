@@ -15,7 +15,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player/video_player.dart';
 
-import 'package:bestcaststudios/common_files/loading_widget.dart';
+import 'package:bestcaststudios/common_files/shimmer/shimmer_skeletons.dart';
 import 'package:bestcaststudios/streamingpalyer/models/casts_models.dart';
 import 'package:bestcaststudios/streamingpalyer/models/main_movie_details_models.dart';
 import 'package:bestcaststudios/streamingpalyer/models/related_movie_modelss.dart';
@@ -826,8 +826,8 @@ class _VideoAppState extends State<VideoApp> {
                     ),
                   ),
                 )
-              : LoadingWidget()
-          : LoadingWidget(),
+              : const DetailScreenSkeleton()
+          : const DetailScreenSkeleton(),
     );
   }
 
