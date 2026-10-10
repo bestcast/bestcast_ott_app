@@ -31,14 +31,13 @@ import '../common_files/api_services.dart';
 import '../common_files/app_default_colors.dart';
 import '../common_files/common_widgets.dart';
 import '../common_files/lifecycle_event_handler.dart';
-import '../common_files/submit_transparent_button.dart';
-import '../common_files/submit_white_button.dart';
 import '../database_helper/DatabaseHelper.dart';
 import '../download_files/dowloadmoviefiles.dart';
 import '../plan_details/plan_details.dart';
 import 'more_like_movies_models.dart';
 import 'components/video_action_buttons.dart';
 import 'components/more_like_this_grid.dart';
+import '../common_files/shimmer/app_shimmer_image.dart';
 
 // ignore: must_be_immutable
 class VideoApp extends StatefulWidget {
@@ -51,16 +50,16 @@ class VideoApp extends StatefulWidget {
 }
 
 class _VideoAppState extends State<VideoApp> {
-  late VideoPlayerController _controller;
+  VideoPlayerController? _controller;
 
   late final SimulatedDownloadController _downloadControllers = SimulatedDownloadController(
       onOpenDownload: () {
         Navigator.push(context, MaterialPageRoute(builder: (context) => DownloadMovieFiles()));
       },
-      downloadUrl: movieData!.moviesource.toString(),
-      downloadMovieID: movieData!.id.toString(),
-      downloadThumnail: movieData!.thumbnail.toString(),
-      downloadMovieTitle: movieData!.title.toString());
+      downloadUrl: movieData?.moviesource.toString() ?? '',
+      downloadMovieID: movieData?.id.toString() ?? '',
+      downloadThumnail: movieData?.thumbnail.toString() ?? '',
+      downloadMovieTitle: movieData?.title.toString() ?? '');
 
   bool _isMuted = false;
   bool _isPlaying = false;
@@ -72,6 +71,7 @@ class _VideoAppState extends State<VideoApp> {
   bool _showControls = true;
   Timer? _hideControlsTimer;
   LifecycleEventHandler? _lifecycleHandler;
+  bool _isSynopsisExpanded = false;
 
   late MovieData? movieData;
   List<CastElement> castElementList = [];
@@ -133,12 +133,12 @@ class _VideoAppState extends State<VideoApp> {
   }
 
   void _onControllerProgress() {
-    if (!mounted) return;
+    if (!mounted || _controller == null) return;
     try {
-      if (!_controller.value.isInitialized) return;
-      final double duration = _controller.value.duration.inSeconds.toDouble();
+      if (!_controller!.value.isInitialized) return;
+      final double duration = _controller!.value.duration.inSeconds.toDouble();
       if (duration > 0) {
-        final double progress = (_controller.value.position.inSeconds.toDouble() / duration).clamp(0.0, 1.0);
+        final double progress = (_controller!.value.position.inSeconds.toDouble() / duration).clamp(0.0, 1.0);
         if ((progress - _progressValue).abs() > 0.005) {
           if (mounted) {
             setState(() {
@@ -153,23 +153,23 @@ class _VideoAppState extends State<VideoApp> {
   void getPlayerController(String loaderUrl) {
     print("LoaderUrl:$loaderUrl");
     try {
-      _controller.removeListener(_onControllerProgress);
-      if (_controller.value.isPlaying) {
-        _controller.pause();
+      _controller?.removeListener(_onControllerProgress);
+      if (_controller != null && _controller!.value.isPlaying) {
+        _controller!.pause();
       }
-      _controller.dispose();
+      _controller?.dispose();
     } catch (_) {}
 
     _controller = VideoPlayerController.networkUrl(Uri.parse(loaderUrl))
       ..initialize().then((_) {
         if (!mounted) return;
         setState(() {});
-        _controller.addListener(_onControllerProgress);
+        _controller?.addListener(_onControllerProgress);
       }).catchError((error) {
         print("VideoPlayerController init error: $error");
       });
 
-    _controller.play();
+    _controller?.play();
     _isPlaying = true;
 
     _startHideControlsTimer();
@@ -225,609 +225,1023 @@ class _VideoAppState extends State<VideoApp> {
   }
 
   void pauseController() {
-    if (_controller.value.isPlaying) {
-      _controller.pause();
+    if (_controller != null && _controller!.value.isInitialized && _controller!.value.isPlaying) {
+      _controller!.pause();
       _isPlaying = false;
     }
   }
 
   void playController() {
-    if (!_controller.value.isPlaying) {
-      _controller.play();
+    if (_controller != null && _controller!.value.isInitialized && !_controller!.value.isPlaying) {
+      _controller!.play();
       _isPlaying = true;
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppDefaultColors.appColor,
-      appBar: AppBar(
-        backgroundColor: AppDefaultColors.appColor,
-        leading: const BackButton(color: Colors.white),
+  void _handlePlayMovie() async {
+    print("movie_watchTime: $watchTime");
+
+    if (!loggedStatus) {
+      pauseController();
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => LoginPage()),
+      );
+      return;
+    }
+
+    if (mobileDataUsage == "Wi-FiOnly") {
+      bool isWifi = await CommonWidget().isWifiConnectivity();
+      if (!isWifi) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Enable Wi-Fi on your device.\nYour settings enabled Wi-Fi video playback option',
+            ),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+    }
+
+    if (_plan_status == "0" && movieData!.movie_access != "1") {
+      pauseController();
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => PlanDetailsPage()),
+      );
+      return;
+    }
+
+    pauseController();
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MovieVideoViewer(
+          getMainMovieUrl: movieData!.videoUrl.toString(),
+          getMainMovieID: movieData!.id.toString(),
+          getWatchTime: watchTime,
+          playType: 1,
+          movieTitle: movieData!.title,
+          thumbnail: movieData!.thumbnail,
+          subtitles: movieData!.subtitle,
+        ),
       ),
-      body: isLoading == false
-          ? readyToPlay
-              ? SafeArea(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.start,
+    ).then((value) {
+      if (value != null && (value is int || value is String)) {
+        setState(() {
+          watchTime = value.toString();
+        });
+      }
+      setState(() {
+        getUserWatchingMoviesDetails(_token, profileID, widget.getMovieID);
+      });
+    });
+  }
+
+  void _handlePlayDownloadedMovie() async {
+    var movieId = widget.getMovieID.toString();
+    var movieLocalTitle = await dbHelper.getMovieTitle(movieId);
+    pauseController();
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MovieVideoViewer(
+          getMainMovieUrl: movieLocalTitle,
+          getMainMovieID: '',
+          getWatchTime: '0',
+          playType: 2,
+          movieTitle: movieData!.title,
+          thumbnail: movieData!.thumbnail,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlayerCircleButton({
+    required IconData icon,
+    required double size,
+    required double iconSize,
+    required VoidCallback onTap,
+    bool isPrimary = false,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: isPrimary
+              ? Colors.white.withValues(alpha: 0.28)
+              : Colors.black.withValues(alpha: 0.45),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: isPrimary
+                ? Colors.white.withValues(alpha: 0.5)
+                : Colors.white.withValues(alpha: 0.2),
+            width: isPrimary ? 1.5 : 1.0,
+          ),
+          boxShadow: isPrimary
+              ? [
+                  BoxShadow(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    blurRadius: 10,
+                    spreadRadius: 1,
+                  )
+                ]
+              : null,
+        ),
+        child: Center(
+          child: Icon(
+            icon,
+            color: Colors.white,
+            size: iconSize,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVideoPlayerSection(BuildContext context) {
+    final bool isVideoReady = _controller != null && _controller!.value.isInitialized;
+    final double aspectRatio = isVideoReady ? _controller!.value.aspectRatio : (16 / 9);
+
+    return Container(
+      color: Colors.black,
+      width: double.infinity,
+      child: AspectRatio(
+        aspectRatio: aspectRatio,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // 1. Video Player or Poster Shimmer Fallback
+            if (isVideoReady)
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _showControls = !_showControls;
+                    if (_showControls && (_controller?.value.isPlaying ?? false)) {
+                      _startHideControlsTimer();
+                    }
+                  });
+                },
+                child: VideoPlayer(_controller!),
+              )
+            else
+              Stack(
+                fit: StackFit.expand,
+                children: [
+                  AppShimmerImage(
+                    imageUrl: movieData?.thumbnail ?? '',
+                    fit: BoxFit.cover,
+                    errorAsset: 'images/sample_home_screen.jpg',
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withValues(alpha: 0.35),
+                          Colors.black.withValues(alpha: 0.75),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Center(
+                    child: SizedBox(
+                      width: 32,
+                      height: 32,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: AppDefaultColors.thikRed,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+            // 2. Center Player Controls Overlay
+            if (_showControls && isVideoReady)
+              AnimatedOpacity(
+                opacity: _showControls ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 250),
+                child: Container(
+                  color: Colors.black.withValues(alpha: 0.38),
+                  child: Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Container(
-                          // height: 270,
-                          child: _controller.value.isInitialized
-                              ? Column(
-                                  children: [
-                                    Stack(children: <Widget>[
-                                      GestureDetector(
-                                        onTap: () {
-                                          setState(() {
-                                            _showControls = !_showControls;
-                                            if (_showControls && _controller.value.isPlaying) {
-                                              _startHideControlsTimer();
-                                            }
-                                          });
-                                        },
-                                        child: AspectRatio(
-                                          aspectRatio: _controller.value.aspectRatio,
-                                          child: VideoPlayer(_controller),
-                                        ),
-                                      ),
-                                      IconButton(
-                                        icon: Icon(
-                                          _isMuted ? Icons.volume_off : Icons.volume_up,
-                                          color: Colors.white,
-                                        ),
-                                        onPressed: () {
-                                          setState(() {
-                                            _isMuted = !_isMuted;
-                                            _controller.setVolume(_isMuted ? 0.0 : 1.0);
-                                          });
-                                        },
-                                      ),
-                                      Positioned(
-                                        bottom: 0,
-                                        left: -10,
-                                        right: -10,
-                                        child: LayoutBuilder(builder: (context, constraints) {
-                                          return Slider(
-                                            value: _progressValue.clamp(0.0, 1.0),
-                                            activeColor: AppDefaultColors.thikRed,
-                                            inactiveColor: AppDefaultColors.white,
-                                            onChanged: (double value) {
-                                              setState(() {
-                                                _progressValue = value.clamp(0.0, 1.0);
-                                                final Duration newPosition = Duration(seconds: (_controller.value.duration.inSeconds * _progressValue).toInt());
-                                                _controller.seekTo(newPosition);
-                                              });
-                                            },
-                                          );
-                                        }),
-                                      ),
-                                      if (_showControls)
-                                        Positioned(
-                                          bottom: 0,
-                                          top: 0,
-                                          left: 0,
-                                          right: 0,
-                                          child: AnimatedOpacity(
-                                            opacity: _showControls ? 1.0 : 0.0,
-                                            duration: Duration(milliseconds: 1000),
-                                            child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              crossAxisAlignment: CrossAxisAlignment.center,
-                                              children: [
-                                                IconButton(
-                                                  icon: Image(
-                                                    image: AssetImage("images/rotate_left.png"),
-                                                    height: 30,
-                                                  ),
-                                                  onPressed: () {
-                                                    _controller.seekTo(Duration(seconds: _controller.value.position.inSeconds - 10));
-                                                  },
-                                                ),
-                                                IconButton(
-                                                  icon: Icon(
-                                                    _isPlaying ? Icons.pause : Icons.play_arrow,
-                                                    color: Colors.white,
-                                                    size: 40,
-                                                  ),
-                                                  onPressed: () {
-                                                    setState(() {
-                                                      _isPlaying ? _controller.pause() : _controller.play();
-                                                      _isPlaying = !_isPlaying;
-                                                      _startHideControlsTimer();
-                                                    });
-                                                  },
-                                                ),
-                                                IconButton(
-                                                  icon: Image(
-                                                    image: AssetImage("images/rotate_right.png"),
-                                                    height: 30,
-                                                  ),
-                                                  onPressed: () {
-                                                    _controller.seekTo(Duration(seconds: _controller.value.position.inSeconds + 10));
-                                                  },
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                    ]),
-
-                                    //   mainAxisAlignment: MainAxisAlignment.center,
-                                    //         height: 30,
-                                    //         _isPlaying ? Icons.pause : Icons.play_arrow,
-                                    //         color: Colors.white,
-                                    //         size: 40,
-                                    //         height: 30,
-                                    //   value: _controller.value.buffered.isNotEmpty
-                                    //       ? _controller.value.buffered.last.end.inSeconds / _controller.value.duration.inSeconds
-                                    //       : 0.0,
-                                  ],
-                                )
-                              : Align(
-                                  alignment: Alignment.center,
-                                  child: CircularProgressIndicator(
-                                    color: AppDefaultColors.thikRed,
-                                  ),
-                                ),
+                        _buildPlayerCircleButton(
+                          icon: Icons.replay_10_rounded,
+                          size: 42,
+                          iconSize: 24,
+                          onTap: () {
+                            if (_controller != null && _controller!.value.isInitialized) {
+                              _controller!.seekTo(
+                                Duration(seconds: _controller!.value.position.inSeconds - 10),
+                              );
+                              _startHideControlsTimer();
+                            }
+                          },
                         ),
-                        Padding(
-                          padding: EdgeInsets.only(
-                            top: 10,
-                            right: 10,
-                            left: 10,
-                            bottom: 5,
-                          ),
-                          child: Text(
-                            movieData!.title.toString(),
-                            // "Movie Time Name",
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 2,
-                            style: const TextStyle(color: Colors.white, fontSize: 25.0, fontWeight: FontWeight.w900),
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            Padding(
-                              padding: EdgeInsets.only(left: 10),
-                              child: Text(
-                                appUtils.getDateTimeToYear(movieData!.releaseDate.toString()),
-                                // '2024 2h 22m',
-                                style: TextStyle(color: AppDefaultColors.textLightGray),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.only(left: 8.0, top: 8.0, bottom: 8.0, right: 3.0),
-                              child: Container(
-                                height: 25,
-                                decoration: BoxDecoration(
-                                  border: Border.all(
-                                    color: AppDefaultColors.textLightGray, // Border color
-                                    width: 1.0, // Border width
-                                  ),
-                                ),
-                                child: Padding(
-                                  padding: EdgeInsets.all(5.0),
-                                  child: Center(
-                                    child: Text(
-                                      movieData!.certificate.toString(),
-                                      // '2024 2h 22m',
-                                      style: TextStyle(color: AppDefaultColors.textLightGray, fontSize: 12),
-                                    ),
-                                  ),
-                                ), // Your content inside the container
-                              ),
-                            ),
-                            Padding(
-                              padding: EdgeInsets.only(left: 5),
-                              child: Text(
-                                movieData!.durationText.toString(),
-                                style: TextStyle(color: AppDefaultColors.textLightGray),
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        Padding(
-                          padding: EdgeInsets.all(10),
-                          child: Text(
-                            movieData!.content.toString(),
-                            // 'Wrongfully suspended while pursuing the culprit in a missing persons case, a cop seeks '
-                            // 'redemption-and'
-                            // 'justice-when he gets a new assignment.',
-                            style: TextStyle(color: AppDefaultColors.white),
-                          ),
-                        ),
-                        if (staringNames.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8, left: 12, right: 12),
-                            child: GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onTap: () {
-                                getStartingBottomWidget();
-                              },
-                              child: RichText(
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                text: TextSpan(
-                                  children: [
-                                    const TextSpan(
-                                      text: 'Starring: ',
-                                      style: TextStyle(
-                                        color: Colors.white60,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    TextSpan(
-                                      text: staringNames,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                    if (castElementList.isNotEmpty || staringNames.length > 25)
-                                      const TextSpan(
-                                        text: '  more...',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        if (_DirectorName.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4, left: 12, right: 12),
-                            child: RichText(
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              text: TextSpan(
-                                children: [
-                                  TextSpan(
-                                    text: '$_directorLabel: ',
-                                    style: const TextStyle(
-                                      color: Colors.white60,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  TextSpan(
-                                    text: _DirectorName,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        if (_producersNames.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4, left: 12, right: 12),
-                            child: RichText(
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              text: TextSpan(
-                                children: [
-                                  TextSpan(
-                                    text: '$_producersLabel: ',
-                                    style: const TextStyle(
-                                      color: Colors.white60,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  TextSpan(
-                                    text: _producersNames,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-
-                        Padding(
-                          padding: const EdgeInsets.only(
-                            top: 8.0,
-                            right: 8.0,
-                            left: 8.0,
-                            bottom: 0.0,
-                          ),
-                          child: Container(
-                            width: double.infinity,
-                            height: 50,
-                            margin: EdgeInsets.only(top: 20),
-                            padding: const EdgeInsets.only(right: 5.0),
-                            child: SubmitWhiteButton(
-                              _plan_status == "1" || movieData!.movie_access == "1" ? "Play" : "Subscribe to Watch",
-                              Icons.play_arrow,
-                              onTap: () async {
-                                //     context,
-
-                                print("movie_watchTime: $watchTime");
-
-                                if (loggedStatus) {
-                                  if (mobileDataUsage == "Wi-FiOnly") {
-                                    if (await CommonWidget().isWifiConnectivity()) {
-                                      if (_plan_status == "0") {
-                                        if (movieData!.movie_access == "1") {
-                                          Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                  builder: (context) => MovieVideoViewer(
-                                                        getMainMovieUrl: movieData!.videoUrl.toString(),
-                                                        getMainMovieID: movieData!.id.toString(),
-                                                        getWatchTime: watchTime,
-                                                        playType: 1,
-                                                        movieTitle: movieData!.title,
-                                                        thumbnail: movieData!.thumbnail,
-                                                        subtitles: movieData!.subtitle,
-                                                      ))).then((value) {
-                                            setState(() {
-                                              getUserWatchingMoviesDetails(_token, profileID, widget.getMovieID);
-                                            });
-                                          });
-                                        } else {
-                                          Navigator.push(context, MaterialPageRoute(builder: (context) => PlanDetailsPage()));
-                                        }
-                                      } else {
-                                        Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                                builder: (context) => MovieVideoViewer(
-                                                      getMainMovieUrl: movieData!.videoUrl.toString(),
-                                                      getMainMovieID: movieData!.id.toString(),
-                                                      getWatchTime: watchTime,
-                                                      playType: 1,
-                                                      movieTitle: movieData!.title,
-                                                      thumbnail: movieData!.thumbnail,
-                                                      subtitles: movieData!.subtitle,
-                                                    ))).then((value) {
-                                          setState(() {
-                                            getUserWatchingMoviesDetails(_token, profileID, widget.getMovieID);
-                                          });
-                                        });
-                                      }
-                                    } else {
-                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                        content: Text('Enable Wi-fi on your device.\nYour settings enabled wifi video playback option'),
-                                        duration: Duration(seconds: 2),
-                                      ));
-                                    }
-                                  } else {
-                                    pauseController();
-
-                                    //     context,
-                                    //         builder: (context) =>
-                                    //               getMainMovieUrl:
-                                    //               getMainMovieID:
-                                    //               getWatchTime:watchTime,
-                                    //               playType: 1,
-                                    print("_plan_status: $_plan_status");
-                                    if (_plan_status == "0") {
-                                      if (movieData!.movie_access == "1") {
-                                        Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                                builder: (context) => MovieVideoViewer(
-                                                      getMainMovieUrl: movieData!.videoUrl.toString(),
-                                                      getMainMovieID: movieData!.id.toString(),
-                                                      getWatchTime: watchTime,
-                                                      playType: 1,
-                                                      movieTitle: movieData!.title,
-                                                      thumbnail: movieData!.thumbnail,
-                                                      subtitles: movieData!.subtitle,
-                                                    ))).then((value) {
-                                          setState(() {
-                                            getUserWatchingMoviesDetails(_token, profileID, widget.getMovieID);
-                                          });
-                                        });
-                                      } else {
-                                        Navigator.push(context, MaterialPageRoute(builder: (context) => PlanDetailsPage()));
-                                      }
-                                    } else {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => MovieVideoViewer(
-                                            getMainMovieUrl: movieData!.videoUrl.toString(),
-                                            getMainMovieID: movieData!.id.toString(),
-                                            getWatchTime: watchTime,
-                                            playType: 1,
-                                            movieTitle: movieData!.title,
-                                            thumbnail: movieData!.thumbnail,
-                                            subtitles: movieData!.subtitle,
-                                          ),
-                                        ),
-                                      ).then((value) {
-                                        setState(() {
-                                          getUserWatchingMoviesDetails(_token, profileID, widget.getMovieID);
-                                        });
-                                      });
-                                    }
-                                  }
+                        const SizedBox(width: 30),
+                        _buildPlayerCircleButton(
+                          icon: _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                          size: 56,
+                          iconSize: 34,
+                          isPrimary: true,
+                          onTap: () {
+                            setState(() {
+                              if (_controller != null && _controller!.value.isInitialized) {
+                                if (_isPlaying) {
+                                  _controller!.pause();
                                 } else {
-                                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginPage()));
+                                  _controller!.play();
                                 }
-                              },
-                            ),
-                          ),
+                                _isPlaying = !_isPlaying;
+                              }
+                              _startHideControlsTimer();
+                            });
+                          },
                         ),
-
-                        //Downloaded video play option
-                        _plan_status == "1"
-                            ? downloadedPlayBTOption
-                                ? Padding(
-                                    padding: const EdgeInsets.only(
-                                      top: 8.0,
-                                      right: 8.0,
-                                      left: 8.0,
-                                      bottom: 0.0,
-                                    ),
-                                    child: Container(
-                                      width: double.infinity,
-                                      height: 50,
-                                      padding: const EdgeInsets.only(right: 5.0),
-                                      child: SubmitTransparentButton(
-                                        "Play Downloaded movie",
-                                        Icons.play_circle,
-                                        onTap: () async {
-                                          var movieId = widget.getMovieID.toString();
-                                          var movieLocalTitle = await dbHelper.getMovieTitle(movieId);
-                                          Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                  builder: (context) => MovieVideoViewer(
-                                                        getMainMovieUrl: movieLocalTitle,
-                                                        getMainMovieID: '',
-                                                        getWatchTime: '0',
-                                                        playType: 2,
-                                                        movieTitle: movieData!.title,
-                                                        thumbnail: movieData!.thumbnail,
-                                                      )));
-                                        },
-                                      ),
-                                    ),
-                                  )
-                                : Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: SizedBox(
-                                      width: double.infinity,
-                                      height: 50,
-                                      child: AnimatedBuilder(
-                                        animation: _downloadControllers,
-                                        builder: (context, child) {
-                                          return DownloadButton(
-                                            status: _downloadControllers.downloadStatus,
-                                            downloadProgress: _downloadControllers.progress,
-                                            onDownload: _downloadControllers.startDownload,
-                                            onCancel: _downloadControllers.stopDownload,
-                                            onOpen: _downloadControllers.openDownload,
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  )
-                            : Text(""),
-
-                        //User mylist
-
-                        if (loggedStatus)
-                          VideoActionButtons(
-                            isRated: _isRated,
-                            isLike: _isLike,
-                            isDisLike: _isDisLike,
-                            onRate: () {
-                              var isMyList = 0;
-                              setState(() {
-                                if (_isRated) {
-                                  _isRated = false;
-                                  isMyList = 0;
-                                } else {
-                                  _isRated = true;
-                                  isMyList = 1;
-                                }
-                              });
-
-                              final postValues = {
-                                'mylist': isMyList,
-                              };
-                              setUserMovies(_token, profileID, movieData!.id.toString(), postValues);
-                            },
-                            onLike: () {
-                              var isLikeValue = 0;
-                              setState(() {
-                                _isDisLike = false;
-                                if (_isLike) {
-                                  _isLike = false;
-                                  isLikeValue = 0;
-                                } else {
-                                  _isLike = true;
-                                  isLikeValue = 1;
-                                }
-                              });
-
-                              final postValues = {
-                                'likes': isLikeValue,
-                              };
-                              setUserMovies(_token, profileID, movieData!.id.toString(), postValues);
-                            },
-                            onDislike: () {
-                              var isDisLikeValue = 0;
-                              setState(() {
-                                _isLike = false;
-                                if (_isDisLike) {
-                                  _isDisLike = false;
-                                  isDisLikeValue = 0;
-                                } else {
-                                  _isDisLike = true;
-                                  isDisLikeValue = 2;
-                                }
-                              });
-
-                              final postValues = {
-                                'likes': isDisLikeValue,
-                              };
-                              setUserMovies(_token, profileID, movieData!.id.toString(), postValues);
-                            },
-                            onShare: () {
-                              final encodedTitle = Uri.encodeComponent(movieData!.title.toString());
-                              Share.share('Watch ${movieData!.title} on Bestcast OTT, \n\nCheck it out here: ${AppConfig.BaseUrl}/search?search=$encodedTitle');
-                            },
-                          ),
-
-                        Divider(
-                          color: AppDefaultColors.textLightGray,
-                          height: 1,
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            "More Like This",
-                            style: const TextStyle(color: Colors.white, fontSize: 20.0, fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                        // TEST BUTTON START ------------------------------------------
-                        // ElevatedButton(
-                        //   onPressed: () {
-                        //     Navigator.push(
-                        //       context,
-                        //       MaterialPageRoute(
-                        //         builder: (context) => TestComponent(),
-                        //       ),
-                        //     );
-                        //   },
-                        //   child: Text("TEST"),
-                        // ),
-                        // TEST BUTTON END --------------------------------------------
-                        MoreLikeThisGrid(
-                          relatedMovieData: relatedMovieData,
-                          onMovieTap: (movieId) {
-                            getUserMoviesDetails(
-                              _token,
-                              profileID,
-                              movieId,
-                            );
+                        const SizedBox(width: 30),
+                        _buildPlayerCircleButton(
+                          icon: Icons.forward_10_rounded,
+                          size: 42,
+                          iconSize: 24,
+                          onTap: () {
+                            if (_controller != null && _controller!.value.isInitialized) {
+                              _controller!.seekTo(
+                                Duration(seconds: _controller!.value.position.inSeconds + 10),
+                              );
+                              _startHideControlsTimer();
+                            }
                           },
                         ),
                       ],
                     ),
                   ),
-                )
-              : const DetailScreenSkeleton()
-          : const DetailScreenSkeleton(),
+                ),
+              ),
+
+            // 3. Bottom Timeline Scrim & Progress Bar
+            if (isVideoReady)
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.only(left: 6, right: 6, bottom: 2, top: 12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.85),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                  child: SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      trackHeight: 2.5,
+                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5.0),
+                      overlayShape: const RoundSliderOverlayShape(overlayRadius: 12.0),
+                      activeTrackColor: AppDefaultColors.thikRed,
+                      inactiveTrackColor: Colors.white.withValues(alpha: 0.35),
+                      thumbColor: AppDefaultColors.thikRed,
+                      overlayColor: AppDefaultColors.thikRed.withValues(alpha: 0.2),
+                    ),
+                    child: Slider(
+                      value: _progressValue.clamp(0.0, 1.0),
+                      onChanged: (double value) {
+                        setState(() {
+                          _progressValue = value.clamp(0.0, 1.0);
+                          if (_controller != null && _controller!.value.isInitialized) {
+                            final Duration newPosition = Duration(
+                              seconds: (_controller!.value.duration.inSeconds * _progressValue).toInt(),
+                            );
+                            _controller!.seekTo(newPosition);
+                          }
+                        });
+                      },
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMetadataRow() {
+    final String year = appUtils.getDateTimeToYear(movieData!.releaseDate.toString()).trim();
+    final String cert = movieData!.certificate.toString().trim();
+    final String duration = movieData!.durationText.toString().trim();
+    final bool isTop10 = movieData!.topten.toString() == "1";
+
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 8,
+      runSpacing: 6,
+      children: [
+        if (isTop10)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: AppDefaultColors.thikRed,
+              borderRadius: BorderRadius.circular(3),
+            ),
+            child: const Text(
+              "TOP 10",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+        if (year.isNotEmpty)
+          Text(
+            year,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        if (cert.isNotEmpty)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.3),
+                width: 0.8,
+              ),
+            ),
+            child: Text(
+              cert,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        if (duration.isNotEmpty)
+          Text(
+            duration,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(3),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.25),
+              width: 0.7,
+            ),
+          ),
+          child: const Text(
+            "HD",
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSubscriptionBanner() {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFFD4AF37).withValues(alpha: 0.2),
+            const Color(0xFFFF8C00).withValues(alpha: 0.1),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: const Color(0xFFD4AF37).withValues(alpha: 0.45),
+          width: 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            pauseController();
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => PlanDetailsPage()),
+            );
+          },
+          borderRadius: BorderRadius.circular(10),
+          child: Row(
+            children: [
+              const Icon(Icons.workspace_premium_rounded, color: Color(0xFFFFD700), size: 22),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "SUBSCRIBE TO WATCH",
+                      style: TextStyle(
+                        color: Color(0xFFFFD700),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      "Unlock this movie & entire Bestcast library in Full HD",
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.8),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFFFFD700), size: 14),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPrimaryPlayButton(bool hasAccess) {
+    final int currentWatchSeconds = int.tryParse(watchTime) ?? 0;
+    final bool canResume = currentWatchSeconds > 60;
+
+    String buttonTitle = "Play";
+    IconData buttonIcon = Icons.play_arrow_rounded;
+
+    if (!hasAccess) {
+      buttonTitle = "Subscribe to Watch";
+      buttonIcon = Icons.workspace_premium_rounded;
+    } else if (canResume) {
+      final int minutes = (currentWatchSeconds / 60).floor();
+      buttonTitle = minutes > 0 ? "Resume ($minutes mins)" : "Resume";
+    }
+
+    return Container(
+      width: double.infinity,
+      height: 48,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        gradient: !hasAccess
+            ? const LinearGradient(
+                colors: [Color(0xFFFFB800), Color(0xFFFF8A00)],
+              )
+            : null,
+        color: hasAccess ? Colors.white : null,
+        boxShadow: [
+          BoxShadow(
+            color: (!hasAccess ? const Color(0xFFFF8A00) : Colors.white).withValues(alpha: 0.22),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            _handlePlayMovie();
+          },
+          borderRadius: BorderRadius.circular(10),
+          child: Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  buttonIcon,
+                  color: Colors.black,
+                  size: 26,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  buttonTitle,
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDownloadButtonSection() {
+    if (_plan_status != "1") {
+      return const SizedBox.shrink();
+    }
+
+    if (downloadedPlayBTOption) {
+      return Container(
+        width: double.infinity,
+        height: 48,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.15),
+            width: 0.8,
+          ),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              _handlePlayDownloadedMovie();
+            },
+            borderRadius: BorderRadius.circular(10),
+            child: const Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.play_circle_fill_rounded,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    "Play Downloaded Movie",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      width: double.infinity,
+      height: 48,
+      child: AnimatedBuilder(
+        animation: _downloadControllers,
+        builder: (context, child) {
+          return DownloadButton(
+            status: _downloadControllers.downloadStatus,
+            downloadProgress: _downloadControllers.progress,
+            onDownload: _downloadControllers.startDownload,
+            onCancel: _downloadControllers.stopDownload,
+            onOpen: _downloadControllers.openDownload,
+          );
+        },
+      ),
+    );
+  }
+
+  String _decodeHtmlAndEntities(String? raw) {
+    if (raw == null || raw.isEmpty) return "";
+
+    // 1. Strip HTML tags like <p>, <br>, <div>, <span>, etc.
+    String text = raw.replaceAll(RegExp(r'<[^>]*>', multiLine: true), ' ');
+
+    // 2. Decode common named HTML entities
+    const Map<String, String> htmlEntities = {
+      '&nbsp;': ' ',
+      '&amp;': '&',
+      '&quot;': '"',
+      '&apos;': "'",
+      '&rsquo;': "’",
+      '&lsquo;': "‘",
+      '&rdquo;': '”',
+      '&ldquo;': '“',
+      '&ndash;': '–',
+      '&mdash;': '—',
+      '&hellip;': '…',
+      '&bull;': '•',
+      '&copy;': '©',
+      '&trade;': '™',
+      '&reg;': '®',
+      '&lt;': '<',
+      '&gt;': '>',
+      '&middot;': '·',
+      '&cent;': '¢',
+      '&pound;': '£',
+      '&yen;': '¥',
+      '&euro;': '€',
+    };
+
+    htmlEntities.forEach((entity, replacement) {
+      text = text.replaceAll(entity, replacement);
+    });
+
+    // 3. Decode decimal entities (e.g., &#39;, &#039;, &#8217;)
+    text = text.replaceAllMapped(RegExp(r'&#(\d+);'), (match) {
+      final code = int.tryParse(match.group(1) ?? '');
+      return code != null ? String.fromCharCode(code) : match.group(0)!;
+    });
+
+    // 4. Decode hex entities (e.g., &#x27;, &#x2019;)
+    text = text.replaceAllMapped(RegExp(r'&#x([0-9a-fA-F]+);'), (match) {
+      final code = int.tryParse(match.group(1) ?? '', radix: 16);
+      return code != null ? String.fromCharCode(code) : match.group(0)!;
+    });
+
+    // 5. Clean up redundant whitespace while preserving clean flow
+    text = text.replaceAll(RegExp(r'[ \t]+'), ' ').trim();
+
+    return text;
+  }
+
+  Widget _buildSynopsisSection() {
+    String cleanContent = _decodeHtmlAndEntities(movieData!.content);
+
+    if (cleanContent.isEmpty || cleanContent.toUpperCase() == "SUBSCRIBE TO WATCH") {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          cleanContent,
+          maxLines: _isSynopsisExpanded ? null : 3,
+          overflow: _isSynopsisExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.88),
+            fontSize: 13.5,
+            height: 1.5,
+            letterSpacing: 0.15,
+          ),
+        ),
+        if (cleanContent.length > 130)
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              setState(() {
+                _isSynopsisExpanded = !_isSynopsisExpanded;
+              });
+            },
+            child: Padding(
+              padding: const EdgeInsets.only(top: 6.0),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _isSynopsisExpanded ? "Show less" : "Read more",
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  Icon(
+                    _isSynopsisExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                    color: Colors.white70,
+                    size: 16,
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildCastAndCrewSection() {
+    final bool hasData = castElementList.isNotEmpty ||
+        staringNames.isNotEmpty ||
+        _DirectorName.isNotEmpty ||
+        _producersNames.isNotEmpty;
+    if (!hasData) {
+      return const SizedBox.shrink();
+    }
+
+    String preview = "";
+    if (staringNames.isNotEmpty) {
+      preview = _decodeHtmlAndEntities(staringNames);
+    } else if (_DirectorName.isNotEmpty) {
+      preview = "$_directorLabel: ${_decodeHtmlAndEntities(_DirectorName)}";
+    } else if (_producersNames.isNotEmpty) {
+      preview = "$_producersLabel: ${_decodeHtmlAndEntities(_producersNames)}";
+    } else {
+      preview = "View full cast and technical crew";
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(top: 2, bottom: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF161616),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.08),
+          width: 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          splashColor: Colors.white.withValues(alpha: 0.1),
+          highlightColor: Colors.white.withValues(alpha: 0.05),
+          onTap: () {
+            HapticFeedback.lightImpact();
+            getStartingBottomWidget();
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.groups_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        "Cast & Crew",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.1,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        preview,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.55),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: Colors.white.withValues(alpha: 0.5),
+                  size: 22,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading == true || !readyToPlay) {
+      return Scaffold(
+        backgroundColor: AppDefaultColors.appColor,
+        body: const DetailScreenSkeleton(),
+      );
+    }
+
+    final bool hasAccess = _plan_status == "1" || movieData!.movie_access == "1";
+
+    return Scaffold(
+      backgroundColor: AppDefaultColors.appColor,
+      appBar: AppBar(
+        backgroundColor: AppDefaultColors.appColor,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        toolbarHeight: 48,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+          onPressed: () {
+            pauseController();
+            Navigator.pop(context);
+          },
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(
+              _isMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
+            onPressed: () {
+              setState(() {
+                _isMuted = !_isMuted;
+                _controller?.setVolume(_isMuted ? 0.0 : 1.0);
+              });
+            },
+          ),
+          const SizedBox(width: 6),
+        ],
+      ),
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 1. Immersive 16:9 Video Player / Backdrop
+              _buildVideoPlayerSection(context),
+
+            // 2. Movie Content Body
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 12),
+                  // Title
+                  Text(
+                    _decodeHtmlAndEntities(movieData!.title),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 23.0,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.4,
+                      height: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Metadata Badges (Year, Rating, Duration, Quality, Top 10)
+                  _buildMetadataRow(),
+                  const SizedBox(height: 12),
+
+                  // Subscription VIP Banner (if not accessible)
+                  if (!hasAccess)
+                    _buildSubscriptionBanner(),
+
+                  // Primary Play / Resume CTA Button
+                  _buildPrimaryPlayButton(hasAccess),
+                  const SizedBox(height: 10),
+
+                  // Download CTA Button (or Play Downloaded Movie)
+                  _buildDownloadButtonSection(),
+                  const SizedBox(height: 10),
+
+                  // Cast & Crew Button
+                  _buildCastAndCrewSection(),
+
+                  // Synopsis / Description
+                  _buildSynopsisSection(),
+                  const SizedBox(height: 14),
+
+                  // Action Buttons (My List, Like, Dislike, Share)
+                  if (loggedStatus)
+                    VideoActionButtons(
+                      isRated: _isRated,
+                      isLike: _isLike,
+                      isDisLike: _isDisLike,
+                      onRate: () {
+                        var isMyList = 0;
+                        setState(() {
+                          if (_isRated) {
+                            _isRated = false;
+                            isMyList = 0;
+                          } else {
+                            _isRated = true;
+                            isMyList = 1;
+                          }
+                        });
+                        final postValues = {'mylist': isMyList};
+                        setUserMovies(_token, profileID, movieData!.id.toString(), postValues);
+                      },
+                      onLike: () {
+                        var isLikeValue = 0;
+                        setState(() {
+                          _isDisLike = false;
+                          if (_isLike) {
+                            _isLike = false;
+                            isLikeValue = 0;
+                          } else {
+                            _isLike = true;
+                            isLikeValue = 1;
+                          }
+                        });
+                        final postValues = {'likes': isLikeValue};
+                        setUserMovies(_token, profileID, movieData!.id.toString(), postValues);
+                      },
+                      onDislike: () {
+                        var isDisLikeValue = 0;
+                        setState(() {
+                          _isLike = false;
+                          if (_isDisLike) {
+                            _isDisLike = false;
+                            isDisLikeValue = 0;
+                          } else {
+                            _isDisLike = true;
+                            isDisLikeValue = 2;
+                          }
+                        });
+                        final postValues = {'likes': isDisLikeValue};
+                        setUserMovies(_token, profileID, movieData!.id.toString(), postValues);
+                      },
+                      onShare: () {
+                        final encodedTitle = Uri.encodeComponent(movieData!.title.toString());
+                        Share.share('Watch ${movieData!.title} on Bestcast OTT, \n\nCheck it out here: ${AppConfig.BaseUrl}/search?search=$encodedTitle');
+                      },
+                    ),
+
+                  const SizedBox(height: 12),
+                  Divider(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    height: 1,
+                  ),
+                  const SizedBox(height: 14),
+
+                  // More Like This Header
+                  Row(
+                    children: [
+                      Container(
+                        width: 3.5,
+                        height: 18,
+                        decoration: BoxDecoration(
+                          color: AppDefaultColors.thikRed,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        "More Like This",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18.0,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Responsive More Like This Grid
+                  MoreLikeThisGrid(
+                    relatedMovieData: relatedMovieData,
+                    onMovieTap: (movieId) {
+                      getUserMoviesDetails(_token, profileID, movieId);
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      ),
     );
   }
 
@@ -920,8 +1334,8 @@ class _VideoAppState extends State<VideoApp> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color(0xFF2C2C3A),
-                  Color(0xFF1C1C26),
+                  Color(0xFF282828),
+                  Color(0xFF181818),
                 ],
               ),
             ),
@@ -944,7 +1358,7 @@ class _VideoAppState extends State<VideoApp> {
             height: 38,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFF22222E),
+              color: const Color(0xFF202020),
               border: Border.all(
                 color: Colors.white.withValues(alpha: 0.08),
                 width: 1,
@@ -966,10 +1380,10 @@ class _VideoAppState extends State<VideoApp> {
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: const Color(0xFF171720),
+              color: const Color(0xFF161616),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.04),
+                color: Colors.white.withValues(alpha: 0.05),
               ),
             ),
             child: Row(
@@ -1017,11 +1431,11 @@ class _VideoAppState extends State<VideoApp> {
 
         return Container(
           decoration: const BoxDecoration(
-            color: Color(0xFF121217),
+            color: Color(0xFF0F0F0F),
             borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black87,
+                color: Colors.black,
                 blurRadius: 20,
                 spreadRadius: 2,
               ),
@@ -1053,7 +1467,7 @@ class _VideoAppState extends State<VideoApp> {
                   child: Row(
                     children: [
                       const Text(
-                        "Starring & Crew",
+                        "Cast & Crew",
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 18,
@@ -1210,11 +1624,11 @@ class _VideoAppState extends State<VideoApp> {
     }
     _hideControlsTimer?.cancel();
     try {
-      _controller.removeListener(_onControllerProgress);
-      if (_controller.value.isPlaying) {
-        _controller.pause();
+      _controller?.removeListener(_onControllerProgress);
+      if (_controller != null && _controller!.value.isPlaying) {
+        _controller!.pause();
       }
-      _controller.dispose();
+      _controller?.dispose();
     } catch (_) {}
     _isPlaying = false;
     super.dispose();
@@ -1618,9 +2032,9 @@ class _VideoAppState extends State<VideoApp> {
           var jsonValues = Usermovies.fromJson(data['usermovies']);
 
           if (jsonValues.id != "null") {
-            var watchTime = data["usermovies"]["watch_time"].toString();
+            var rawWatchTime = data["usermovies"]["watch_time"].toString();
             setState(() {
-              watchTime = watchTime;
+              watchTime = rawWatchTime;
             });
             print("watchTime:$watchTime");
           }
@@ -1720,9 +2134,6 @@ class _VideoAppState extends State<VideoApp> {
       }
     });
   }
-
-//     // Ensure that the window object is available
-//         // Do nothing when a screenshot is detected
 }
 
 Dialog rateDialog = Dialog(
@@ -1833,21 +2244,12 @@ class DownloadButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: _onPressed,
-      child: Stack(
-        children: [
-          Container(
-            width: double.infinity,
-            height: 50,
-            padding: const EdgeInsets.only(right: 5.0),
-            child: ButtonShapeWidget(
-              downloadProgress: downloadProgress,
-              transitionDuration: transitionDuration,
-              isDownloaded: _isDownloaded,
-              isDownloading: _isDownloading,
-              isFetching: _isFetching,
-            ),
-          ),
-        ],
+      child: ButtonShapeWidget(
+        downloadProgress: downloadProgress,
+        transitionDuration: transitionDuration,
+        isDownloaded: _isDownloaded,
+        isDownloading: _isDownloading,
+        isFetching: _isFetching,
       ),
     );
   }
@@ -1870,34 +2272,28 @@ class ButtonShapeWidget extends StatelessWidget {
   final bool isFetching;
   final Duration transitionDuration;
 
-  Null get onTap => null;
-
   @override
   Widget build(BuildContext context) {
-    //   color: CupertinoColors.lightBackgroundGray,
-    //
-
-    return SizedBox(
-      height: 40,
-      child: ElevatedButton(
-        onPressed: onTap,
-        style: ButtonStyle(
-          backgroundColor: WidgetStateProperty.all(AppDefaultColors.boxDarkGray.withOpacity(0.5)),
-          foregroundColor: WidgetStateProperty.all(Colors.transparent),
-          padding: WidgetStateProperty.all(EdgeInsets.symmetric(vertical: 0, horizontal: 0)),
-          textStyle: WidgetStateProperty.all(TextStyle(fontSize: 16)),
-          shape: WidgetStateProperty.all<RoundedRectangleBorder>(
-            RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(5), // BorderRadius
-            ),
-          ),
+    return Container(
+      height: 48,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.15),
+          width: 0.8,
         ),
-        child: Wrap(
-          crossAxisAlignment: WrapCrossAlignment.center,
+      ),
+      child: Center(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
             isDownloading || isFetching
                 ? SizedBox(
-                    height: 30,
+                    height: 24,
+                    width: 24,
                     child: AnimatedOpacity(
                       duration: transitionDuration,
                       opacity: isDownloading || isFetching ? 1.0 : 0.0,
@@ -1912,8 +2308,8 @@ class ButtonShapeWidget extends StatelessWidget {
                           ),
                           if (isDownloading)
                             const Icon(
-                              Icons.stop,
-                              size: 14,
+                              Icons.stop_rounded,
+                              size: 12,
                               color: AppDefaultColors.thikRed,
                             ),
                         ],
@@ -1921,16 +2317,23 @@ class ButtonShapeWidget extends StatelessWidget {
                     ),
                   )
                 : Icon(
-                    Icons.file_download_outlined,
-                    color: AppDefaultColors.white,
-                    size: 40.0,
+                    isDownloaded ? Icons.check_circle_rounded : Icons.file_download_outlined,
+                    color: isDownloaded ? const Color(0xFF4ADE80) : Colors.white,
+                    size: 22.0,
                   ),
-            SizedBox(
-              width: 10,
-            ),
+            const SizedBox(width: 8),
             Text(
-              isDownloaded ? 'Download Completed' : 'Download',
-              style: TextStyle(color: AppDefaultColors.white, fontSize: 17, fontWeight: FontWeight.w500),
+              isDownloaded
+                  ? 'Download Completed'
+                  : isDownloading
+                      ? 'Downloading ${(downloadProgress * 100).toInt()}%'
+                      : 'Download',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.2,
+              ),
             ),
           ],
         ),

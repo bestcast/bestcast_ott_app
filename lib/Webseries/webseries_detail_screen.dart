@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player/video_player.dart';
@@ -9,7 +10,6 @@ import 'package:bestcaststudios/app_config/app_utils.dart';
 import 'package:bestcaststudios/app_config/appconfig.dart';
 import 'package:bestcaststudios/authendication/login_page.dart';
 import 'package:bestcaststudios/common_files/app_default_colors.dart';
-import 'package:bestcaststudios/common_files/submit_white_button.dart';
 import 'package:bestcaststudios/common_files/shimmer/shimmer_skeletons.dart';
 import 'package:bestcaststudios/common_files/shimmer/app_shimmer_image.dart';
 import 'package:bestcaststudios/streamingpalyer/components/video_action_buttons.dart';
@@ -36,10 +36,14 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
   final WebseriesApiService _apiService = WebseriesApiService();
 
   bool _isLoading = true;
+  bool _isAuthLoaded = false;
   String _token = "";
   String _profileId = "";
   bool _loggedStatus = false;
   String _planStatus = "";
+
+  bool get _hasSubscription =>
+      _isAuthLoaded && (_planStatus == "1" || (_webseriesDetail?.movieAccess == 1));
 
   WebseriesItemModel? _webseriesDetail;
   int _selectedSeasonIndex = 0;
@@ -51,17 +55,67 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
   bool _showTrailerControls = false;
   double _trailerProgressValue = 0.0;
   Timer? _hideControlsTimer;
+  bool _isSynopsisExpanded = false;
 
   // Interaction States
   bool _isRated = false;
   bool _isLike = false;
   bool _isDisLike = false;
 
+  Widget _buildPlayerCircleButton({
+    required IconData icon,
+    required double size,
+    required double iconSize,
+    required VoidCallback onTap,
+    bool isPrimary = false,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: isPrimary
+              ? Colors.white.withValues(alpha: 0.28)
+              : Colors.black.withValues(alpha: 0.45),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: isPrimary
+                ? Colors.white.withValues(alpha: 0.5)
+                : Colors.white.withValues(alpha: 0.2),
+            width: isPrimary ? 1.5 : 1.0,
+          ),
+          boxShadow: isPrimary
+              ? [
+                  BoxShadow(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    blurRadius: 10,
+                    spreadRadius: 1,
+                  )
+                ]
+              : null,
+        ),
+        child: Center(
+          child: Icon(
+            icon,
+            color: Colors.white,
+            size: iconSize,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
     _webseriesDetail = widget.initialItem;
-    _isLoading = _webseriesDetail == null || _webseriesDetail!.seasons.isEmpty;
+    // Always keep loading true until auth & subscription status is verified from SharedPreferences
+    _isLoading = true;
+    _isAuthLoaded = false;
 
     if (_webseriesDetail != null && _webseriesDetail!.trailer.isNotEmpty) {
       _initTrailerPlayer(_webseriesDetail!.trailer);
@@ -134,11 +188,35 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
   }
 
   Future<void> _loadInitialData() async {
-    final pref = await SharedPreferences.getInstance();
-    _token = pref.getString(AppPreferences.token) ?? '';
-    _profileId = pref.getString(AppPreferences.profileID) ?? '';
-    _loggedStatus = pref.getBool(AppPreferences.loggedStatus) ?? false;
-    _planStatus = pref.getString(AppPreferences.plan_status) ?? '';
+    try {
+      final pref = await SharedPreferences.getInstance();
+      final String token = pref.getString(AppPreferences.token) ?? '';
+      final String profileId = pref.getString(AppPreferences.profileID) ?? '';
+      final bool logged = pref.getBool(AppPreferences.loggedStatus) ?? false;
+      final String plan = pref.get(AppPreferences.plan_status)?.toString() ?? '';
+
+      if (mounted) {
+        setState(() {
+          _token = token;
+          _profileId = profileId;
+          _loggedStatus = logged;
+          _planStatus = plan;
+          _isAuthLoaded = true;
+
+          // If initial item already contains seasons, reveal content immediately
+          // with verified auth and subscription status to prevent any flicker!
+          if (_webseriesDetail != null && _webseriesDetail!.seasons.isNotEmpty) {
+            _isLoading = false;
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isAuthLoaded = true;
+        });
+      }
+    }
 
     await _fetchDetails();
   }
@@ -339,8 +417,44 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
   }
 
   String _stripHtml(String htmlString) {
-    RegExp exp = RegExp(r"<[^>]*>", multiLine: true, caseSensitive: true);
-    return htmlString.replaceAll(exp, '').replaceAll('&nbsp;', ' ').trim();
+    if (htmlString.isEmpty) return "";
+    String text = htmlString.replaceAll(RegExp(r"<[^>]*>", multiLine: true, caseSensitive: true), ' ');
+
+    const Map<String, String> htmlEntities = {
+      '&nbsp;': ' ',
+      '&amp;': '&',
+      '&quot;': '"',
+      '&apos;': "'",
+      '&rsquo;': "’",
+      '&lsquo;': "‘",
+      '&rdquo;': '”',
+      '&ldquo;': '“',
+      '&ndash;': '–',
+      '&mdash;': '—',
+      '&hellip;': '…',
+      '&bull;': '•',
+      '&copy;': '©',
+      '&trade;': '™',
+      '&reg;': '®',
+      '&lt;': '<',
+      '&gt;': '>',
+    };
+
+    htmlEntities.forEach((entity, replacement) {
+      text = text.replaceAll(entity, replacement);
+    });
+
+    text = text.replaceAllMapped(RegExp(r'&#(\d+);'), (match) {
+      final code = int.tryParse(match.group(1) ?? '');
+      return code != null ? String.fromCharCode(code) : match.group(0)!;
+    });
+
+    text = text.replaceAllMapped(RegExp(r'&#x([0-9a-fA-F]+);'), (match) {
+      final code = int.tryParse(match.group(1) ?? '', radix: 16);
+      return code != null ? String.fromCharCode(code) : match.group(0)!;
+    });
+
+    return text.replaceAll(RegExp(r'[ \t]+'), ' ').trim();
   }
 
   String _formatYear(String dateStr) {
@@ -381,10 +495,20 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
   }
 
   void _playEpisode(WebseriesEpisodeModel episode, List<WebseriesEpisodeModel> currentSeasonEpisodes) {
+    if (!_isAuthLoaded) return;
     if (!_loggedStatus || _token.isEmpty) {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => LoginPage()),
+      ).then((_) => _loadInitialData());
+      return;
+    }
+
+    if (!_hasSubscription) {
+      _trailerController?.pause();
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const PlanDetailsPage()),
       ).then((_) => _loadInitialData());
       return;
     }
@@ -412,23 +536,66 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading || !_isAuthLoaded) {
+      return Scaffold(
+        backgroundColor: AppDefaultColors.appColor,
+        appBar: AppBar(
+          backgroundColor: AppDefaultColors.appColor,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          toolbarHeight: 48,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+            onPressed: () {
+              _trailerController?.pause();
+              Navigator.pop(context);
+            },
+          ),
+        ),
+        body: const DetailScreenSkeleton(),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppDefaultColors.appColor,
       appBar: AppBar(
         backgroundColor: AppDefaultColors.appColor,
         elevation: 0,
-        leading: const BackButton(color: Colors.white),
+        scrolledUnderElevation: 0,
+        toolbarHeight: 48,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+          onPressed: () {
+            _trailerController?.pause();
+            Navigator.pop(context);
+          },
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(
+              _isTrailerMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
+            onPressed: () {
+              setState(() {
+                _isTrailerMuted = !_isTrailerMuted;
+                _trailerController?.setVolume(_isTrailerMuted ? 0.0 : 1.0);
+              });
+            },
+          ),
+          const SizedBox(width: 6),
+        ],
       ),
-      body: _isLoading
-          ? const DetailScreenSkeleton()
-          : _webseriesDetail == null
-              ? const Center(
-                  child: Text(
-                    "Webseries details not found",
-                    style: TextStyle(color: Colors.white70, fontSize: 16),
-                  ),
-                )
-              : SafeArea(
+      body: _webseriesDetail == null
+          ? const Center(
+              child: Text(
+                "Webseries details not found",
+                style: TextStyle(color: Colors.white70, fontSize: 16),
+              ),
+            )
+          : SafeArea(
+                  top: false,
                   child: SingleChildScrollView(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -447,153 +614,230 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
     );
   }
 
+  Widget _buildSubscriptionBanner() {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFFD4AF37).withValues(alpha: 0.2),
+            const Color(0xFFFF8C00).withValues(alpha: 0.1),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: const Color(0xFFD4AF37).withValues(alpha: 0.45),
+          width: 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            _trailerController?.pause();
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const PlanDetailsPage()),
+            ).then((_) => _loadInitialData());
+          },
+          borderRadius: BorderRadius.circular(10),
+          child: Row(
+            children: [
+              const Icon(Icons.workspace_premium_rounded, color: Color(0xFFFFD700), size: 22),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "SUBSCRIBE TO WATCH",
+                      style: TextStyle(
+                        color: Color(0xFFFFD700),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      "Unlock this webseries & entire Bestcast library in Full HD",
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.8),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFFFFD700), size: 14),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildVideoPlayerOrBanner() {
     final bool hasTrailer = _trailerController != null && _trailerController!.value.isInitialized;
+    final double aspectRatio = hasTrailer
+        ? (_trailerController!.value.aspectRatio > 0 ? _trailerController!.value.aspectRatio : 16 / 9)
+        : (16 / 9);
 
     if (hasTrailer) {
-      return AspectRatio(
-        aspectRatio: _trailerController!.value.aspectRatio > 0 ? _trailerController!.value.aspectRatio : 16 / 9,
-        child: Stack(
-          children: [
-            GestureDetector(
-              onTap: () {
-                setState(() {
-                  _showTrailerControls = !_showTrailerControls;
-                  if (_showTrailerControls && _trailerController!.value.isPlaying) {
-                    _startHideControlsTimer();
-                  }
-                });
-              },
-              child: VideoPlayer(_trailerController!),
-            ),
-            // Volume Toggle Button
-            Positioned(
-              top: 8,
-              right: 8,
-              child: IconButton(
-                icon: Icon(
-                  _isTrailerMuted ? Icons.volume_off : Icons.volume_up,
-                  color: Colors.white,
-                ),
-                onPressed: () {
+      return Container(
+        color: Colors.black,
+        width: double.infinity,
+        child: AspectRatio(
+          aspectRatio: aspectRatio,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              GestureDetector(
+                onTap: () {
                   setState(() {
-                    _isTrailerMuted = !_isTrailerMuted;
-                    _trailerController?.setVolume(_isTrailerMuted ? 0.0 : 1.0);
+                    _showTrailerControls = !_showTrailerControls;
+                    if (_showTrailerControls && _trailerController!.value.isPlaying) {
+                      _startHideControlsTimer();
+                    }
                   });
                 },
+                child: VideoPlayer(_trailerController!),
               ),
-            ),
-            // Progress Slider at bottom
-            Positioned(
-              bottom: 0,
-              left: -10,
-              right: -10,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return Slider(
-                    value: _trailerProgressValue.clamp(0.0, 1.0),
-                    activeColor: AppDefaultColors.thikRed,
-                    inactiveColor: AppDefaultColors.white,
-                    onChanged: (double value) {
-                      setState(() {
-                        _trailerProgressValue = value.clamp(0.0, 1.0);
-                        final Duration newPosition = Duration(
-                          seconds: (_trailerController!.value.duration.inSeconds * _trailerProgressValue).toInt(),
-                        );
-                        _trailerController?.seekTo(newPosition);
-                      });
-                    },
-                  );
-                },
-              ),
-            ),
-            // Controls Overlay
-            if (_showTrailerControls)
-              Positioned.fill(
+              // Controls Overlay
+              if (_showTrailerControls)
+                AnimatedOpacity(
+                  opacity: _showTrailerControls ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 250),
+                  child: Container(
+                    color: Colors.black.withValues(alpha: 0.38),
+                    child: Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          _buildPlayerCircleButton(
+                            icon: Icons.replay_10_rounded,
+                            size: 42,
+                            iconSize: 24,
+                            onTap: () {
+                              if (_trailerController != null && _trailerController!.value.isInitialized) {
+                                _trailerController!.seekTo(
+                                  Duration(seconds: _trailerController!.value.position.inSeconds - 10),
+                                );
+                                _startHideControlsTimer();
+                              }
+                            },
+                          ),
+                          const SizedBox(width: 30),
+                          _buildPlayerCircleButton(
+                            icon: _isTrailerPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                            size: 56,
+                            iconSize: 34,
+                            isPrimary: true,
+                            onTap: () {
+                              setState(() {
+                                if (_trailerController != null && _trailerController!.value.isInitialized) {
+                                  if (_isTrailerPlaying) {
+                                    _trailerController!.pause();
+                                  } else {
+                                    _trailerController!.play();
+                                  }
+                                  _isTrailerPlaying = !_isTrailerPlaying;
+                                }
+                                _startHideControlsTimer();
+                              });
+                            },
+                          ),
+                          const SizedBox(width: 30),
+                          _buildPlayerCircleButton(
+                            icon: Icons.forward_10_rounded,
+                            size: 42,
+                            iconSize: 24,
+                            onTap: () {
+                              if (_trailerController != null && _trailerController!.value.isInitialized) {
+                                _trailerController!.seekTo(
+                                  Duration(seconds: _trailerController!.value.position.inSeconds + 10),
+                                );
+                                _startHideControlsTimer();
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              // Bottom Timeline Scrim & Progress Bar
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
                 child: Container(
-                  color: Colors.black38,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      IconButton(
-                        icon: const Image(
-                          image: AssetImage("images/rotate_left.png"),
-                          height: 30,
-                        ),
-                        onPressed: () {
-                          _trailerController?.seekTo(
-                            Duration(seconds: _trailerController!.value.position.inSeconds - 10),
-                          );
-                        },
-                      ),
-                      const SizedBox(width: 16),
-                      IconButton(
-                        icon: Icon(
-                          _isTrailerPlaying ? Icons.pause : Icons.play_arrow,
-                          color: Colors.white,
-                          size: 40,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            if (_isTrailerPlaying) {
-                              _trailerController?.pause();
-                              _isTrailerPlaying = false;
-                            } else {
-                              _trailerController?.play();
-                              _isTrailerPlaying = true;
-                              _startHideControlsTimer();
-                            }
-                          });
-                        },
-                      ),
-                      const SizedBox(width: 16),
-                      IconButton(
-                        icon: const Image(
-                          image: AssetImage("images/rotate_right.png"),
-                          height: 30,
-                        ),
-                        onPressed: () {
-                          _trailerController?.seekTo(
-                            Duration(seconds: _trailerController!.value.position.inSeconds + 10),
-                          );
-                        },
-                      ),
-                    ],
+                  padding: const EdgeInsets.only(left: 6, right: 6, bottom: 2, top: 12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.85),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                  child: SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      trackHeight: 2.5,
+                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5.0),
+                      overlayShape: const RoundSliderOverlayShape(overlayRadius: 12.0),
+                      activeTrackColor: AppDefaultColors.thikRed,
+                      inactiveTrackColor: Colors.white.withValues(alpha: 0.35),
+                      thumbColor: AppDefaultColors.thikRed,
+                      overlayColor: AppDefaultColors.thikRed.withValues(alpha: 0.2),
+                    ),
+                    child: Slider(
+                      value: _trailerProgressValue.clamp(0.0, 1.0),
+                      onChanged: (double value) {
+                        setState(() {
+                          _trailerProgressValue = value.clamp(0.0, 1.0);
+                          if (_trailerController != null && _trailerController!.value.isInitialized) {
+                            final Duration newPosition = Duration(
+                              seconds: (_trailerController!.value.duration.inSeconds * _trailerProgressValue).toInt(),
+                            );
+                            _trailerController!.seekTo(newPosition);
+                          }
+                        });
+                      },
+                    ),
                   ),
                 ),
               ),
-          ],
+            ],
+          ),
         ),
       );
     }
 
     // Static Backdrop Banner Fallback
     String bgUrl = _getHeaderBannerUrl();
-    return SizedBox(
-      height: 230,
-      width: double.infinity,
+    return AspectRatio(
+      aspectRatio: 16 / 9,
       child: Stack(
+        fit: StackFit.expand,
         children: [
-          SizedBox(
-            height: 230,
-            width: double.infinity,
-            child: AppShimmerImage(
-              imageUrl: bgUrl,
-              fit: BoxFit.cover,
-              errorAsset: 'images/default_portrate_large.jpg',
-            ),
+          AppShimmerImage(
+            imageUrl: bgUrl,
+            fit: BoxFit.cover,
+            errorAsset: 'images/default_portrate_large.jpg',
           ),
           Container(
-            height: 230,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.4),
-                  Colors.black.withOpacity(0.85),
+                  Colors.black.withValues(alpha: 0.35),
+                  Colors.black.withValues(alpha: 0.85),
                 ],
               ),
             ),
@@ -608,104 +852,143 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
     String yearText = _formatYear(_webseriesDetail!.publishedDate);
     WebseriesEpisodeModel? targetEp = _findResumeOrFirstEpisode();
 
-    bool hasSubscription = _planStatus == "1" || _webseriesDetail!.movieAccess == 1;
-    String playButtonText = "Subscribe to Watch";
-    if (_loggedStatus && _webseriesDetail!.resumeEpisodeId != null && _webseriesDetail!.resumeEpisodeId!.isNotEmpty) {
-      playButtonText = "Resume Watching";
-    } else if (_loggedStatus && hasSubscription) {
-      playButtonText = "Play";
-    } else {
-      playButtonText = "Subscribe to Watch";
+    final bool hasSubscription = _hasSubscription;
+
+    String playButtonTitle = "Play";
+    IconData playButtonIcon = Icons.play_arrow_rounded;
+
+    if (!hasSubscription) {
+      playButtonTitle = "Subscribe to Watch";
+      playButtonIcon = Icons.workspace_premium_rounded;
+    } else if (_loggedStatus && _webseriesDetail!.resumeEpisodeId != null && _webseriesDetail!.resumeEpisodeId!.isNotEmpty) {
+      playButtonTitle = targetEp != null && targetEp.title.isNotEmpty
+          ? "Resume (${targetEp.title})"
+          : "Resume Watching";
     }
 
     return Padding(
-      padding: const EdgeInsets.only(top: 10, right: 12, left: 12, bottom: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 14.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const SizedBox(height: 12),
           // Title
           Text(
-            _webseriesDetail!.title,
+            _stripHtml(_webseriesDetail!.title),
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 25.0,
-              fontWeight: FontWeight.w900,
+              fontSize: 23.0,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.4,
+              height: 1.2,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
 
-          // Metadata Badges Row (Year, Certificate, Seasons count)
-          Row(
+          // Metadata Badges Row (Year, Certificate, Seasons count, HD)
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 6,
             children: [
               if (yearText.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: Text(
-                    yearText,
-                    style: TextStyle(color: AppDefaultColors.textLightGray, fontSize: 13),
+                Text(
+                  yearText,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               if (_webseriesDetail!.certificate.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: Container(
-                    height: 24,
-                    padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 2.0),
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: AppDefaultColors.textLightGray,
-                        width: 1.0,
-                      ),
-                      borderRadius: BorderRadius.circular(4),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 1.5),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.3),
+                      width: 0.8,
                     ),
-                    child: Center(
-                      child: Text(
-                        _webseriesDetail!.certificate,
-                        style: TextStyle(color: AppDefaultColors.textLightGray, fontSize: 11),
-                      ),
+                  ),
+                  child: Text(
+                    _webseriesDetail!.certificate,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
               if (_webseriesDetail!.seasons.isNotEmpty)
                 Text(
                   "${_webseriesDetail!.seasons.length} Season${_webseriesDetail!.seasons.length > 1 ? 's' : ''}",
-                  style: TextStyle(color: AppDefaultColors.textLightGray, fontSize: 13),
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(3),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.25),
+                    width: 0.7,
+                  ),
+                ),
+                child: const Text(
+                  "HD",
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
               if (_webseriesDetail!.tagText.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(left: 8.0),
-                  child: Text(
-                    _stripHtml(_webseriesDetail!.tagText),
-                    style: TextStyle(color: AppDefaultColors.textLightGray, fontSize: 12),
+                Text(
+                  _stripHtml(_webseriesDetail!.tagText),
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    fontSize: 12,
                   ),
                 ),
             ],
           ),
+          const SizedBox(height: 12),
 
-          // Synopsis / Content Text
-          if (cleanContent.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Text(
-              cleanContent,
-              style: TextStyle(color: AppDefaultColors.white, fontSize: 14, height: 1.4),
-              maxLines: 4,
-              overflow: TextOverflow.ellipsis,
+          // Subscription VIP Banner
+          if (_isAuthLoaded && !hasSubscription)
+            _buildSubscriptionBanner(),
+
+          // Primary Play / Resume Button
+          Container(
+            width: double.infinity,
+            height: 48,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              gradient: !hasSubscription
+                  ? const LinearGradient(
+                      colors: [Color(0xFFFFB800), Color(0xFFFF8A00)],
+                    )
+                  : null,
+              color: hasSubscription ? Colors.white : null,
+              boxShadow: [
+                BoxShadow(
+                  color: (!hasSubscription ? const Color(0xFFFF8A00) : Colors.white).withValues(alpha: 0.22),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
-          ],
-
-          // Cast & Crew inline section
-          _buildCastInlineSection(),
-
-          // Main Play / Resume Button
-          Padding(
-            padding: const EdgeInsets.only(top: 18.0),
-            child: SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: SubmitWhiteButton(
-                playButtonText,
-                Icons.play_arrow,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
                 onTap: () {
+                  HapticFeedback.lightImpact();
+                  if (!_isAuthLoaded) return;
                   if (!_loggedStatus || _token.isEmpty) {
                     Navigator.push(
                       context,
@@ -725,9 +1008,83 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
                     }
                   }
                 },
+                borderRadius: BorderRadius.circular(10),
+                child: Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        playButtonIcon,
+                        color: Colors.black,
+                        size: 26,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        playButtonTitle,
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
+          const SizedBox(height: 10),
+
+          // Cast & Crew Button
+          _buildCastInlineSection(),
+
+          // Synopsis / Content Text with Read More
+          if (cleanContent.isNotEmpty) ...[
+            Text(
+              cleanContent,
+              maxLines: _isSynopsisExpanded ? null : 3,
+              overflow: _isSynopsisExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.88),
+                fontSize: 13.5,
+                height: 1.5,
+                letterSpacing: 0.15,
+              ),
+            ),
+            if (cleanContent.length > 130)
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  setState(() {
+                    _isSynopsisExpanded = !_isSynopsisExpanded;
+                  });
+                },
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 6.0),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _isSynopsisExpanded ? "Show less" : "Read more",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      Icon(
+                        _isSynopsisExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                        color: Colors.white70,
+                        size: 16,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+          const SizedBox(height: 14),
 
           // Video Action Buttons (My List, Like, Dislike, Share)
           VideoActionButtons(
@@ -779,16 +1136,35 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
           ),
 
           if (_loggedStatus) ...[
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
             Divider(
-              color: AppDefaultColors.textLightGray,
+              color: Colors.white.withValues(alpha: 0.1),
               height: 1,
             ),
             const SizedBox(height: 14),
-            const Text(
-              "Episodes",
-              style: TextStyle(color: Colors.white, fontSize: 20.0, fontWeight: FontWeight.w700),
+            Row(
+              children: [
+                Container(
+                  width: 3.5,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    color: AppDefaultColors.thikRed,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  "Episodes",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18.0,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+              ],
             ),
+            const SizedBox(height: 4),
           ],
         ],
       ),
@@ -801,7 +1177,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: SizedBox(
-        height: 42,
+        height: 40,
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -811,23 +1187,30 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
             var season = _webseriesDetail!.seasons[index];
             return GestureDetector(
               onTap: () {
+                HapticFeedback.lightImpact();
                 setState(() {
                   _selectedSeasonIndex = index;
                 });
               },
               child: Container(
-                margin: const EdgeInsets.only(right: 10),
+                margin: const EdgeInsets.only(right: 8),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: isSelected ? AppDefaultColors.primaryRed : Colors.white10,
+                  color: isSelected ? AppDefaultColors.primaryRed : Colors.white.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isSelected
+                        ? AppDefaultColors.primaryRed
+                        : Colors.white.withValues(alpha: 0.1),
+                    width: 0.8,
+                  ),
                 ),
                 child: Center(
                   child: Text(
                     season.title.isNotEmpty ? season.title : "Season ${season.seasonNumber}",
                     style: TextStyle(
                       color: isSelected ? Colors.white : Colors.white70,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                       fontSize: 13,
                     ),
                   ),
@@ -849,12 +1232,12 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
     var episodes = currentSeason.episodes;
 
     if (episodes.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(24.0),
+      return Padding(
+        padding: const EdgeInsets.all(24.0),
         child: Center(
           child: Text(
             "No episodes available for this season",
-            style: TextStyle(color: Colors.white54),
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13),
           ),
         ),
       );
@@ -870,93 +1253,121 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
         String epThumb = _buildImageUrl(ep.thumbnail.isNotEmpty ? ep.thumbnail : ep.image);
         double watchedPercent = ep.episodeUser?.watchedPercent ?? 0.0;
 
-        return Card(
-          color: Colors.grey[900],
-          margin: const EdgeInsets.only(bottom: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(8),
-            onTap: () => _playEpisode(ep, episodes),
-            child: Padding(
-              padding: const EdgeInsets.all(10.0),
-              child: Row(
-                children: [
-                  // Thumbnail Stack with Progress Bar
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(6),
-                        child: SizedBox(
-                          width: 110,
-                          height: 70,
-                          child: AppShimmerImage(
-                            imageUrl: epThumb,
-                            fit: BoxFit.cover,
-                            borderRadius: 6,
-                            errorAsset: 'images/default_portrate_large.jpg',
-                          ),
-                        ),
-                      ),
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: const BoxDecoration(
-                          color: Colors.black54,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.play_arrow, color: Colors.white, size: 20),
-                      ),
-                      // Progress Bar
-                      if (watchedPercent > 0)
-                        Positioned(
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                          child: LinearProgressIndicator(
-                            value: (watchedPercent / 100).clamp(0.0, 1.0),
-                            backgroundColor: Colors.white24,
-                            valueColor: const AlwaysStoppedAnimation<Color>(AppDefaultColors.primaryRed),
-                            minHeight: 3,
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(width: 12),
-                  // Episode Info
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+        return Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF161616),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.06),
+              width: 0.8,
+            ),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: () {
+                HapticFeedback.lightImpact();
+                _playEpisode(ep, episodes);
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Row(
+                  children: [
+                    // Thumbnail Stack with Progress Bar
+                    Stack(
+                      alignment: Alignment.center,
                       children: [
-                        Text(
-                          ep.title,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: SizedBox(
+                            width: 110,
+                            height: 68,
+                            child: AppShimmerImage(
+                              imageUrl: epThumb,
+                              fit: BoxFit.cover,
+                              borderRadius: 8,
+                              errorAsset: 'images/default_portrate_large.jpg',
+                            ),
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 4),
-                        if (ep.durationText.isNotEmpty || ep.duration.isNotEmpty)
-                          Text(
-                            ep.durationText.isNotEmpty ? ep.durationText : "${ep.duration} min",
-                            style: const TextStyle(color: Colors.white54, fontSize: 12),
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.55),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.25),
+                              width: 1,
+                            ),
                           ),
-                        if (ep.contentPlain.isNotEmpty || ep.content.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            _stripHtml(ep.contentPlain.isNotEmpty ? ep.contentPlain : ep.content),
-                            style: const TextStyle(color: Colors.white70, fontSize: 12),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                          child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 20),
+                        ),
+                        // Progress Bar
+                        if (watchedPercent > 0)
+                          Positioned(
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            child: ClipRRect(
+                              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(8)),
+                              child: LinearProgressIndicator(
+                                value: (watchedPercent / 100).clamp(0.0, 1.0),
+                                backgroundColor: Colors.white24,
+                                valueColor: const AlwaysStoppedAnimation<Color>(AppDefaultColors.primaryRed),
+                                minHeight: 3,
+                              ),
+                            ),
                           ),
-                        ],
                       ],
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 12),
+                    // Episode Info
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            ep.title,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.1,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 3),
+                          if (ep.durationText.isNotEmpty || ep.duration.isNotEmpty)
+                            Text(
+                              ep.durationText.isNotEmpty ? ep.durationText : "${ep.duration} min",
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.5),
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          if (ep.contentPlain.isNotEmpty || ep.content.isNotEmpty) ...[
+                            const SizedBox(height: 3),
+                            Text(
+                              _stripHtml(ep.contentPlain.isNotEmpty ? ep.contentPlain : ep.content),
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.65),
+                                fontSize: 11.5,
+                                height: 1.3,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -1008,102 +1419,88 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
     final String producerLabel = producersArray.length > 1 ? "Producers" : "Producer";
     final String producerText = producersArray.join(', ');
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 10.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (starringText.isNotEmpty)
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => _showCastAndCrewBottomSheet(validCasts),
-              child: RichText(
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                text: TextSpan(
-                  children: [
-                    const TextSpan(
-                      text: 'Starring: ',
-                      style: TextStyle(
-                        color: Colors.white60,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    TextSpan(
-                      text: starringText,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                      ),
-                    ),
-                    const TextSpan(
-                      text: '  more...',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
+    final String preview = starringText.isNotEmpty
+        ? starringText
+        : (directorText.isNotEmpty
+            ? '$directorLabel: $directorText'
+            : (producerText.isNotEmpty ? '$producerLabel: $producerText' : 'View full cast and technical crew'));
+
+    return Container(
+      margin: const EdgeInsets.only(top: 2, bottom: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF161616),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.08),
+          width: 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          splashColor: Colors.white.withValues(alpha: 0.1),
+          highlightColor: Colors.white.withValues(alpha: 0.05),
+          onTap: () {
+            HapticFeedback.lightImpact();
+            _showCastAndCrewBottomSheet(validCasts);
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.groups_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
-              ),
-            ),
-          if (directorText.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 4.0),
-              child: RichText(
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                text: TextSpan(
-                  children: [
-                    TextSpan(
-                      text: '$directorLabel: ',
-                      style: const TextStyle(
-                        color: Colors.white60,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        "Cast & Crew",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.1,
+                        ),
                       ),
-                    ),
-                    TextSpan(
-                      text: directorText,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
+                      const SizedBox(height: 2),
+                      Text(
+                        preview,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.55),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ),
-          if (producerText.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 4.0),
-              child: RichText(
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                text: TextSpan(
-                  children: [
-                    TextSpan(
-                      text: '$producerLabel: ',
-                      style: const TextStyle(
-                        color: Colors.white60,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    TextSpan(
-                      text: producerText,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: Colors.white.withValues(alpha: 0.5),
+                  size: 22,
                 ),
-              ),
+              ],
             ),
-        ],
+          ),
+        ),
       ),
     );
   }
@@ -1201,8 +1598,8 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color(0xFF2C2C3A),
-                  Color(0xFF1C1C26),
+                  Color(0xFF282828),
+                  Color(0xFF181818),
                 ],
               ),
             ),
@@ -1225,7 +1622,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
             height: 38,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFF22222E),
+              color: const Color(0xFF202020),
               border: Border.all(
                 color: Colors.white.withValues(alpha: 0.08),
                 width: 1,
@@ -1247,10 +1644,10 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: const Color(0xFF171720),
+              color: const Color(0xFF161616),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.04),
+                color: Colors.white.withValues(alpha: 0.05),
               ),
             ),
             child: Row(
@@ -1298,11 +1695,11 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
 
         return Container(
           decoration: const BoxDecoration(
-            color: Color(0xFF121217),
+            color: Color(0xFF0F0F0F),
             borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black87,
+                color: Colors.black,
                 blurRadius: 20,
                 spreadRadius: 2,
               ),
@@ -1334,7 +1731,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
                   child: Row(
                     children: [
                       const Text(
-                        "Starring & Crew",
+                        "Cast & Crew",
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 18,

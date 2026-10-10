@@ -146,7 +146,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
             ? const ProfileSkeleton()
             : RefreshIndicator(
                 color: AppDefaultColors.primaryRed,
-                backgroundColor: const Color(0xFF1E1E26),
+                backgroundColor: const Color(0xFF161616),
                 onRefresh: () async {
                   await getInitalValue();
                 },
@@ -221,7 +221,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: const Color(0xFF15151C),
+          color: const Color(0xFF141414),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: Colors.white.withOpacity(0.08)),
         ),
@@ -298,7 +298,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF15151C),
+        color: const Color(0xFF141414),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: Colors.white.withOpacity(0.06)),
       ),
@@ -426,7 +426,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
   Widget _avatarFallback(String name) {
     final initial = name.isNotEmpty ? name[0].toUpperCase() : "B";
     return Container(
-      color: const Color(0xFF22222E),
+      color: const Color(0xFF202020),
       alignment: Alignment.center,
       child: Text(
         initial,
@@ -489,7 +489,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
-          color: const Color(0xFF15151C),
+          color: const Color(0xFF141414),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white.withOpacity(0.06)),
         ),
@@ -824,7 +824,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
   Widget _buildSettingsGroup() {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF15151C),
+        color: const Color(0xFF141414),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: Colors.white.withOpacity(0.06)),
       ),
@@ -967,7 +967,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF16161F),
+      backgroundColor: const Color(0xFF121212),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -1068,7 +1068,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
   // -------------------------------------------------------------
   Widget showSignOutAlertDialog() {
     return AlertDialog(
-      backgroundColor: const Color(0xFF1C1C24),
+      backgroundColor: const Color(0xFF161616),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: const Text(
         'Sign Out',

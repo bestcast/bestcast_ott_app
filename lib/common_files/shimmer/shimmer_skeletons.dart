@@ -364,7 +364,7 @@ class ProfileSkeleton extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16.0),
               decoration: BoxDecoration(
-                color: const Color(0xFF141418),
+                color: const Color(0xFF141414),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Row(
