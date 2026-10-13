@@ -6,7 +6,6 @@ import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:bestcaststudios/authendication/plan_expired_creen.dart';
 import 'package:bestcaststudios/register/add_userpage.dart';
 import 'package:bestcaststudios/register/who_watching_model.dart';
 import '../app_config/app_preferences.dart';
@@ -631,18 +630,23 @@ class _WhosWatchingPageState extends State<WhosWatchingPage> {
           if (jsonResponse['status'] == "success") {
             final String? planStatus =
                 jsonResponse['results']?['user']?['plan_status']?.toString();
+            final String? planExpiry =
+                jsonResponse['results']?['user']?['plan_expiry']?.toString();
             final String? planDeviceStatus =
                 jsonResponse['results']?['user']?['plan_device_status']?.toString();
 
-            if (planStatus == "0") {
-              if (mounted) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const PlanExpiredScreen()),
-                );
-              }
-              return;
-            } else if (planDeviceStatus == "0") {
+            final pref = await SharedPreferences.getInstance();
+            if (planStatus != null) {
+              await pref.setString(AppPreferences.plan_status, planStatus);
+            }
+            if (planExpiry != null) {
+              await pref.setString(AppPreferences.plan_expiry, planExpiry);
+            }
+            if (planDeviceStatus != null) {
+              await pref.setString(AppPreferences.plan_device_status, planDeviceStatus);
+            }
+
+            if (planDeviceStatus == "0") {
               if (mounted) {
                 Navigator.push(
                   context,

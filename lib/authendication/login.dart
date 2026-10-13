@@ -7,7 +7,6 @@ import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:bestcaststudios/authendication/plan_expired_creen.dart';
 import 'package:bestcaststudios/common_files/submitButton.dart';
 import 'package:bestcaststudios/register/intro_page.dart';
 import '../app_config/app_preferences.dart';
@@ -18,7 +17,6 @@ import '../common_files/api_services.dart';
 import '../common_files/app_default_colors.dart';
 import '../common_files/common_widgets.dart';
 import '../common_files/loading_widget.dart';
-import '../register/create_account.dart';
 import '../register/who_watching_page.dart';
 import '../webview_pages/bestcast_webviewpages.dart';
 import 'device_signout_alert_screen.dart';
@@ -135,23 +133,20 @@ class _LoginPageState extends State<LoginPage> {
                                 borderRadius: BorderRadius.circular(10.0),
                               ),
                               child: Padding(
-                                  padding: EdgeInsets.only(
-                                      left: 15, right: 15, top: 5),
+                                  padding: EdgeInsets.only(left: 15, right: 15, top: 5),
                                   child: TextFormField(
                                       obscureText: _passwordVisible,
                                       autovalidateMode: AutovalidateMode.always,
                                       validator: (txt) {
                                         if (txt?.length != 0) {
-                                          WidgetsBinding.instance
-                                              .addPostFrameCallback((_) {
+                                          WidgetsBinding.instance.addPostFrameCallback((_) {
                                             setState(() {
                                               _enablePassowdShowBtn = true;
                                               _isPassowdValid = true;
                                             });
                                           });
                                         } else {
-                                          WidgetsBinding.instance
-                                              .addPostFrameCallback((_) {
+                                          WidgetsBinding.instance.addPostFrameCallback((_) {
                                             setState(() {
                                               _enablePassowdShowBtn = false;
                                               _isPassowdValid = false;
@@ -159,8 +154,7 @@ class _LoginPageState extends State<LoginPage> {
                                           });
                                         }
 
-                                        if (_isEmailPhoneValid &&
-                                            _isPassowdValid) {
+                                        if (_isEmailPhoneValid && _isPassowdValid) {
                                           isButtonEnabled = true;
                                         } else {
                                           isButtonEnabled = false;
@@ -181,13 +175,10 @@ class _LoginPageState extends State<LoginPage> {
                                     child: ElevatedButton(
                                       style: ElevatedButton.styleFrom(
                                         fixedSize: Size.fromHeight(70),
-                                        foregroundColor:
-                                            AppDefaultColors.lightGray,
-                                        backgroundColor:
-                                            AppDefaultColors.boxDarkGray,
+                                        foregroundColor: AppDefaultColors.lightGray,
+                                        backgroundColor: AppDefaultColors.boxDarkGray,
                                         shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(10),
+                                          borderRadius: BorderRadius.circular(10),
                                         ),
                                       ),
                                       onPressed: () {
@@ -197,10 +188,7 @@ class _LoginPageState extends State<LoginPage> {
                                       },
                                       child: Text(
                                         _passwordVisible ? 'SHOW' : "HIDE",
-                                        style: TextStyle(
-                                            color:
-                                                AppDefaultColors.textLightGray,
-                                            fontSize: 15),
+                                        style: TextStyle(color: AppDefaultColors.textLightGray, fontSize: 15),
                                       ),
                                     ),
                                   )
@@ -233,12 +221,9 @@ class _LoginPageState extends State<LoginPage> {
                               if (formkey.currentState!.validate()) {
                                 String userName = userNameController.text;
                                 String password = passwordController.text;
-                                if (!appUtils.validateEmail(userName) &&
-                                    !appUtils
-                                        .isNumericUsing_tryParse(userName)) {
+                                if (!appUtils.validateEmail(userName) && !appUtils.isNumericUsing_tryParse(userName)) {
                                   setState(() {
-                                    _errorMessage =
-                                        AppStrings.errorMessagePhoneOrEmail;
+                                    _errorMessage = AppStrings.errorMessagePhoneOrEmail;
                                   });
                                 } else {
                                   setState(() {
@@ -254,11 +239,7 @@ class _LoginPageState extends State<LoginPage> {
                                 print("Not Validated");
                               }
                             } else {
-                              CommonWidget().showSnackBar(
-                                  context,
-                                  ContentType.warning,
-                                  "Check your internet connection.",
-                                  "");
+                              CommonWidget().showSnackBar(context, ContentType.warning, "Check your internet connection.", "");
                             }
                           },
                         ),
@@ -273,8 +254,7 @@ class _LoginPageState extends State<LoginPage> {
                         },
                         child: const Text(
                           'OR',
-                          style:
-                              TextStyle(color: AppDefaultColors.textLightGray),
+                          style: TextStyle(color: AppDefaultColors.textLightGray),
                         ),
                       ),
                     ),
@@ -296,9 +276,7 @@ class _LoginPageState extends State<LoginPage> {
                         },
                         child: const Text(
                           'Forgot Password?',
-                          style: TextStyle(
-                              color: AppDefaultColors.textLightGray,
-                              fontSize: 17),
+                          style: TextStyle(color: AppDefaultColors.textLightGray, fontSize: 17),
                         ),
                       ),
                     ),
@@ -308,16 +286,11 @@ class _LoginPageState extends State<LoginPage> {
                       padding: const EdgeInsets.only(right: 5.0),
                       child: TextButton(
                         onPressed: () {
-                          Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => const IntroPage()));
+                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const IntroPage()));
                         },
                         child: const Text(
                           'New to Bestcast? Sign up now.',
-                          style: TextStyle(
-                              color: AppDefaultColors.textLightGray,
-                              fontSize: 17),
+                          style: TextStyle(color: AppDefaultColors.textLightGray, fontSize: 17),
                         ),
                       ),
                     ),
@@ -342,15 +315,9 @@ class _LoginPageState extends State<LoginPage> {
     context.loaderOverlay.show();
 
     try {
-      final postValues = {
-        'email': userName,
-        'password': password,
-        'device': "mobile"
-      };
+      final postValues = {'email': userName, 'password': password, 'device': "mobile"};
 
-      final response = await ApiServices()
-          .postRequest(AppConfig.LoginUrl, postValues)
-          .timeout(const Duration(seconds: 15));
+      final response = await ApiServices().postRequest(AppConfig.LoginUrl, postValues).timeout(const Duration(seconds: 15));
 
       if (!mounted) return;
 
@@ -365,30 +332,21 @@ class _LoginPageState extends State<LoginPage> {
         String? email = jsonReponse['results']['user']['email'].toString();
         String? phone = jsonReponse['results']['user']['phone'].toString();
         String? name = jsonReponse['results']['user']['name'].toString();
-        String? firstname =
-            jsonReponse['results']['user']['firstname'].toString();
-        String? lastname =
-            jsonReponse['results']['user']['lastname'].toString();
+        String? firstname = jsonReponse['results']['user']['firstname'].toString();
+        String? lastname = jsonReponse['results']['user']['lastname'].toString();
         String? dob = jsonReponse['results']['user']['dob'].toString();
         String? gender = jsonReponse['results']['user']['gender'].toString();
         String? plan = jsonReponse['results']['user']['plan'].toString();
-        String? planExpiry =
-            jsonReponse['results']['user']['plan_expiry'].toString();
+        String? planExpiry = jsonReponse['results']['user']['plan_expiry'].toString();
         String? photo = jsonReponse['results']['user']['photo'].toString();
         String? otp = jsonReponse['results']['user']['otp'].toString();
         String? tvcode = jsonReponse['results']['user']['tvcode'].toString();
-        String? referalCode =
-            jsonReponse['results']['user']['referal_code'].toString();
-        String? creditsUsed =
-            jsonReponse['results']['user']['credits_used'].toString();
-        String? refferer =
-            jsonReponse['results']['user']['refferer'].toString();
-        String? bmpReferralCode =
-            jsonReponse['results']['user']['bmp_referral_code']?.toString();
-        String? planStatus =
-            jsonReponse['results']['user']['plan_status'].toString();
-        String? planDeviceStatus =
-            jsonReponse['results']['user']['plan_device_status'].toString();
+        String? referalCode = jsonReponse['results']['user']['referal_code'].toString();
+        String? creditsUsed = jsonReponse['results']['user']['credits_used'].toString();
+        String? refferer = jsonReponse['results']['user']['refferer'].toString();
+        String? bmpReferralCode = jsonReponse['results']['user']['bmp_referral_code']?.toString();
+        String? planStatus = jsonReponse['results']['user']['plan_status'].toString();
+        String? planDeviceStatus = jsonReponse['results']['user']['plan_device_status'].toString();
         String? token = jsonReponse['results']['token'].toString();
 
         print("TokenLogin$token");
@@ -415,19 +373,11 @@ class _LoginPageState extends State<LoginPage> {
           await pref.setString(AppPreferences.refferer, bmpReferralCode);
         }
         await pref.setString(AppPreferences.token, token);
+        await pref.setString(AppPreferences.plan_status, planStatus);
 
         if (!mounted) return;
 
-        if (plan == "0") {
-          await pref.setBool(AppPreferences.accountCreatedStatus, true);
-          Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => CreateAccount(requiredEmail: email)));
-        } else if (planStatus == "0" && plan != "0") {
-          Navigator.pushReplacement(context,
-              MaterialPageRoute(builder: (context) => const PlanExpiredScreen()));
-        } else if (planDeviceStatus == "0") {
+        if (planDeviceStatus == "0") {
           Navigator.pushReplacement(
               context,
               MaterialPageRoute(
@@ -456,8 +406,7 @@ class _LoginPageState extends State<LoginPage> {
     } catch (e) {
       print('LoginError:$e');
       if (mounted) {
-        CommonWidget().showSnackBar(
-            context, ContentType.failure, "Connection Error", "Unable to connect to server. Please try again.");
+        CommonWidget().showSnackBar(context, ContentType.failure, "Connection Error", "Unable to connect to server. Please try again.");
       }
     } finally {
       if (mounted) {

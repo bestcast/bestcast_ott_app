@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -6,8 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:loader_overlay/loader_overlay.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:bestcaststudios/authendication/login_page.dart';
 import 'package:bestcaststudios/webview_pages/bestcast_webviewpages.dart';
 import '../app_config/app_preferences.dart';
 import '../app_config/app_utils.dart';
@@ -1041,28 +1042,52 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
 
   Widget showDeleteAlertDialog() {
     return AlertDialog(
-      backgroundColor: AppDefaultColors.darkGray,
-      title: const Text('Are you sure want to delete acccount?',
-          style: TextStyle(color: Colors.white, fontSize: 17)),
+      backgroundColor: const Color(0xFF161616),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: const Text(
+        'Delete Account',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
       content: Text(
-          "Delete user account means you'll delete account permanently from Bestcast.",
-          style: TextStyle(color: Colors.white, fontSize: 15)),
+        "Are you sure you want to delete your account permanently? All your profile data, watch history, and account settings will be erased from Bestcast.",
+        style: TextStyle(color: Colors.white.withOpacity(0.75), fontSize: 14),
+      ),
+      actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       actions: <Widget>[
         TextButton(
-          child: const Text('Cancel',
-              style: TextStyle(color: Colors.white, fontSize: 15)),
+          child: Text(
+            'Cancel',
+            style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 14),
+          ),
           onPressed: () => Navigator.pop(context),
         ),
-        TextButton(
-          child: const Text('Delete Account',
-              style: TextStyle(color: Colors.white, fontSize: 15)),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppDefaultColors.primaryRed,
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+          child: const Text(
+            'Delete Account',
+            style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+          ),
           onPressed: () async {
             Navigator.pop(context);
             if (await CommonWidget().isInternetConnectivity()) {
               deleteAccount(_token);
             } else {
-              CommonWidget().showSnackBar(context, ContentType.warning,
-                  "Check your internet connection.", "");
+              if (mounted) {
+                CommonWidget().showSnackBar(
+                  context,
+                  ContentType.warning,
+                  "Check your internet connection.",
+                  "",
+                );
+              }
             }
           },
         ),
@@ -1070,44 +1095,40 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
     );
   }
 
-  void deleteAccount(String token) async {
+  Future<void> deleteAccount(String token) async {
     appUtils.showLoaderDialog(context);
 
-    ApiServices()
-        .getRequestData(AppConfig.deleteaAccountUrl, token)
-        .then((response) async {
-      String jsonsDataString = response.body.toString();
-      print("logout_Response: $jsonsDataString");
-      if (response.statusCode == 200) {
-        try {
-          var jsonReponse = jsonDecode(jsonsDataString);
-          String status = jsonReponse['status'];
-
-          if (status == "success") {
-            final pref = await SharedPreferences.getInstance();
-            await pref.clear();
-
-            await Future.delayed(Duration(seconds: 1));
-
-            Navigator.of(context).pushNamedAndRemoveUntil(
-              'login',
-              (route) => false, // Removes all routes from the stack
-            );
-          }
-        } catch (e) {
-          appUtils.hideLoaderDialog(context);
-          print('logoutException:$e');
-        }
-      } else {
-        setState(() {
-          appUtils.hideLoaderDialog(context);
-        });
-        print("logoutError: $response");
-        CommonWidget().showSnackBar(
-            context, ContentType.failure, "Error", response.toString());
+    Future<void> performLocalSignoutAndExit() async {
+      try {
+        final pref = await SharedPreferences.getInstance();
+        await AppPreferences.clearUserSession(pref);
+      } catch (e) {
+        debugPrint('Error clearing session on delete: $e');
       }
-    });
-    appUtils.hideLoaderDialog(context);
+
+      if (mounted) {
+        appUtils.hideLoaderDialog(context);
+        Fluttertoast.showToast(msg: "Account deleted successfully");
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+          (route) => false,
+        );
+      }
+    }
+
+    try {
+      if (token.isNotEmpty) {
+        final response = await ApiServices()
+            .getRequestData(AppConfig.deleteaAccountUrl, token)
+            .timeout(const Duration(seconds: 8));
+
+        debugPrint("deleteAccount_Response: ${response.body}");
+      }
+      await performLocalSignoutAndExit();
+    } catch (e) {
+      debugPrint('deleteAccountException: $e');
+      await performLocalSignoutAndExit();
+    }
   }
 
   void initDeviceInfo() async {

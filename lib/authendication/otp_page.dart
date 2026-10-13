@@ -363,6 +363,10 @@ class _OTPactivityState extends State<OTPactivity> {
               await pref.setString(AppPreferences.bmpReferralCode, bmpReferralCode);
               await pref.setString(AppPreferences.refferer, bmpReferralCode);
             }
+            await pref.setString(
+              AppPreferences.plan_status,
+              (user['plan_status'] ?? '0').toString(),
+            );
           }
 
           final String token = (results?['token'] ?? '').toString();

@@ -268,13 +268,16 @@ class _VideoAppState extends State<VideoApp> {
       }
     }
 
-    if (_plan_status == "0" && movieData!.movie_access != "1") {
+    final bool hasAccess = _plan_status == "1" || movieData!.movie_access == "1";
+    if (!hasAccess) {
       pauseController();
       if (!mounted) return;
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => PlanDetailsPage()),
-      );
+        MaterialPageRoute(builder: (context) => const PlanDetailsPage()),
+      ).then((_) {
+        getInitalValue();
+      });
       return;
     }
 
@@ -659,8 +662,10 @@ class _VideoAppState extends State<VideoApp> {
             pauseController();
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => PlanDetailsPage()),
-            );
+              MaterialPageRoute(builder: (context) => const PlanDetailsPage()),
+            ).then((_) {
+              getInitalValue();
+            });
           },
           borderRadius: BorderRadius.circular(10),
           child: Row(

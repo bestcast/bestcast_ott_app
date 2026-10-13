@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:bestcaststudios/authendication/login_page.dart';
 import 'package:bestcaststudios/main_screen.dart';
 import 'package:bestcaststudios/register/profile_image_grid.dart';
 import 'common_files/app_default_colors.dart';
@@ -100,6 +101,7 @@ class MyApp extends StatelessWidget {
       routes: {
         "profile_image_grid": (context) => const ProfileImageGrid(),
         'mainscreen': (context) => const MainScreen(),
+        'login': (context) => const LoginPage(),
       },
     );
   }
