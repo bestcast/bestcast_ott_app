@@ -42,8 +42,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
   bool _loggedStatus = false;
   String _planStatus = "";
 
-  bool get _hasSubscription =>
-      _isAuthLoaded && (_planStatus == "1" || (_webseriesDetail?.movieAccess == 1));
+  bool get _hasSubscription => _isAuthLoaded && (_planStatus == "1" || (_webseriesDetail?.movieAccess == 1));
 
   WebseriesItemModel? _webseriesDetail;
   int _selectedSeasonIndex = 0;
@@ -78,14 +77,10 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
         width: size,
         height: size,
         decoration: BoxDecoration(
-          color: isPrimary
-              ? Colors.white.withValues(alpha: 0.28)
-              : Colors.black.withValues(alpha: 0.45),
+          color: isPrimary ? Colors.white.withValues(alpha: 0.28) : Colors.black.withValues(alpha: 0.45),
           shape: BoxShape.circle,
           border: Border.all(
-            color: isPrimary
-                ? Colors.white.withValues(alpha: 0.5)
-                : Colors.white.withValues(alpha: 0.2),
+            color: isPrimary ? Colors.white.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.2),
             width: isPrimary ? 1.5 : 1.0,
           ),
           boxShadow: isPrimary
@@ -160,10 +155,11 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
       _trailerController?.dispose();
     } catch (_) {}
 
-    _trailerController = VideoPlayerController.networkUrl(Uri.parse(trailerUrl))
-      ..initialize().then((_) {
-        if (!mounted) return;
-        _trailerController?.setVolume(_isTrailerMuted ? 0.0 : 1.0);
+    _trailerController = VideoPlayerController.networkUrl(Uri.parse(trailerUrl));
+    _trailerController?.setVolume(_isTrailerMuted ? 0.0 : 1.0);
+    _trailerController!.initialize().then((_) {
+      if (!mounted) return;
+      _trailerController?.setVolume(_isTrailerMuted ? 0.0 : 1.0);
         _trailerController?.setLooping(true);
         _trailerController?.play();
         setState(() {
@@ -595,22 +591,22 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
               ),
             )
           : SafeArea(
-                  top: false,
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildVideoPlayerOrBanner(),
-                        _buildInfoSection(),
-                        if (_loggedStatus) ...[
-                          _buildSeasonTabs(),
-                          _buildEpisodeList(),
-                        ],
-                        const SizedBox(height: 30),
-                      ],
-                    ),
-                  ),
+              top: false,
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildVideoPlayerOrBanner(),
+                    _buildInfoSection(),
+                    if (_loggedStatus) ...[
+                      _buildSeasonTabs(),
+                      _buildEpisodeList(),
+                    ],
+                    const SizedBox(height: 30),
+                  ],
                 ),
+              ),
+            ),
     );
   }
 
@@ -680,9 +676,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
 
   Widget _buildVideoPlayerOrBanner() {
     final bool hasTrailer = _trailerController != null && _trailerController!.value.isInitialized;
-    final double aspectRatio = hasTrailer
-        ? (_trailerController!.value.aspectRatio > 0 ? _trailerController!.value.aspectRatio : 16 / 9)
-        : (16 / 9);
+    final double aspectRatio = hasTrailer ? (_trailerController!.value.aspectRatio > 0 ? _trailerController!.value.aspectRatio : 16 / 9) : (16 / 9);
 
     if (hasTrailer) {
       return Container(
@@ -861,9 +855,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
       playButtonTitle = "Subscribe to Watch";
       playButtonIcon = Icons.workspace_premium_rounded;
     } else if (_loggedStatus && _webseriesDetail!.resumeEpisodeId != null && _webseriesDetail!.resumeEpisodeId!.isNotEmpty) {
-      playButtonTitle = targetEp != null && targetEp.title.isNotEmpty
-          ? "Resume (${targetEp.title})"
-          : "Resume Watching";
+      playButtonTitle = "Play";
     }
 
     return Padding(
@@ -960,8 +952,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
           const SizedBox(height: 12),
 
           // Subscription VIP Banner
-          if (_isAuthLoaded && !hasSubscription)
-            _buildSubscriptionBanner(),
+          if (_isAuthLoaded && !hasSubscription) _buildSubscriptionBanner(),
 
           // Primary Play / Resume Button
           Container(
@@ -1199,9 +1190,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
                   color: isSelected ? AppDefaultColors.primaryRed : Colors.white.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: isSelected
-                        ? AppDefaultColors.primaryRed
-                        : Colors.white.withValues(alpha: 0.1),
+                    color: isSelected ? AppDefaultColors.primaryRed : Colors.white.withValues(alpha: 0.1),
                     width: 0.8,
                   ),
                 ),
@@ -1419,11 +1408,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
     final String producerLabel = producersArray.length > 1 ? "Producers" : "Producer";
     final String producerText = producersArray.join(', ');
 
-    final String preview = starringText.isNotEmpty
-        ? starringText
-        : (directorText.isNotEmpty
-            ? '$directorLabel: $directorText'
-            : (producerText.isNotEmpty ? '$producerLabel: $producerText' : 'View full cast and technical crew'));
+    final String preview = starringText.isNotEmpty ? starringText : (directorText.isNotEmpty ? '$directorLabel: $directorText' : (producerText.isNotEmpty ? '$producerLabel: $producerText' : 'View full cast and technical crew'));
 
     return Container(
       margin: const EdgeInsets.only(top: 2, bottom: 12),

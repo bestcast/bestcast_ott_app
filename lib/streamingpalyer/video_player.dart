@@ -61,7 +61,7 @@ class _VideoAppState extends State<VideoApp> {
       downloadThumnail: movieData?.thumbnail.toString() ?? '',
       downloadMovieTitle: movieData?.title.toString() ?? '');
 
-  bool _isMuted = false;
+  bool _isMuted = true;
   bool _isPlaying = false;
   bool _isRated = false;
   bool _isLike = false;
@@ -160,14 +160,16 @@ class _VideoAppState extends State<VideoApp> {
       _controller?.dispose();
     } catch (_) {}
 
-    _controller = VideoPlayerController.networkUrl(Uri.parse(loaderUrl))
-      ..initialize().then((_) {
-        if (!mounted) return;
-        setState(() {});
-        _controller?.addListener(_onControllerProgress);
-      }).catchError((error) {
-        print("VideoPlayerController init error: $error");
-      });
+    _controller = VideoPlayerController.networkUrl(Uri.parse(loaderUrl));
+    _controller?.setVolume(_isMuted ? 0.0 : 1.0);
+    _controller!.initialize().then((_) {
+      if (!mounted) return;
+      _controller?.setVolume(_isMuted ? 0.0 : 1.0);
+      setState(() {});
+      _controller?.addListener(_onControllerProgress);
+    }).catchError((error) {
+      print("VideoPlayerController init error: $error");
+    });
 
     _controller?.play();
     _isPlaying = true;
@@ -708,8 +710,7 @@ class _VideoAppState extends State<VideoApp> {
       buttonTitle = "Subscribe to Watch";
       buttonIcon = Icons.workspace_premium_rounded;
     } else if (canResume) {
-      final int minutes = (currentWatchSeconds / 60).floor();
-      buttonTitle = minutes > 0 ? "Resume ($minutes mins)" : "Resume";
+      buttonTitle = "Play";
     }
 
     return Container(
