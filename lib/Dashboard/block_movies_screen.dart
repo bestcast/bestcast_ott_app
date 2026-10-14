@@ -8,6 +8,7 @@ import 'package:bestcaststudios/app_config/appconfig.dart';
 import 'package:bestcaststudios/common_files/app_default_colors.dart';
 import 'package:bestcaststudios/streamingpalyer/video_player.dart';
 import 'package:bestcaststudios/common_files/shimmer/app_shimmer_image.dart';
+import 'package:bestcaststudios/common_files/free_tag_badge.dart';
 
 class BlockMoviesScreen extends StatefulWidget {
   final String blockTitle;
@@ -254,15 +255,8 @@ class _BlockMoviesScreenState extends State<BlockMoviesScreen> {
                                   borderRadius: 7.2,
                                   errorAsset: 'images/default_portrate_small.jpg',
                                 ),
-                                if (movie.movie_access == "1")
-                                  Positioned(
-                                    top: 4,
-                                    right: 4,
-                                    child: SizedBox(
-                                      height: 22,
-                                      child: const Image(image: AssetImage("images/free_tag_img.png")),
-                                    ),
-                                  ),
+                                if (movie.movie_access == "1" || (movie.webseriesItem?.movieAccess == 1))
+                                  FreeTagBadge.positioned(top: 5, right: 5),
                               ],
                             ),
                           ),

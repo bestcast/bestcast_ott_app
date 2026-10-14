@@ -35,6 +35,7 @@ import '../common_files/submit_white_button.dart';
 import '../streamingpalyer/models/main_movie_details_models.dart';
 import '../common_files/shimmer/shimmer_skeletons.dart';
 import '../common_files/shimmer/app_shimmer_image.dart';
+import '../common_files/free_tag_badge.dart';
 
 class DashboardBannerItem {
   final String bannerId;
@@ -691,11 +692,18 @@ class _DashboardState extends State<Dashboard> {
               child: SizedBox(
                 height: 160,
                 width: 120,
-                child: AppShimmerImage(
-                  imageUrl: thumb,
-                  fit: BoxFit.cover,
-                  borderRadius: 6,
-                  errorAsset: 'images/default_portrate_large.jpg',
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    AppShimmerImage(
+                      imageUrl: thumb,
+                      fit: BoxFit.cover,
+                      borderRadius: 6,
+                      errorAsset: 'images/default_portrate_large.jpg',
+                    ),
+                    if (item.movieAccess == 1)
+                      FreeTagBadge.positioned(top: 5, right: 5),
+                  ],
                 ),
               ),
             ),
@@ -802,15 +810,8 @@ class _DashboardState extends State<Dashboard> {
                         borderRadius: 7.2,
                         errorAsset: 'images/default_portrate_small.jpg',
                       ),
-                      if (moviesModel.movie_access == "1")
-                        Positioned(
-                          top: 4,
-                          right: 4,
-                          child: SizedBox(
-                            height: 24,
-                            child: const Image(image: AssetImage("images/free_tag_img.png")),
-                          ),
-                        ),
+                      if (moviesModel.movie_access == "1" || (moviesModel.webseriesItem?.movieAccess == 1))
+                        FreeTagBadge.positioned(top: 5, right: 5),
                     ],
                   ),
                 ),

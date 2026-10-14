@@ -12,6 +12,7 @@ import 'package:bestcaststudios/authendication/login_page.dart';
 import 'package:bestcaststudios/common_files/app_default_colors.dart';
 import 'package:bestcaststudios/common_files/shimmer/shimmer_skeletons.dart';
 import 'package:bestcaststudios/common_files/shimmer/app_shimmer_image.dart';
+import 'package:bestcaststudios/common_files/free_tag_badge.dart';
 import 'package:bestcaststudios/streamingpalyer/components/video_action_buttons.dart';
 import 'package:bestcaststudios/plan_details/plan_details.dart';
 import 'package:bestcaststudios/Webseries/Models/webseries_models.dart';
@@ -883,6 +884,8 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
             spacing: 8,
             runSpacing: 6,
             children: [
+              if (_webseriesDetail!.movieAccess == 1)
+                const FreeTagBadge.chip(),
               if (yearText.isNotEmpty)
                 Text(
                   yearText,
@@ -1281,6 +1284,14 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
                             ),
                           ),
                         ),
+                        if (ep.movieAccess == 1)
+                          FreeTagBadge.positioned(
+                            top: 4,
+                            left: 4,
+                            right: null,
+                            fontSize: 8.0,
+                            padding: const EdgeInsets.symmetric(horizontal: 4.5, vertical: 1.5),
+                          ),
                         Container(
                           width: 32,
                           height: 32,

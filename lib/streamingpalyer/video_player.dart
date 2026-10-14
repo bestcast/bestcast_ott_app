@@ -38,6 +38,7 @@ import 'more_like_movies_models.dart';
 import 'components/video_action_buttons.dart';
 import 'components/more_like_this_grid.dart';
 import '../common_files/shimmer/app_shimmer_image.dart';
+import '../common_files/free_tag_badge.dart';
 
 // ignore: must_be_immutable
 class VideoApp extends StatefulWidget {
@@ -561,6 +562,8 @@ class _VideoAppState extends State<VideoApp> {
       spacing: 8,
       runSpacing: 6,
       children: [
+        if (movieData!.movie_access == "1")
+          const FreeTagBadge.chip(),
         if (isTop10)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),

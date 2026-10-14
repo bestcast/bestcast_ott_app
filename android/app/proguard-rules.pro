@@ -10,3 +10,9 @@
 
 # Don’t warn about missing Google Pay classes
 -dontwarn com.google.android.apps.nbu.paisa.inapp.client.api.**
+
+# Google Play Core In-App Update
+-keep class com.google.android.play.core.appupdate.** { *; }
+-keep class com.google.android.play.core.install.** { *; }
+-keep class de.ffuf.in_app_update.** { *; }
+

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/related_movie_modelss.dart';
 import '../../common_files/shimmer/app_shimmer_image.dart';
+import '../../common_files/free_tag_badge.dart';
 
 class MoreLikeThisGrid extends StatelessWidget {
   final List<RelatedMovieData> relatedMovieData;
@@ -69,13 +70,19 @@ class MoreLikeThisGrid extends StatelessWidget {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: AppShimmerImage(
-                  imageUrl: posterUrl,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: double.infinity,
-                  borderRadius: 8,
-                  errorAsset: 'images/sample_movie_1.jpg',
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    AppShimmerImage(
+                      imageUrl: posterUrl,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                      borderRadius: 8,
+                      errorAsset: 'images/sample_movie_1.jpg',
+                    ),
+                    if (item.movie?.movie_access == "1") FreeTagBadge.positioned(top: 5, right: 5),
+                  ],
                 ),
               ),
             ),

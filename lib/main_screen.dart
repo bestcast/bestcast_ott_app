@@ -20,6 +20,7 @@ import 'app_config/appconfig.dart';
 import 'authendication/login_page.dart';
 import 'common_files/api_services.dart';
 import 'common_files/app_default_colors.dart';
+import 'services/app_update_service.dart';
 
 class MainScreen extends StatefulWidget {
   final int initialIndex;
@@ -29,7 +30,7 @@ class MainScreen extends StatefulWidget {
   _MainScreenState createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
   int _pageIndex = 0;
 
@@ -52,6 +53,12 @@ class _MainScreenState extends State<MainScreen> {
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
+
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAppUpdate();
+    });
+    
     super.initState();
     BackButtonInterceptor.add(myInterceptor);
 
@@ -61,9 +68,42 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _linkSubscription?.cancel();
     BackButtonInterceptor.remove(myInterceptor);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkAppUpdate();
+    }
+  }
+
+  void _checkAppUpdate() {
+    AppUpdateService.checkForUpdate(
+      onFlexibleUpdateDownloaded: () {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppDefaultColors.darkGray,
+            content: const Text(
+              'An update has been downloaded.',
+              style: TextStyle(color: Colors.white),
+            ),
+            duration: const Duration(days: 1),
+            action: SnackBarAction(
+              label: 'RESTART',
+              textColor: AppDefaultColors.primaryRed,
+              onPressed: () {
+                AppUpdateService.completeFlexibleUpdate();
+              },
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void _initDeepLinks() async {
@@ -185,8 +225,7 @@ class _MainScreenState extends State<MainScreen> {
 
         // On Home tab: double back press to exit
         final DateTime currentTime = DateTime.now();
-        if (_lastPressedAt == null ||
-            currentTime.difference(_lastPressedAt!) > const Duration(seconds: 2)) {
+        if (_lastPressedAt == null || currentTime.difference(_lastPressedAt!) > const Duration(seconds: 2)) {
           _lastPressedAt = currentTime;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -284,9 +323,7 @@ class _MainScreenState extends State<MainScreen> {
 
     Widget iconWidget;
     if (isProfile && loggedStatus && profilePicture.isNotEmpty) {
-      final String imgUrl = profilePicture.startsWith('http')
-          ? profilePicture
-          : "${AppConfig.BaseUrl}/$profilePicture";
+      final String imgUrl = profilePicture.startsWith('http') ? profilePicture : "${AppConfig.BaseUrl}/$profilePicture";
       iconWidget = Container(
         width: 24,
         height: 24,
@@ -358,9 +395,7 @@ class _MainScreenState extends State<MainScreen> {
     setState(() {
       isLoading = true;
     });
-    ApiServices()
-        .postRequestTokenWithoutBody(AppConfig.tokenexist, token)
-        .then((response) async {
+    ApiServices().postRequestTokenWithoutBody(AppConfig.tokenexist, token).then((response) async {
       String jsonsDataString = response.body.toString();
       print("getTokenExist_Response: $jsonsDataString");
       print("getTokenExist_Token: $token");
@@ -376,8 +411,7 @@ class _MainScreenState extends State<MainScreen> {
             setState(() {
               loggedStatus = false;
             });
-            Navigator.push(
-                context, MaterialPageRoute(builder: (context) => LoginPage()));
+            Navigator.push(context, MaterialPageRoute(builder: (context) => LoginPage()));
           } else {
             _pageIndex = index;
           }

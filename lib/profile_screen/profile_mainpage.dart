@@ -25,6 +25,7 @@ import '../common_files/app_default_colors.dart';
 import '../common_files/common_widgets.dart';
 import '../common_files/shimmer/shimmer_skeletons.dart';
 import '../common_files/shimmer/app_shimmer_image.dart';
+import '../common_files/free_tag_badge.dart';
 import '../main_screen.dart';
 import '../streamingpalyer/video_player.dart';
 
@@ -621,6 +622,8 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                           borderRadius: 10,
                           errorAsset: 'images/default_portrate_small.jpg',
                         ),
+                        if (movie.movie_access == "1")
+                          FreeTagBadge.positioned(top: 5, right: 5),
                         // Play icon centered
                         Positioned.fill(
                           child: Center(
@@ -717,13 +720,19 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                   ),
                 );
               },
-              child: AppShimmerImage(
-                imageUrl: movie.portraitsmall.toString(),
-                width: 110,
-                height: 165,
-                fit: BoxFit.cover,
-                borderRadius: 10,
-                errorAsset: 'images/default_portrate_small.jpg',
+              child: Stack(
+                children: [
+                  AppShimmerImage(
+                    imageUrl: movie.portraitsmall.toString(),
+                    width: 110,
+                    height: 165,
+                    fit: BoxFit.cover,
+                    borderRadius: 10,
+                    errorAsset: 'images/default_portrate_small.jpg',
+                  ),
+                  if (movie.movie_access == "1")
+                    FreeTagBadge.positioned(top: 5, right: 5),
+                ],
               ),
             );
           },
