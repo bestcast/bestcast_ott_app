@@ -501,7 +501,8 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
       return;
     }
 
-    if (!_hasSubscription) {
+    final bool canPlay = _hasSubscription || episode.movieAccess == 1;
+    if (!canPlay) {
       _trailerController?.pause();
       Navigator.push(
         context,
@@ -523,6 +524,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
           webseriesTitle: _webseriesDetail?.title ?? '',
           seasonEpisodes: currentSeasonEpisodes,
           webseriesId: widget.webseriesId,
+          hasSubscription: _hasSubscription,
         ),
       ),
     ).then((_) {
@@ -848,13 +850,17 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
     WebseriesEpisodeModel? targetEp = _findResumeOrFirstEpisode();
 
     final bool hasSubscription = _hasSubscription;
+    final bool canPlayTarget = hasSubscription || (targetEp != null && targetEp.movieAccess == 1);
 
     String playButtonTitle = "Play";
     IconData playButtonIcon = Icons.play_arrow_rounded;
 
-    if (!hasSubscription) {
+    if (!canPlayTarget) {
       playButtonTitle = "Subscribe to Watch";
       playButtonIcon = Icons.workspace_premium_rounded;
+    } else if (!hasSubscription && targetEp != null && targetEp.movieAccess == 1) {
+      playButtonTitle = "Play Free Episode";
+      playButtonIcon = Icons.play_arrow_rounded;
     } else if (_loggedStatus && _webseriesDetail!.resumeEpisodeId != null && _webseriesDetail!.resumeEpisodeId!.isNotEmpty) {
       playButtonTitle = "Play";
     }
@@ -963,15 +969,15 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
             height: 48,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(10),
-              gradient: !hasSubscription
+              gradient: !canPlayTarget
                   ? const LinearGradient(
                       colors: [Color(0xFFFFB800), Color(0xFFFF8A00)],
                     )
                   : null,
-              color: hasSubscription ? Colors.white : null,
+              color: canPlayTarget ? Colors.white : null,
               boxShadow: [
                 BoxShadow(
-                  color: (!hasSubscription ? const Color(0xFFFF8A00) : Colors.white).withValues(alpha: 0.22),
+                  color: (!canPlayTarget ? const Color(0xFFFF8A00) : Colors.white).withValues(alpha: 0.22),
                   blurRadius: 8,
                   offset: const Offset(0, 3),
                 ),
@@ -988,7 +994,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
                       context,
                       MaterialPageRoute(builder: (context) => LoginPage()),
                     ).then((_) => _loadInitialData());
-                  } else if (!hasSubscription) {
+                  } else if (!canPlayTarget) {
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => const PlanDetailsPage()),
@@ -1292,18 +1298,29 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
                             fontSize: 8.0,
                             padding: const EdgeInsets.symmetric(horizontal: 4.5, vertical: 1.5),
                           ),
-                        Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.55),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.25),
-                              width: 1,
-                            ),
-                          ),
-                          child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 20),
+                        Builder(
+                          builder: (context) {
+                            final bool isEpPlayable = _hasSubscription || ep.movieAccess == 1;
+                            return Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.55),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: isEpPlayable
+                                      ? Colors.white.withValues(alpha: 0.25)
+                                      : const Color(0xFFFFD700).withValues(alpha: 0.45),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Icon(
+                                isEpPlayable ? Icons.play_arrow_rounded : Icons.lock_outline_rounded,
+                                color: isEpPlayable ? Colors.white : const Color(0xFFFFD700),
+                                size: isEpPlayable ? 20 : 16,
+                              ),
+                            );
+                          },
                         ),
                         // Progress Bar
                         if (watchedPercent > 0)

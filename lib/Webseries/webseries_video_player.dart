@@ -11,6 +11,7 @@ import 'package:bestcaststudios/common_files/app_default_colors.dart';
 import 'package:bestcaststudios/common_files/background_loading_widget.dart';
 import 'package:bestcaststudios/streamingpalyer/video_player_source/video_viewer.dart';
 import 'package:bestcaststudios/streamingpalyer/video_view_player.dart';
+import 'package:bestcaststudios/plan_details/plan_details.dart';
 import 'Models/webseries_models.dart';
 import 'webseries_api_service.dart';
 
@@ -63,6 +64,7 @@ class WebseriesVideoPlayer extends StatefulWidget {
   final String webseriesTitle;
   final List<WebseriesEpisodeModel> seasonEpisodes;
   final String webseriesId;
+  final bool hasSubscription;
 
   const WebseriesVideoPlayer({
     super.key,
@@ -70,6 +72,7 @@ class WebseriesVideoPlayer extends StatefulWidget {
     required this.webseriesTitle,
     required this.seasonEpisodes,
     required this.webseriesId,
+    this.hasSubscription = false,
   });
 
   @override
@@ -150,6 +153,10 @@ class _WebseriesVideoPlayerState extends State<WebseriesVideoPlayer> {
         _profileId = pref.getString(AppPreferences.profileID) ?? '';
       });
     }
+  }
+
+  bool _canPlay(WebseriesEpisodeModel ep) {
+    return widget.hasSubscription || ep.movieAccess == 1;
   }
 
   int _getEpisodeResumeSeconds(WebseriesEpisodeModel ep) {
@@ -278,6 +285,24 @@ class _WebseriesVideoPlayerState extends State<WebseriesVideoPlayer> {
 
   void _playNextEpisode(WebseriesEpisodeModel nextEp) async {
     if (_isSwitchingEpisode) return;
+
+    if (!_canPlay(nextEp)) {
+      _overlayTimer?.cancel();
+      _playbackTimer?.cancel();
+      _initTimer?.cancel();
+      _seekTimer?.cancel();
+      await _syncProgress(isCompleted: true);
+      if (!mounted) return;
+      if (_controller.isFullScreen) {
+        _controller.closeFullScreen();
+      }
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const PlanDetailsPage()),
+      );
+      return;
+    }
+
     _isSwitchingEpisode = true;
 
     _initTimer?.cancel();
@@ -465,9 +490,11 @@ class _WebseriesVideoPlayerState extends State<WebseriesVideoPlayer> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          "Up Next in $_overlayCountdown s",
-                          style: const TextStyle(
-                            color: AppDefaultColors.primaryRed,
+                          _canPlay(nextEp)
+                              ? "Up Next in $_overlayCountdown s"
+                              : "Next Episode Requires Subscription",
+                          style: TextStyle(
+                            color: _canPlay(nextEp) ? AppDefaultColors.primaryRed : const Color(0xFFFFD700),
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
                           ),
@@ -487,15 +514,18 @@ class _WebseriesVideoPlayerState extends State<WebseriesVideoPlayer> {
                           children: [
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppDefaultColors.primaryRed,
-                                foregroundColor: Colors.white,
+                                backgroundColor: _canPlay(nextEp) ? AppDefaultColors.primaryRed : const Color(0xFFFFB800),
+                                foregroundColor: _canPlay(nextEp) ? Colors.white : Colors.black,
                                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                               ),
                               onPressed: () => _playNextEpisode(nextEp),
-                              child: const Text("Play Now", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                              child: Text(
+                                _canPlay(nextEp) ? "Play Now" : "Subscribe",
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                              ),
                             ),
                             const SizedBox(width: 8),
                             OutlinedButton(
