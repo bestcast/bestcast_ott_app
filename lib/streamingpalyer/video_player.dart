@@ -273,6 +273,10 @@ class _VideoAppState extends State<VideoApp> {
     if (!hasAccess) {
       pauseController();
       if (!mounted) return;
+      if (AppConfig.isIOSPlatform) {
+        _showIosSubscriptionRequiredDialog();
+        return;
+      }
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const PlanDetailsPage()),
@@ -642,6 +646,39 @@ class _VideoAppState extends State<VideoApp> {
   }
 
   Widget _buildSubscriptionBanner() {
+    if (AppConfig.isIOSPlatform) {
+      return Container(
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.15),
+            width: 0.8,
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.info_outline_rounded, color: Color(0xFFFFD700), size: 22),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                loggedStatus
+                    ? "This movie requires an active Bestcast subscription."
+                    : "This movie requires an active Bestcast subscription. Sign in with an active account to watch.",
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.85),
+                  fontSize: 11.5,
+                  height: 1.3,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -707,6 +744,49 @@ class _VideoAppState extends State<VideoApp> {
     );
   }
 
+  void _showIosSubscriptionRequiredDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext ctx) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1E1E1E),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          title: const Row(
+            children: [
+              Icon(Icons.lock_outline_rounded, color: Color(0xFFFFD700), size: 22),
+              SizedBox(width: 8),
+              Text(
+                "Subscription Required",
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: const Text(
+            "This movie is available for active Bestcast subscribers. Subscriptions cannot be purchased within the iOS app. If you have an active subscription on another account, please switch accounts.",
+            style: TextStyle(color: Colors.white70, fontSize: 13.5, height: 1.4),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text("OK", style: TextStyle(color: Colors.white60)),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                pauseController();
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => LoginPage()),
+                );
+              },
+              child: const Text("Switch Account", style: TextStyle(color: Color(0xFFFFD700))),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildPrimaryPlayButton(bool hasAccess) {
     final int currentWatchSeconds = int.tryParse(watchTime) ?? 0;
     final bool canResume = currentWatchSeconds > 60;
@@ -715,8 +795,18 @@ class _VideoAppState extends State<VideoApp> {
     IconData buttonIcon = Icons.play_arrow_rounded;
 
     if (!hasAccess) {
-      buttonTitle = "Subscribe to Watch";
-      buttonIcon = Icons.workspace_premium_rounded;
+      if (AppConfig.isIOSPlatform) {
+        if (!loggedStatus) {
+          buttonTitle = "Sign In to Watch";
+          buttonIcon = Icons.login_rounded;
+        } else {
+          buttonTitle = "Subscription Required";
+          buttonIcon = Icons.lock_outline_rounded;
+        }
+      } else {
+        buttonTitle = "Subscribe to Watch";
+        buttonIcon = Icons.workspace_premium_rounded;
+      }
     } else if (canResume) {
       buttonTitle = "Play";
     }

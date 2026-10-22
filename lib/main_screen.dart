@@ -136,7 +136,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       await pref.setString(AppPreferences.refferer, ref);
     }
     if (uri.path == '/pricing') {
-      if (mounted) {
+      if (mounted && !AppConfig.isIOSPlatform) {
         Navigator.push(
           context,
           MaterialPageRoute(

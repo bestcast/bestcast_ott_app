@@ -30,7 +30,7 @@ class PlanDetailsPage extends StatefulWidget {
 
 class _PlanDetailsPageState extends State<PlanDetailsPage> {
   final AppUtils appUtils = AppUtils();
-  late final Razorpay _razorpay;
+  Razorpay? _razorpay;
   bool isLoading = false;
   List<SubscriptionListModel> subscriptionListModel = [];
   String _phone = "";
@@ -40,6 +40,53 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (AppConfig.isIOSPlatform) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            "Subscription Info",
+            style: TextStyle(color: Colors.white, fontSize: 22.0, fontWeight: FontWeight.w700),
+          ),
+          backgroundColor: AppDefaultColors.appColor,
+          leading: const BackButton(color: Colors.white),
+        ),
+        backgroundColor: AppDefaultColors.appColor,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.info_outline_rounded, color: Colors.white70, size: 56),
+                const SizedBox(height: 18),
+                const Text(
+                  "Subscription Notice",
+                  style: TextStyle(fontSize: 20, color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  "In-app purchases and subscriptions are not available on this device.\n\nExisting subscribers can access their content across all supported devices by logging into their account.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14, color: AppDefaultColors.textLightGray, height: 1.5),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppDefaultColors.appRed,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Go Back"),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return LoaderOverlay(
       child: Scaffold(
         appBar: AppBar(
@@ -167,17 +214,19 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
     ]);
     super.initState();
 
-    _razorpay = Razorpay();
-    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, handlePaymentErrorResponse);
-    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, handlePaymentSuccessResponse);
-    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, handleExternalWalletSelected);
+    if (!AppConfig.isIOSPlatform) {
+      _razorpay = Razorpay();
+      _razorpay!.on(Razorpay.EVENT_PAYMENT_ERROR, handlePaymentErrorResponse);
+      _razorpay!.on(Razorpay.EVENT_PAYMENT_SUCCESS, handlePaymentSuccessResponse);
+      _razorpay!.on(Razorpay.EVENT_EXTERNAL_WALLET, handleExternalWalletSelected);
+    }
 
     getInitalValue();
   }
 
   @override
   void dispose() {
-    _razorpay.clear();
+    _razorpay?.clear();
     super.dispose();
   }
 
@@ -211,6 +260,13 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
   }
 
   void payRazor(String amount, String description, String mobilenumber, dynamic orderId) {
+    if (AppConfig.isIOSPlatform) {
+      if (mounted) {
+        CommonWidget().showSnackBar(context, ContentType.warning, "Notice", "In-app purchases are not supported on iOS.");
+      }
+      return;
+    }
+
     print("_gateWayKey:$_gateWayKey");
     print("logo_gateWay:$_logo");
 
@@ -229,7 +285,7 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
           'wallets': ['paytm']
         }
       };
-      _razorpay.open(options);
+      _razorpay?.open(options);
     } catch (e) {
       print("payRazor exception: $e");
       if (mounted) {
