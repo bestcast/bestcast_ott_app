@@ -1,0 +1,32 @@
+
+workflows:
+  bestcast-ios-check:
+    name: Bestcast iOS Build Check
+    max_build_duration: 30
+    instance_type: mac_mini_m2
+
+    environment:
+      flutter: 3.38.9
+      xcode: latest
+      cocoapods: default
+
+    scripts:
+      - name: Get Flutter dependencies
+        script: flutter pub get
+
+      - name: Install CocoaPods dependencies
+        script: |
+          if [ -f ios/Podfile ]; then
+            cd ios
+            pod install
+          fi
+
+      - name: Analyze Flutter code
+        script: flutter analyze
+
+      - name: Build iOS without code signing
+        script: flutter build ios --release --no-codesign
+
+    artifacts:
+      - build/ios/iphoneos/**/*.app
+      - /tmp/xcodebuild_logs/**/*.log

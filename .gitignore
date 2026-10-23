@@ -54,3 +54,10 @@ webseries_api.docx
 webseries API Detail.docx
 
 test
+
+.packages
+build/
+
+ios/Pods/
+ios/Flutter/ephemeral/
+ios/Flutter/.last_build_id
