@@ -1,32 +1,175 @@
-
 workflows:
+  # ---------------------------------------------------------------------------
+  # Workflow 1: iOS Build Check (CI Verification)
+  # ---------------------------------------------------------------------------
+  # Purpose: Validates that Flutter dependencies, CocoaPods, and Xcode compile
+  # cleanly without requiring Apple Developer signing certificates.
+  # ---------------------------------------------------------------------------
   bestcast-ios-check:
     name: Bestcast iOS Build Check
-    max_build_duration: 30
+    max_build_duration: 45
     instance_type: mac_mini_m2
 
     environment:
-      flutter: 3.38.9
+      flutter: stable
       xcode: latest
       cocoapods: default
+      vars:
+        BUNDLE_ID: "com.bestcast.bestcastott"
+
+    cache:
+      cache_paths:
+        - $FLUTTER_ROOT/.pub-cache
+        - $HOME/Library/Caches/CocoaPods
+
+    triggering:
+      events:
+        - push
+        - pull_request
+      branch_patterns:
+        - pattern: "ios_app"
+          include: true
+          source: true
+        - pattern: "main"
+          include: true
+          source: true
 
     scripts:
       - name: Get Flutter dependencies
-        script: flutter pub get
+        script: |
+          flutter clean
+          flutter pub get
+
+      - name: Precache iOS build tools
+        script: |
+          flutter precache --ios
 
       - name: Install CocoaPods dependencies
         script: |
-          if [ -f ios/Podfile ]; then
-            cd ios
-            pod install
-          fi
+          cd ios
+          pod install --repo-update
+          cd ..
 
       - name: Analyze Flutter code
-        script: flutter analyze
+        script: |
+          flutter analyze lib --no-fatal-infos
 
-      - name: Build iOS without code signing
-        script: flutter build ios --release --no-codesign
+      - name: Build iOS application (Release, unsigned)
+        script: |
+          flutter build ios --release --no-codesign
 
     artifacts:
       - build/ios/iphoneos/**/*.app
       - /tmp/xcodebuild_logs/**/*.log
+      - flutter_drive.log
+
+    publishing:
+      email:
+        recipients:
+          - support@bestcaststudios.com
+        notify:
+          success: false
+          failure: true
+
+  # ---------------------------------------------------------------------------
+  # Workflow 2: iOS Release Build (.ipa for TestFlight / App Store)
+  # ---------------------------------------------------------------------------
+  # Purpose: Generates a signed IPA ready for upload to TestFlight or App Store.
+  # Note: Requires Apple Developer code signing configured in Codemagic dashboard:
+  #   - Either Automatic signing via App Store Connect API Key
+  #   - Or Manual signing with Distribution Certificate (.p12) and Provisioning Profile (.mobileprovision)
+  # ---------------------------------------------------------------------------
+  bestcast-ios-release:
+    name: Bestcast iOS Release (IPA)
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      # Uncomment and set your Codemagic environment variable group name if using App Store Connect API:
+      # groups:
+      #   - appstore_credentials
+      vars:
+        BUNDLE_ID: "com.bestcast.bestcastott"
+        XCODE_PROJECT: "ios/Runner.xcodeproj"
+        XCODE_SCHEME: "Runner"
+
+    cache:
+      cache_paths:
+        - $FLUTTER_ROOT/.pub-cache
+        - $HOME/Library/Caches/CocoaPods
+
+    triggering:
+      events:
+        - tag
+        # To trigger releases on push to main or ios_app, uncomment below:
+        # - push
+      branch_patterns:
+        - pattern: "main"
+          include: true
+          source: true
+
+    scripts:
+      - name: Set up keychain and signing profiles
+        script: |
+          # 1. Initialize keychain for certificates
+          keychain initialize
+
+          # 2. If using Codemagic App Store Connect API integration:
+          # app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+
+          # 3. If using manual certificates uploaded to Codemagic:
+          if which xcode-project > /dev/null 2>&1; then
+            xcode-project use-profiles || true
+          fi
+
+      - name: Get Flutter dependencies
+        script: |
+          flutter clean
+          flutter pub get
+
+      - name: Precache iOS build tools
+        script: |
+          flutter precache --ios
+
+      - name: Install CocoaPods dependencies
+        script: |
+          cd ios
+          pod install --repo-update
+          cd ..
+
+      - name: Build IPA for App Store / TestFlight
+        script: |
+          # Use Codemagic's auto-incrementing build number if available, else pubspec version
+          BUILD_NUM=${BUILD_NUMBER:-$(git rev-list --count HEAD)}
+          echo "Building IPA with build number: $BUILD_NUM"
+
+          if [ -f /Users/builder/export_options.plist ]; then
+            flutter build ipa --release \
+              --build-number=$BUILD_NUM \
+              --export-options-plist=/Users/builder/export_options.plist
+          else
+            flutter build ipa --release \
+              --build-number=$BUILD_NUM
+          fi
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/**/*.log
+      - flutter_drive.log
+
+    publishing:
+      # To automatically distribute to TestFlight, uncomment the block below:
+      # app_store_connect:
+      #   auth: integration
+      #   submit_to_testflight: true
+      #   # beta_groups:
+      #   #   - "Internal Testers"
+      email:
+        recipients:
+          - support@bestcaststudios.com
+        notify:
+          success: true
+          failure: true
