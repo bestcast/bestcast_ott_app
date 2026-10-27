@@ -26,12 +26,12 @@ if (keystorePropertiesFile.exists()) {
 
 
 android {
-    namespace "com.bestcast.bestcastott"
+    namespace "com.bestcasts.bestcaststudios"
     compileSdk 36
     ndkVersion "29.0.14033849"
 
     defaultConfig {
-        applicationId "com.bestcast.bestcastott"
+        applicationId "com.bestcasts.bestcaststudios"
         multiDexEnabled true
         minSdkVersion flutter.minSdkVersion
         targetSdk 36

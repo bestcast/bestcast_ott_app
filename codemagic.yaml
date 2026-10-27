@@ -15,7 +15,7 @@ workflows:
       xcode: latest
       cocoapods: default
       vars:
-        BUNDLE_ID: "com.bestcast.bestcastott"
+        BUNDLE_ID: "com.bestcasts.bestcaststudios"
 
     cache:
       cache_paths:
@@ -92,7 +92,7 @@ workflows:
       # groups:
       #   - appstore_credentials
       vars:
-        BUNDLE_ID: "com.bestcast.bestcastott"
+        BUNDLE_ID: "com.bestcasts.bestcaststudios"
         XCODE_PROJECT: "ios/Runner.xcodeproj"
         XCODE_SCHEME: "Runner"
 

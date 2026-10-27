@@ -1,4 +1,4 @@
-package com.bestcast.bestcastott
+package com.bestcasts.bestcaststudios
 
 import io.flutter.embedding.android.FlutterActivity
 
