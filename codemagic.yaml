@@ -88,6 +88,8 @@ workflows:
       app_store_connect: "Bestcast Ott API"
 
     environment:
+      groups:
+        - ios_signing_credentials
       flutter: stable
       xcode: latest
       cocoapods: default
