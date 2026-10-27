@@ -84,13 +84,13 @@ workflows:
     max_build_duration: 60
     instance_type: mac_mini_m2
 
+    integrations:
+      app_store_connect: "Bestcast Ott API"
+
     environment:
       flutter: stable
       xcode: latest
       cocoapods: default
-      # Uncomment and set your Codemagic environment variable group name if using App Store Connect API:
-      # groups:
-      #   - appstore_credentials
       vars:
         BUNDLE_ID: "com.bestcasts.bestcaststudios"
         XCODE_PROJECT: "ios/Runner.xcodeproj"
@@ -114,16 +114,10 @@ workflows:
     scripts:
       - name: Set up keychain and signing profiles
         script: |
-          # 1. Initialize keychain for certificates
           keychain initialize
-
-          # 2. If using Codemagic App Store Connect API integration:
-          # app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
-
-          # 3. If using manual certificates uploaded to Codemagic:
-          if which xcode-project > /dev/null 2>&1; then
-            xcode-project use-profiles || true
-          fi
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+          keychain add-certificates
+          xcode-project use-profiles
 
       - name: Get Flutter dependencies
         script: |
