@@ -296,16 +296,6 @@ class _WebseriesVideoPlayerState extends State<WebseriesVideoPlayer> {
       if (_controller.isFullScreen) {
         _controller.closeFullScreen();
       }
-      if (AppConfig.isIOSPlatform) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Next episode requires an active subscription."),
-            duration: Duration(seconds: 3),
-          ),
-        );
-        Navigator.pop(context);
-        return;
-      }
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const PlanDetailsPage()),

@@ -130,105 +130,61 @@ class _PlanExpiredScreenState extends State<PlanExpiredScreen> {
                     ),
                   ),
                   const SizedBox(height: 32),
-                  if (AppConfig.isIOSPlatform) ...[
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white12),
+                  // Primary Action: View Plans & Renew in-app
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        fixedSize: const Size.fromHeight(50),
+                        backgroundColor: AppDefaultColors.appRed,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 4,
                       ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const PlanDetailsPage(),
+                          ),
+                        );
+                      },
                       child: const Text(
-                        'Subscriptions cannot be purchased or renewed within the iOS app.\n\nIf you have an active subscription or wish to use another account, please switch accounts.',
-                        textAlign: TextAlign.center,
+                        'View Plans & Renew',
                         style: TextStyle(
-                          fontSize: 13.5,
-                          height: 1.4,
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  // Secondary Action: Renew via Website
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        fixedSize: const Size.fromHeight(48),
+                        side: const BorderSide(color: Colors.white24),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () {
+                        launchUrlStart(url: AppConfig.pricingUrl);
+                      },
+                      child: const Text(
+                        'Renew via Website',
+                        style: TextStyle(
                           color: AppDefaultColors.textLightGray,
+                          fontSize: 14,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          fixedSize: const Size.fromHeight(50),
-                          backgroundColor: AppDefaultColors.appRed,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 4,
-                        ),
-                        onPressed: _logout,
-                        child: const Text(
-                          'Switch Account',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ] else ...[
-                    // Primary Action: View Plans & Renew in-app
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          fixedSize: const Size.fromHeight(50),
-                          backgroundColor: AppDefaultColors.appRed,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 4,
-                        ),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const PlanDetailsPage(),
-                            ),
-                          );
-                        },
-                        child: const Text(
-                          'View Plans & Renew',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    // Secondary Action: Renew via Website
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          fixedSize: const Size.fromHeight(48),
-                          side: const BorderSide(color: Colors.white24),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: () {
-                          launchUrlStart(url: AppConfig.BaseUrl);
-                        },
-                        child: const Text(
-                          'Renew via Website',
-                          style: TextStyle(
-                            color: AppDefaultColors.textLightGray,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ],
               ),
             ),

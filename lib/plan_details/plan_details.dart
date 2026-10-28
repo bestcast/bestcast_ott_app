@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -10,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:bestcaststudios/common_files/card_view_background.dart';
 import 'package:bestcaststudios/plan_details/subscription_list_model.dart';
+import 'razorpay_web_checkout.dart';
 import '../app_config/app_preferences.dart';
 import '../app_config/app_utils.dart';
 import '../app_config/appconfig.dart';
@@ -40,53 +42,6 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (AppConfig.isIOSPlatform) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text(
-            "Subscription Info",
-            style: TextStyle(color: Colors.white, fontSize: 22.0, fontWeight: FontWeight.w700),
-          ),
-          backgroundColor: AppDefaultColors.appColor,
-          leading: const BackButton(color: Colors.white),
-        ),
-        backgroundColor: AppDefaultColors.appColor,
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.info_outline_rounded, color: Colors.white70, size: 56),
-                const SizedBox(height: 18),
-                const Text(
-                  "Subscription Notice",
-                  style: TextStyle(fontSize: 20, color: Colors.white, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  "In-app purchases and subscriptions are not available on this device.\n\nExisting subscribers can access their content across all supported devices by logging into their account.",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 14, color: AppDefaultColors.textLightGray, height: 1.5),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppDefaultColors.appRed,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("Go Back"),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
     return LoaderOverlay(
       child: Scaffold(
         appBar: AppBar(
@@ -259,10 +214,33 @@ class _PlanDetailsPageState extends State<PlanDetailsPage> {
     }
   }
 
-  void payRazor(String amount, String description, String mobilenumber, dynamic orderId) {
+  void payRazor(String amount, String description, String mobilenumber, dynamic orderId) async {
     if (AppConfig.isIOSPlatform) {
-      if (mounted) {
-        CommonWidget().showSnackBar(context, ContentType.warning, "Notice", "In-app purchases are not supported on iOS.");
+      final result = await Navigator.push<RazorpayWebResult>(
+        context,
+        CupertinoPageRoute(
+          builder: (context) => RazorpayWebCheckoutPage(
+            apiKey: _gateWayKey,
+            amount: amount,
+            description: description,
+            phone: mobilenumber,
+            orderId: orderId.toString(),
+            logo: _logo,
+          ),
+        ),
+      );
+
+      if (result != null) {
+        if (result.isSuccess) {
+          updatetransaction(
+            _token,
+            result.orderId ?? orderId.toString(),
+            result.paymentId ?? '',
+            result.signature ?? '',
+          );
+        } else if (!result.isDismissed) {
+          appUtils.showToast(result.errorMessage ?? "Payment Failed.");
+        }
       }
       return;
     }

@@ -645,105 +645,6 @@ class _VideoAppState extends State<VideoApp> {
     );
   }
 
-  Widget _buildSubscriptionBanner() {
-    if (AppConfig.isIOSPlatform) {
-      return Container(
-        margin: const EdgeInsets.symmetric(vertical: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.15),
-            width: 0.8,
-          ),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.info_outline_rounded, color: Color(0xFFFFD700), size: 22),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                loggedStatus
-                    ? "This movie requires an active Bestcast subscription."
-                    : "This movie requires an active Bestcast subscription. Sign in with an active account to watch.",
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.85),
-                  fontSize: 11.5,
-                  height: 1.3,
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            const Color(0xFFD4AF37).withValues(alpha: 0.2),
-            const Color(0xFFFF8C00).withValues(alpha: 0.1),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: const Color(0xFFD4AF37).withValues(alpha: 0.45),
-          width: 1,
-        ),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            pauseController();
-            Navigator.push(
-              context,
-              CupertinoPageRoute(builder: (context) => const PlanDetailsPage()),
-            ).then((_) {
-              getInitalValue();
-            });
-          },
-          borderRadius: BorderRadius.circular(10),
-          child: Row(
-            children: [
-              const Icon(Icons.workspace_premium_rounded, color: Color(0xFFFFD700), size: 22),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "SUBSCRIBE TO WATCH",
-                      style: TextStyle(
-                        color: Color(0xFFFFD700),
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      "Unlock this movie & entire Bestcast library in Full HD",
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.8),
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFFFFD700), size: 14),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   void _showIosSubscriptionRequiredDialog() {
     showDialog(
       context: context,
@@ -795,18 +696,8 @@ class _VideoAppState extends State<VideoApp> {
     IconData buttonIcon = Icons.play_arrow_rounded;
 
     if (!hasAccess) {
-      if (AppConfig.isIOSPlatform) {
-        if (!loggedStatus) {
-          buttonTitle = "Sign In to Watch";
-          buttonIcon = Icons.login_rounded;
-        } else {
-          buttonTitle = "Subscription Required";
-          buttonIcon = Icons.lock_outline_rounded;
-        }
-      } else {
-        buttonTitle = "Subscribe to Watch";
-        buttonIcon = Icons.workspace_premium_rounded;
-      }
+      buttonTitle = "Subscription Required";
+      buttonIcon = Icons.workspace_premium_rounded;
     } else if (canResume) {
       buttonTitle = "Play";
     }
@@ -1231,10 +1122,6 @@ class _VideoAppState extends State<VideoApp> {
                   // Metadata Badges (Year, Rating, Duration, Quality, Top 10)
                   _buildMetadataRow(),
                   const SizedBox(height: 12),
-
-                  // Subscription VIP Banner (if not accessible)
-                  if (!hasAccess)
-                    _buildSubscriptionBanner(),
 
                   // Primary Play / Resume CTA Button
                   _buildPrimaryPlayButton(hasAccess),

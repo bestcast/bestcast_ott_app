@@ -618,103 +618,6 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
     );
   }
 
-  Widget _buildSubscriptionBanner() {
-    if (AppConfig.isIOSPlatform) {
-      return Container(
-        margin: const EdgeInsets.symmetric(vertical: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.15),
-            width: 0.8,
-          ),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.info_outline_rounded, color: Color(0xFFFFD700), size: 22),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                _loggedStatus
-                    ? "This web series requires an active Bestcast subscription."
-                    : "This web series requires an active Bestcast subscription. Sign in with an active account to watch.",
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.85),
-                  fontSize: 11.5,
-                  height: 1.3,
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            const Color(0xFFD4AF37).withValues(alpha: 0.2),
-            const Color(0xFFFF8C00).withValues(alpha: 0.1),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: const Color(0xFFD4AF37).withValues(alpha: 0.45),
-          width: 1,
-        ),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            _trailerController?.pause();
-            Navigator.push(
-              context,
-              CupertinoPageRoute(builder: (context) => const PlanDetailsPage()),
-            ).then((_) => _loadInitialData());
-          },
-          borderRadius: BorderRadius.circular(10),
-          child: Row(
-            children: [
-              const Icon(Icons.workspace_premium_rounded, color: Color(0xFFFFD700), size: 22),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "SUBSCRIBE TO WATCH",
-                      style: TextStyle(
-                        color: Color(0xFFFFD700),
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      "Unlock this webseries & entire Bestcast library in Full HD",
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.8),
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFFFFD700), size: 14),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   void _showIosSubscriptionRequiredDialog() {
     showDialog(
       context: context,
@@ -733,7 +636,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
             ],
           ),
           content: const Text(
-            "This web series is available for active Bestcast subscribers. Subscriptions cannot be purchased within the iOS app. If you have an active subscription on another account, please switch accounts.",
+            "This series is available for active Bestcast subscribers. Subscriptions cannot be purchased within the iOS app. If you have an active subscription on another account, please switch accounts.",
             style: TextStyle(color: Colors.white70, fontSize: 13.5, height: 1.4),
           ),
           actions: [
@@ -744,11 +647,10 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
             TextButton(
               onPressed: () {
                 Navigator.of(ctx).pop();
-                _trailerController?.pause();
-                Navigator.push(
+                Navigator.pushReplacement(
                   context,
                   CupertinoPageRoute(builder: (context) => LoginPage()),
-                ).then((_) => _loadInitialData());
+                );
               },
               child: const Text("Switch Account", style: TextStyle(color: Color(0xFFFFD700))),
             ),
@@ -937,18 +839,8 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
     IconData playButtonIcon = Icons.play_arrow_rounded;
 
     if (!canPlayTarget) {
-      if (AppConfig.isIOSPlatform) {
-        if (!_loggedStatus) {
-          playButtonTitle = "Sign In to Watch";
-          playButtonIcon = Icons.login_rounded;
-        } else {
-          playButtonTitle = "Subscription Required";
-          playButtonIcon = Icons.lock_outline_rounded;
-        }
-      } else {
-        playButtonTitle = "Subscribe to Watch";
-        playButtonIcon = Icons.workspace_premium_rounded;
-      }
+      playButtonTitle = "Subscription Required";
+      playButtonIcon = Icons.workspace_premium_rounded;
     } else if (!hasSubscription && targetEp != null && targetEp.movieAccess == 1) {
       playButtonTitle = "Play Free Episode";
       playButtonIcon = Icons.play_arrow_rounded;
@@ -1051,9 +943,6 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
           ),
           const SizedBox(height: 12),
 
-          // Subscription VIP Banner
-          if (_isAuthLoaded && !hasSubscription) _buildSubscriptionBanner(),
-
           // Primary Play / Resume Button
           Container(
             width: double.infinity,
@@ -1088,12 +977,12 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
                   } else if (!canPlayTarget) {
                     if (AppConfig.isIOSPlatform) {
                       _showIosSubscriptionRequiredDialog();
-                    } else {
-                      Navigator.push(
-                        context,
-                        CupertinoPageRoute(builder: (context) => const PlanDetailsPage()),
-                      ).then((_) => _loadInitialData());
+                      return;
                     }
+                    Navigator.push(
+                      context,
+                      CupertinoPageRoute(builder: (context) => const PlanDetailsPage()),
+                    ).then((_) => _loadInitialData());
                   } else {
                     if (targetEp != null) {
                       List<WebseriesEpisodeModel> currentSeasonEps = _webseriesDetail!.seasons.isNotEmpty ? _webseriesDetail!.seasons.first.episodes : [targetEp];

@@ -18,7 +18,6 @@ import 'package:bestcaststudios/Dashboard/MoviesModels.dart';
 import 'package:bestcaststudios/Dashboard/block_movies_screen.dart';
 import 'package:bestcaststudios/common_files/main_card_background.dart';
 import 'package:bestcaststudios/common_files/movie_categories_card_wishlist.dart';
-import 'package:bestcaststudios/common_files/submit_transparent_button.dart';
 import 'package:bestcaststudios/streamingpalyer/video_player.dart';
 import 'package:bestcaststudios/streamingpalyer/models/subtitle_models.dart';
 import '../app_config/app_preferences.dart';
@@ -31,7 +30,6 @@ import '../authendication/login_page.dart';
 import '../common_files/api_services.dart';
 import '../common_files/app_default_colors.dart';
 import '../common_files/common_widgets.dart';
-import '../common_files/submit_white_button.dart';
 import '../streamingpalyer/models/main_movie_details_models.dart';
 import '../common_files/shimmer/shimmer_skeletons.dart';
 import '../common_files/shimmer/app_shimmer_image.dart';
@@ -71,7 +69,6 @@ class _DashboardState extends State<Dashboard> {
   bool isLoading = false;
   bool loggedStatus = false;
 
-  String _mainMovieId = "";
   String _mainMoviePicture = "";
   String _mainMovieCategory = "";
 
@@ -108,7 +105,6 @@ class _DashboardState extends State<Dashboard> {
   final ValueNotifier<int> _currentBannerIndexNotifier = ValueNotifier<int>(0);
   final Duration _duration = const Duration(milliseconds: 250);
 
-  bool _isAddedMyList = false;
 
   List<Genres> allCategoryItems = [];
 
@@ -255,9 +251,7 @@ class _DashboardState extends State<Dashboard> {
           _currentBannerIndexNotifier.value = 0;
           if (_bannerList.isNotEmpty) {
             _mainMoviePicture = _bannerList[0].imageUrl;
-            _mainMovieId = _bannerList[0].movieId;
             _mainMovieCategory = _bannerList[0].category;
-            _isAddedMyList = _bannerList[0].isMyList;
             movieData = _bannerList[0].movieData;
           }
         }
@@ -291,9 +285,7 @@ class _DashboardState extends State<Dashboard> {
         _bannerList = filteredBanners;
         _currentBannerIndexNotifier.value = 0;
         _mainMoviePicture = _bannerList[0].imageUrl;
-        _mainMovieId = _bannerList[0].movieId;
         _mainMovieCategory = _bannerList[0].category;
-        _isAddedMyList = _bannerList[0].isMyList;
         movieData = _bannerList[0].movieData;
       }
       isLoading = false;
@@ -1014,25 +1006,15 @@ class _DashboardState extends State<Dashboard> {
               return Stack(
                 children: [
                   // Full-bleed Poster Image
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        CupertinoPageRoute(
-                          builder: (context) => VideoApp(getMovieID: banner.movieId),
-                        ),
-                      );
-                    },
-                    child: SizedBox(
+                  SizedBox(
+                    height: bannerHeight,
+                    width: double.infinity,
+                    child: AppShimmerImage(
+                      imageUrl: banner.imageUrl,
                       height: bannerHeight,
                       width: double.infinity,
-                      child: AppShimmerImage(
-                        imageUrl: banner.imageUrl,
-                        height: bannerHeight,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorAsset: 'images/default_portrate_large.jpg',
-                      ),
+                      fit: BoxFit.cover,
+                      errorAsset: 'images/default_portrate_large.jpg',
                     ),
                   ),
 
@@ -1058,7 +1040,7 @@ class _DashboardState extends State<Dashboard> {
                     ),
                   ),
 
-                  // Metadata & Action Buttons
+                  // Metadata
                   Align(
                     alignment: Alignment.bottomCenter,
                     child: Padding(
@@ -1069,7 +1051,7 @@ class _DashboardState extends State<Dashboard> {
                         children: [
                           if (banner.title.isNotEmpty)
                             Padding(
-                              padding: const EdgeInsets.only(bottom: 6.0),
+                              padding: EdgeInsets.only(bottom: banner.category.isNotEmpty ? 4.0 : 0.0),
                               child: Text(
                                 banner.title,
                                 maxLines: 1,
@@ -1091,73 +1073,18 @@ class _DashboardState extends State<Dashboard> {
                               ),
                             ),
                           if (banner.category.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 14.0),
-                              child: Text(
-                                banner.category,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.85),
-                                  fontSize: 13.5,
-                                  fontWeight: FontWeight.w500,
-                                  letterSpacing: 0.3,
-                                ),
+                            Text(
+                              banner.category,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.85),
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: 0.3,
                               ),
                             ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6.0),
-                                  child: SubmitWhiteButton(
-                                    "Play",
-                                    Icons.play_arrow,
-                                    onTap: () async {
-                                      Navigator.push(
-                                        context,
-                                        CupertinoPageRoute(
-                                          builder: (context) => VideoApp(getMovieID: banner.movieId),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6.0),
-                                  child: SubmitTransparentButton(
-                                    "My List",
-                                    banner.isMyList ? Icons.check : Icons.add,
-                                    onTap: () async {
-                                      if (loggedStatus) {
-                                        setState(() {
-                                          banner.isMyList = !banner.isMyList;
-                                          if (index == 0) {
-                                            _isAddedMyList = banner.isMyList;
-                                          }
-                                        });
-                                        final postValues = {
-                                          'mylist': banner.isMyList ? 1 : 0,
-                                        };
-                                        setUserMovies(_token, profileID, banner.movieId, postValues);
-                                      } else {
-                                        Navigator.push(
-                                          context,
-                                          CupertinoPageRoute(
-                                            builder: (context) => LoginPage(),
-                                          ),
-                                        );
-                                      }
-                                    },
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
                         ],
                       ),
                     ),
@@ -1246,68 +1173,14 @@ class _DashboardState extends State<Dashboard> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   if (_mainMovieCategory.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16.0),
-                      child: Text(
-                        _mainMovieCategory,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 15.0,
-                          fontWeight: FontWeight.normal,
-                        ),
+                    Text(
+                      _mainMovieCategory,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15.0,
+                        fontWeight: FontWeight.normal,
                       ),
                     ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 6.0),
-                          child: SubmitWhiteButton(
-                            "Play",
-                            Icons.play_arrow,
-                            onTap: () async {
-                              if (_mainMovieId.isNotEmpty) {
-                                Navigator.push(
-                                  context,
-                                  CupertinoPageRoute(
-                                    builder: (context) => VideoApp(getMovieID: _mainMovieId),
-                                  ),
-                                );
-                              }
-                            },
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 6.0),
-                          child: SubmitTransparentButton(
-                            "My List",
-                            _isAddedMyList ? Icons.check : Icons.add,
-                            onTap: () async {
-                              if (loggedStatus) {
-                                setState(() {
-                                  _isAddedMyList = !_isAddedMyList;
-                                  final postValues = {
-                                    'mylist': _isAddedMyList ? 1 : 0,
-                                  };
-                                  setUserMovies(_token, profileID, _mainMovieId, postValues);
-                                });
-                              } else {
-                                Navigator.push(
-                                  context,
-                                  CupertinoPageRoute(
-                                    builder: (context) => LoginPage(),
-                                  ),
-                                );
-                              }
-                            },
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ),
@@ -1607,9 +1480,7 @@ class _DashboardState extends State<Dashboard> {
             _currentBannerIndexNotifier.value = 0;
             if (_bannerList.isNotEmpty) {
               _mainMoviePicture = _bannerList[0].imageUrl;
-              _mainMovieId = _bannerList[0].movieId;
               _mainMovieCategory = _bannerList[0].category;
-              _isAddedMyList = _bannerList[0].isMyList;
               movieData = _bannerList[0].movieData;
             }
           }

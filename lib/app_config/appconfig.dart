@@ -3,7 +3,7 @@ import 'dart:io';
 class AppConfig {
   /// Test flag: Set to `true` to test iPhone/iOS Reader Mode behavior on Android devices.
   /// Set back to `false` for normal Android behavior before production release.
-  static const bool simulateIOS = true;
+  static const bool simulateIOS = false;
 
   /// Helper to check if running on iOS or simulating iOS for testing.
   static bool get isIOSPlatform => simulateIOS || Platform.isIOS;
