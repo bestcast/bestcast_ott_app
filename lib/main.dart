@@ -35,12 +35,6 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Bestcast OTT',
       theme: ThemeData(
-        pageTransitionsTheme: PageTransitionsTheme(
-          builders: {
-            TargetPlatform.android: CupertinoPageTransitionsBuilder(),
-            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-          },
-        ),
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.black),
         inputDecorationTheme: InputDecorationTheme(
           hintStyle: TextStyle(fontSize: 12, color: Colors.white),
