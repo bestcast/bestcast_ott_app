@@ -55,7 +55,7 @@ class _VideoAppState extends State<VideoApp> {
 
   late final SimulatedDownloadController _downloadControllers = SimulatedDownloadController(
       onOpenDownload: () {
-        Navigator.push(context, MaterialPageRoute(builder: (context) => DownloadMovieFiles()));
+        Navigator.push(context, CupertinoPageRoute(builder: (context) => DownloadMovieFiles()));
       },
       downloadUrl: movieData?.moviesource.toString() ?? '',
       downloadMovieID: movieData?.id.toString() ?? '',
@@ -248,7 +248,7 @@ class _VideoAppState extends State<VideoApp> {
       pauseController();
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => LoginPage()),
+        CupertinoPageRoute(builder: (context) => LoginPage()),
       );
       return;
     }
@@ -279,7 +279,7 @@ class _VideoAppState extends State<VideoApp> {
       }
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const PlanDetailsPage()),
+        CupertinoPageRoute(builder: (context) => const PlanDetailsPage()),
       ).then((_) {
         getInitalValue();
       });
@@ -290,7 +290,7 @@ class _VideoAppState extends State<VideoApp> {
     if (!mounted) return;
     Navigator.push(
       context,
-      MaterialPageRoute(
+      CupertinoPageRoute(
         builder: (context) => MovieVideoViewer(
           getMainMovieUrl: movieData!.videoUrl.toString(),
           getMainMovieID: movieData!.id.toString(),
@@ -320,7 +320,7 @@ class _VideoAppState extends State<VideoApp> {
     if (!mounted) return;
     Navigator.push(
       context,
-      MaterialPageRoute(
+      CupertinoPageRoute(
         builder: (context) => MovieVideoViewer(
           getMainMovieUrl: movieLocalTitle,
           getMainMovieID: '',
@@ -702,7 +702,7 @@ class _VideoAppState extends State<VideoApp> {
             pauseController();
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const PlanDetailsPage()),
+              CupertinoPageRoute(builder: (context) => const PlanDetailsPage()),
             ).then((_) {
               getInitalValue();
             });
@@ -776,7 +776,7 @@ class _VideoAppState extends State<VideoApp> {
                 pauseController();
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => LoginPage()),
+                  CupertinoPageRoute(builder: (context) => LoginPage()),
                 );
               },
               child: const Text("Switch Account", style: TextStyle(color: Color(0xFFFFD700))),
@@ -1149,6 +1149,19 @@ class _VideoAppState extends State<VideoApp> {
     if (isLoading == true || !readyToPlay) {
       return Scaffold(
         backgroundColor: AppDefaultColors.appColor,
+        appBar: AppBar(
+          backgroundColor: AppDefaultColors.appColor,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          toolbarHeight: 48,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+            onPressed: () {
+              pauseController();
+              Navigator.pop(context);
+            },
+          ),
+        ),
         body: const DetailScreenSkeleton(),
       );
     }

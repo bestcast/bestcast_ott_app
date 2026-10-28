@@ -579,7 +579,7 @@ class _DashboardState extends State<Dashboard> {
                                   padding: const EdgeInsets.only(top: 10.0),
                                   child: GestureDetector(
                                     onTap: () {
-                                      Navigator.push(context, MaterialPageRoute(builder: (context) => LoginPage()));
+                                      Navigator.push(context, CupertinoPageRoute(builder: (context) => LoginPage()));
                                     },
                                     child: const Text("LOGIN", style: TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.w600)),
                                   ),
@@ -673,7 +673,7 @@ class _DashboardState extends State<Dashboard> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
+          CupertinoPageRoute(
             builder: (context) => WebseriesDetailScreen(
               webseriesId: item.id,
               initialItem: item,
@@ -763,7 +763,7 @@ class _DashboardState extends State<Dashboard> {
 
               Navigator.push(
                 context,
-                MaterialPageRoute(
+                CupertinoPageRoute(
                   builder: (context) => WebseriesDetailScreen(
                     webseriesId: moviesModel.id.toString(),
                     initialItem: item,
@@ -1018,7 +1018,7 @@ class _DashboardState extends State<Dashboard> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
+                        CupertinoPageRoute(
                           builder: (context) => VideoApp(getMovieID: banner.movieId),
                         ),
                       );
@@ -1118,7 +1118,7 @@ class _DashboardState extends State<Dashboard> {
                                     onTap: () async {
                                       Navigator.push(
                                         context,
-                                        MaterialPageRoute(
+                                        CupertinoPageRoute(
                                           builder: (context) => VideoApp(getMovieID: banner.movieId),
                                         ),
                                       );
@@ -1147,7 +1147,7 @@ class _DashboardState extends State<Dashboard> {
                                       } else {
                                         Navigator.push(
                                           context,
-                                          MaterialPageRoute(
+                                          CupertinoPageRoute(
                                             builder: (context) => LoginPage(),
                                           ),
                                         );
@@ -1270,7 +1270,7 @@ class _DashboardState extends State<Dashboard> {
                               if (_mainMovieId.isNotEmpty) {
                                 Navigator.push(
                                   context,
-                                  MaterialPageRoute(
+                                  CupertinoPageRoute(
                                     builder: (context) => VideoApp(getMovieID: _mainMovieId),
                                   ),
                                 );
@@ -1297,7 +1297,7 @@ class _DashboardState extends State<Dashboard> {
                               } else {
                                 Navigator.push(
                                   context,
-                                  MaterialPageRoute(
+                                  CupertinoPageRoute(
                                     builder: (context) => LoginPage(),
                                   ),
                                 );
@@ -1776,7 +1776,7 @@ class _DashboardState extends State<Dashboard> {
 
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const LoginPage()),
+              CupertinoPageRoute(builder: (context) => const LoginPage()),
             );
           }
         }
@@ -1794,7 +1794,7 @@ class _DashboardState extends State<Dashboard> {
 
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const LoginPage()),
+            CupertinoPageRoute(builder: (context) => const LoginPage()),
           );
         }
       }

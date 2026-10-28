@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -118,10 +119,14 @@ class _DownloadMovieFilesState extends State<DownloadMovieFiles> {
                                 ),
                               ),
                               onPressed: () {
-                                Navigator.push(
+                                if (Navigator.canPop(context)) {
+                                  Navigator.popUntil(context, (route) => route.isFirst);
+                                } else {
+                                  Navigator.pushReplacement(
                                     context,
-                                    MaterialPageRoute(
-                                        builder: (context) => MainScreen()));
+                                    CupertinoPageRoute(builder: (context) => const MainScreen()),
+                                  );
+                                }
                               },
                               child: Text(
                                 'Find More to Download',
@@ -153,7 +158,7 @@ class _DownloadMovieFilesState extends State<DownloadMovieFiles> {
 
                                   Navigator.push(
                                       context,
-                                      MaterialPageRoute(
+                                      CupertinoPageRoute(
                                           builder: (context) =>
                                               MovieVideoViewer(
                                                 getMainMovieUrl: movieLocalPath,
@@ -224,7 +229,7 @@ class _DownloadMovieFilesState extends State<DownloadMovieFiles> {
                         : moviesDownloadedModel.movieName.toString();
                     Navigator.push(
                         context,
-                        MaterialPageRoute(
+                        CupertinoPageRoute(
                             builder: (context) => MovieVideoViewer(
                                   getMainMovieUrl: movieLocalPath,
                                   getMainMovieID: moviesDownloadedModel.movieID ?? '',

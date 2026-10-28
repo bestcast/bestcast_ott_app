@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -496,7 +497,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
     if (!_loggedStatus || _token.isEmpty) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => LoginPage()),
+        CupertinoPageRoute(builder: (context) => LoginPage()),
       ).then((_) => _loadInitialData());
       return;
     }
@@ -510,7 +511,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
       }
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const PlanDetailsPage()),
+        CupertinoPageRoute(builder: (context) => const PlanDetailsPage()),
       ).then((_) => _loadInitialData());
       return;
     }
@@ -522,7 +523,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
 
     Navigator.push(
       context,
-      MaterialPageRoute(
+      CupertinoPageRoute(
         builder: (context) => WebseriesVideoPlayer(
           episode: episode,
           webseriesTitle: _webseriesDetail?.title ?? '',
@@ -674,7 +675,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
             _trailerController?.pause();
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const PlanDetailsPage()),
+              CupertinoPageRoute(builder: (context) => const PlanDetailsPage()),
             ).then((_) => _loadInitialData());
           },
           borderRadius: BorderRadius.circular(10),
@@ -746,7 +747,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
                 _trailerController?.pause();
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => LoginPage()),
+                  CupertinoPageRoute(builder: (context) => LoginPage()),
                 ).then((_) => _loadInitialData());
               },
               child: const Text("Switch Account", style: TextStyle(color: Color(0xFFFFD700))),
@@ -1082,7 +1083,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
                   if (!_loggedStatus || _token.isEmpty) {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => LoginPage()),
+                      CupertinoPageRoute(builder: (context) => LoginPage()),
                     ).then((_) => _loadInitialData());
                   } else if (!canPlayTarget) {
                     if (AppConfig.isIOSPlatform) {
@@ -1090,7 +1091,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
                     } else {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const PlanDetailsPage()),
+                        CupertinoPageRoute(builder: (context) => const PlanDetailsPage()),
                       ).then((_) => _loadInitialData());
                     }
                   } else {
@@ -1189,7 +1190,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
               if (!_loggedStatus || _token.isEmpty) {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => LoginPage()),
+                  CupertinoPageRoute(builder: (context) => LoginPage()),
                 ).then((_) => _loadInitialData());
               } else {
                 setState(() {
@@ -1201,7 +1202,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
               if (!_loggedStatus || _token.isEmpty) {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => LoginPage()),
+                  CupertinoPageRoute(builder: (context) => LoginPage()),
                 ).then((_) => _loadInitialData());
               } else {
                 setState(() {
@@ -1214,7 +1215,7 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
               if (!_loggedStatus || _token.isEmpty) {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => LoginPage()),
+                  CupertinoPageRoute(builder: (context) => LoginPage()),
                 ).then((_) => _loadInitialData());
               } else {
                 setState(() {

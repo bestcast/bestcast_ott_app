@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -268,7 +269,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const LoginPage()),
+                    CupertinoPageRoute(builder: (context) => const LoginPage()),
                   ).then((_) => getInitalValue());
                 },
                 style: ElevatedButton.styleFrom(
@@ -389,7 +390,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
+                CupertinoPageRoute(
                   builder: (context) => WhosWatchingPage(activityType: "Switch"),
                 ),
               ).then((_) => getInitalValue());
@@ -456,7 +457,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const DownloadMovieFiles()),
+                CupertinoPageRoute(builder: (context) => const DownloadMovieFiles()),
               );
             },
           ),
@@ -603,7 +604,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
+                    CupertinoPageRoute(
                       builder: (context) => VideoApp(getMovieID: movie.id.toString()),
                     ),
                   );
@@ -715,7 +716,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
+                  CupertinoPageRoute(
                     builder: (context) => VideoApp(getMovieID: movie.id.toString()),
                   ),
                 );
@@ -760,7 +761,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
+                  CupertinoPageRoute(
                     builder: (context) => VideoApp(getMovieID: movie.id.toString()),
                   ),
                 );
@@ -846,7 +847,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
+                  CupertinoPageRoute(
                     builder: (context) => WhosWatchingPage(activityType: "Manage"),
                   ),
                 ).then((_) => getInitalValue());
@@ -859,7 +860,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
+                  CupertinoPageRoute(
                     builder: (context) => BestcastWebView(url: "account"),
                   ),
                 );
@@ -879,7 +880,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const AppSettingsPage()),
+                CupertinoPageRoute(builder: (context) => const AppSettingsPage()),
               );
             },
           ),
@@ -890,7 +891,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
+                CupertinoPageRoute(
                   builder: (context) => BestcastWebView(url: "help"),
                 ),
               );
@@ -1030,7 +1031,7 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
                     Navigator.pop(context);
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
+                      CupertinoPageRoute(
                         builder: (context) => VideoApp(getMovieID: moviesModel.id.toString()),
                       ),
                     );
@@ -1446,12 +1447,12 @@ class _ProfileMainPageState extends State<ProfileMainPage> {
 
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const LoginPage()),
+                CupertinoPageRoute(builder: (context) => const LoginPage()),
               ).then((result) {
                 if (result != null && mounted) {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (context) => const MainScreen()),
+                    CupertinoPageRoute(builder: (context) => const MainScreen()),
                   );
                 }
               });

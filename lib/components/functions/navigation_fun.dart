@@ -1,27 +1,27 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class AuthNavigator {
-  /// Smooth navigation with fade transition
+  /// Smooth navigation with fade transition for replacement, or CupertinoPageRoute for push to retain swipe back
   static void navigateWithFade<T extends Widget>(
     BuildContext context,
     T page, {
     bool replace = true, // true = pushReplacement, false = push
   }) {
-    final route = PageRouteBuilder(
-      transitionDuration: const Duration(milliseconds: 200),
-      pageBuilder: (_, __, ___) => page,
-      transitionsBuilder: (_, animation, __, child) {
-        return FadeTransition(
-          opacity: animation,
-          child: child,
-        );
-      },
-    );
-
     if (replace) {
+      final route = PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 200),
+        pageBuilder: (_, __, ___) => page,
+        transitionsBuilder: (_, animation, __, child) {
+          return FadeTransition(
+            opacity: animation,
+            child: child,
+          );
+        },
+      );
       Navigator.pushReplacement(context, route);
     } else {
-      Navigator.push(context, route);
+      Navigator.push(context, CupertinoPageRoute(builder: (_) => page));
     }
   }
 
@@ -32,27 +32,20 @@ class AuthNavigator {
     bool replace = true,
     Offset begin = const Offset(1, 0), // default: slide from right
   }) {
-    final route = PageRouteBuilder(
-      transitionDuration: const Duration(milliseconds: 200),
-      pageBuilder: (_, __, ___) => page,
-      transitionsBuilder: (_, animation, __, child) {
-        return SlideTransition(
-          position: Tween(begin: begin, end: Offset.zero).animate(animation),
-          child: child,
-        );
-      },
-    );
-
     if (replace) {
+      final route = PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 200),
+        pageBuilder: (_, __, ___) => page,
+        transitionsBuilder: (_, animation, __, child) {
+          return SlideTransition(
+            position: Tween(begin: begin, end: Offset.zero).animate(animation),
+            child: child,
+          );
+        },
+      );
       Navigator.pushReplacement(context, route);
     } else {
-      Navigator.push(context, route);
+      Navigator.push(context, CupertinoPageRoute(builder: (_) => page));
     }
   }
 }
-
-
-
-
-// Slide From Bottom
-//   context,

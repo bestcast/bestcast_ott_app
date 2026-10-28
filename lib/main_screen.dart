@@ -139,7 +139,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       if (mounted && !AppConfig.isIOSPlatform) {
         Navigator.push(
           context,
-          MaterialPageRoute(
+          CupertinoPageRoute(
             builder: (context) => PlanDetailsPage(refCode: ref),
           ),
         );
@@ -149,7 +149,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       if (webseriesId.isNotEmpty && mounted) {
         Navigator.push(
           context,
-          MaterialPageRoute(
+          CupertinoPageRoute(
             builder: (context) => WebseriesDetailScreen(webseriesId: webseriesId),
           ),
         );
@@ -223,32 +223,57 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           return;
         }
 
-        // On Home tab: double back press to exit
-        final DateTime currentTime = DateTime.now();
-        if (_lastPressedAt == null || currentTime.difference(_lastPressedAt!) > const Duration(seconds: 2)) {
-          _lastPressedAt = currentTime;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Press back again to exit'),
-              duration: Duration(seconds: 2),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.only(bottom: 16, right: 32, left: 32),
-            ),
-          );
-        } else {
-          SystemNavigator.pop();
+        // On Home tab: double back press to exit (Android only)
+        if (Theme.of(context).platform == TargetPlatform.android) {
+          final DateTime currentTime = DateTime.now();
+          if (_lastPressedAt == null || currentTime.difference(_lastPressedAt!) > const Duration(seconds: 2)) {
+            _lastPressedAt = currentTime;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Press back again to exit'),
+                duration: Duration(seconds: 2),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.only(bottom: 16, right: 32, left: 32),
+              ),
+            );
+          } else {
+            SystemNavigator.pop();
+          }
         }
       },
       child: Scaffold(
         backgroundColor: Colors.black,
         // IndexedStack preserves state and scroll positions of all loaded tabs
-        body: IndexedStack(
-          index: _pageIndex,
+        body: Stack(
           children: [
-            _loadedTabs.contains(0) ? const Dashboard() : const SizedBox.shrink(),
-            _loadedTabs.contains(1) ? const SearchScreen() : const SizedBox.shrink(),
-            _loadedTabs.contains(2) ? const NotificationScreen() : const SizedBox.shrink(),
-            _loadedTabs.contains(3) ? const ProfileMainPage() : const SizedBox.shrink(),
+            IndexedStack(
+              index: _pageIndex,
+              children: [
+                _loadedTabs.contains(0) ? const Dashboard() : const SizedBox.shrink(),
+                _loadedTabs.contains(1) ? const SearchScreen() : const SizedBox.shrink(),
+                _loadedTabs.contains(2) ? const NotificationScreen() : const SizedBox.shrink(),
+                _loadedTabs.contains(3) ? const ProfileMainPage() : const SizedBox.shrink(),
+              ],
+            ),
+            // On secondary tabs, enable edge-swipe to navigate back to Home tab (standard iOS behavior)
+            if (_currentIndex != 0)
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: 30,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onHorizontalDragEnd: (details) {
+                    if ((details.primaryVelocity ?? 0) > 100) {
+                      setState(() {
+                        _currentIndex = 0;
+                        _pageIndex = 0;
+                      });
+                    }
+                  },
+                ),
+              ),
           ],
         ),
         bottomNavigationBar: _buildBottomNavBar(),
@@ -411,7 +436,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
             setState(() {
               loggedStatus = false;
             });
-            Navigator.push(context, MaterialPageRoute(builder: (context) => LoginPage()));
+            Navigator.push(context, CupertinoPageRoute(builder: (context) => const LoginPage()));
           } else {
             _pageIndex = index;
           }

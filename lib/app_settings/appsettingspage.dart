@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -426,7 +427,7 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
                   onTap: () {
                     Navigator.push(
                         context,
-                        MaterialPageRoute(
+                        CupertinoPageRoute(
                             builder: (context) => WhosWatchingPage(
                                   activityType: "Manage",
                                 )));
@@ -562,7 +563,7 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
                   onTap: () {
                     Navigator.push(
                         context,
-                        MaterialPageRoute(
+                        CupertinoPageRoute(
                             builder: (context) => BestcastWebView(
                                   url: "privacy",
                                 )));
@@ -612,7 +613,7 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
                   onTap: () {
                     Navigator.push(
                         context,
-                        MaterialPageRoute(
+                        CupertinoPageRoute(
                             builder: (context) => BestcastWebView(
                                   url: "privacy",
                                 )));
@@ -711,7 +712,7 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
                   onTap: () {
                     Navigator.push(
                         context,
-                        MaterialPageRoute(
+                        CupertinoPageRoute(
                             builder: (context) => BestcastWebView(
                                   url: "terms-conditions",
                                 )));
@@ -1110,7 +1111,7 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
         appUtils.hideLoaderDialog(context);
         Fluttertoast.showToast(msg: "Account deleted successfully");
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const LoginPage()),
+          CupertinoPageRoute(builder: (context) => const LoginPage()),
           (route) => false,
         );
       }
