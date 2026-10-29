@@ -505,10 +505,6 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
     final bool canPlay = _hasSubscription || episode.movieAccess == 1;
     if (!canPlay) {
       _trailerController?.pause();
-      if (AppConfig.isIOSPlatform) {
-        _showIosSubscriptionRequiredDialog();
-        return;
-      }
       Navigator.push(
         context,
         CupertinoPageRoute(builder: (context) => const PlanDetailsPage()),
@@ -615,48 +611,6 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
                 ),
               ),
             ),
-    );
-  }
-
-  void _showIosSubscriptionRequiredDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext ctx) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF1E1E1E),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          title: const Row(
-            children: [
-              Icon(Icons.lock_outline_rounded, color: Color(0xFFFFD700), size: 22),
-              SizedBox(width: 8),
-              Text(
-                "Subscription Required",
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          content: const Text(
-            "This series is available for active Bestcast subscribers. Subscriptions cannot be purchased within the iOS app. If you have an active subscription on another account, please switch accounts.",
-            style: TextStyle(color: Colors.white70, fontSize: 13.5, height: 1.4),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text("OK", style: TextStyle(color: Colors.white60)),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(ctx).pop();
-                Navigator.pushReplacement(
-                  context,
-                  CupertinoPageRoute(builder: (context) => LoginPage()),
-                );
-              },
-              child: const Text("Switch Account", style: TextStyle(color: Color(0xFFFFD700))),
-            ),
-          ],
-        );
-      },
     );
   }
 
@@ -975,10 +929,6 @@ class _WebseriesDetailScreenState extends State<WebseriesDetailScreen> {
                       CupertinoPageRoute(builder: (context) => LoginPage()),
                     ).then((_) => _loadInitialData());
                   } else if (!canPlayTarget) {
-                    if (AppConfig.isIOSPlatform) {
-                      _showIosSubscriptionRequiredDialog();
-                      return;
-                    }
                     Navigator.push(
                       context,
                       CupertinoPageRoute(builder: (context) => const PlanDetailsPage()),
